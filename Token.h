@@ -15,11 +15,21 @@
 #define TOKEN_TYPE_EOF 7
 #define TOKEN_TYPE_DIRECTIVE 8 // e.g. ORG for setting start location in memory
 
+#define DIRECTIVE_TYPE_ORG 0
+#define DIRECTIVE_TYPE_DATA 1
+#define DIRECTIVE_TYPE_SDATA 2
+
 /*
 Syntax:
 #CNAME: 0x27 ; A constant definition
-%VNAME: 0x30 ; A variable definition. Reserves space and sets initial value
+%VNAME: N    ; A variable definition. Reserves N words
 $SNAME: "This is a string" ; Stored as a Forth-string <len><str>
+
+.ORG: 0x0000
+.ORG: #CONST
+.DATA: 23
+.DATA: #CONST          ; TOKEN_TYPE_DATA
+.SDATA: "Some string"  ; TOKEN_TYPE_STRING_DATA An anonymous string
 
 LABEL: JR NZ,#3 ; Jump with literal
 LABEL: JR NZ,%CONST ; Jump with literal value defined as $CONST:
@@ -29,7 +39,9 @@ LABEL: JR NZ,*LABEL ; Relative jump to the label. Error if the destination is to
 
 class Token {
     public:
-    Token(char *name, int line, int pos) {
+
+
+    Token(const char *name, int line, int pos) {
         this->name = name;
         this->line = line;
         this->pos = pos;
@@ -50,21 +62,31 @@ class Token {
         return t;
     }
 
-    const char *name;
-    int line;
-    int pos;
+    const char *name = NULL;
+    int line = 0;
+    int pos = 0;
 
-    uint8_t type;
+    uint8_t type = 0;
 
-    uint16_t address;
-    int value; // NULL for a label; instruction; const or variable value; length of a string
-    const char *str;
+    uint16_t address = 0;
 
-    // FOr an instruction
-    uint8_t opcode;
-    uint8_t arga, argb;
-    uint8_t condition;
-    uint8_t apply;
+    /*
+    * NULL for a label or instruction; 
+    * value of a const 
+    * length of a variable in words
+    * length of a string
+    */
+    int value = 0; 
+    
+    const char *str = NULL;
+
+    // For an instruction or a directive
+    uint8_t opcode = 0;
+    uint8_t arga = 0;
+    uint8_t argb = 0;
+    uint8_t condition = 0;
+    uint8_t apply = 0;
+    uint8_t invert = 0;
 
     // Instructions with immediate values may need to
     // have the value resolved
@@ -74,6 +96,7 @@ class Token {
 
 
     Token *next = NULL;
+    Token *label = NULL;
 
     bool isConditional() {
         return (condition & 8) != 0;
@@ -84,7 +107,7 @@ class Token {
     }
 
     uint8_t getCondition() {
-        return condition & 3;
+        return condition & 0x03;
     }
 
     bool isNamed(char *n) {
@@ -115,12 +138,38 @@ class Token {
         return type == TOKEN_TYPE_COMMENT;
     }
 
+    bool isDirective() {
+        return type == TOKEN_TYPE_DIRECTIVE;
+    }
+
+    bool isOrg() {
+        return isDirective() && (opcode == DIRECTIVE_TYPE_ORG);
+    }
+
+    bool isData() {
+        return isDirective() && (opcode == DIRECTIVE_TYPE_DATA);
+    }
+
+    bool isStringData() {
+        return isDirective() && (opcode == DIRECTIVE_TYPE_SDATA);
+    }
+
+    bool isLocation() {
+        // anything which is not a comment or another label is a location to which a label can be attached
+        return !(isLabel() || isComment());
+    }
+
+    bool isError() {
+        return type == TOKEN_TYPE_ERROR;
+    }
+
     uint16_t opWord() {
         uint16_t w = opcode << OP_BITS;
         w |= (condition & 3) << CC_BITS;
-        w |= ((condition & 0x0c) >> 2) << CC_APPLY_BITS;
-        w |= (arga & 7) << 3;
-        w |= argb & 7;
+        w |= ((condition & 8) >> 3) << CC_APPLY_BIT;
+        w |= ((condition & 4) >> 2) << CC_INV_BIT;
+        w |= (arga & 0x0f) << 4;
+        w |= argb & 0x0f;
         return w;
     }
 

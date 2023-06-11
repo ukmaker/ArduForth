@@ -3,12 +3,15 @@
 
 #include "ForthVM.h"
 #include "Serial.h"
+#include <string.h>
 
 #define SYSCALL_PRINTC 0
 #define SYSCALL_TYPE 1
 #define SYSCALL_DOT 2
 #define SYSCALL_GETC 3
 #define SYSCALL_PUTC 4
+#define SYSCALL_INLINE 5
+#define SYSCALL_FLUSH 6
 
 void syscall_printC(ForthVM *vm) {
     // Syscall to print the char on the top of the stack
@@ -23,7 +26,8 @@ void syscall_type(ForthVM *vm) {
     // Syscall to print the string pointed to by the top of stack
     // The forst word of the string is the length
     // ( addr - )
-    uint16_t a = vm->pop();
+    uint16_t dp = vm->pop();
+    uint16_t a = vm->read(dp);
     uint16_t len = vm->read(a); // length in bytes
     a+=2;
     uint8_t b;
@@ -31,15 +35,28 @@ void syscall_type(ForthVM *vm) {
         b = vm->readByte(a+i);
         printf("%c", b);    
     }
+    fflush(stdout);
 }
 
 void syscall_dot(ForthVM *vm) {
     // Syscall to print the value on the top of the stack
     // This should respect the current BASE but that's for another day
     // ( v - )
-    uint16_t v = vm->pop();
-
-    printf("%d", v);
+    int base = vm->pop();
+    int v = vm->pop();
+    switch(base) {
+        case 1:    
+            printf("%04x", v);
+            break;
+        case 2:
+            printf("%016b", v);
+            break;
+        case 0: 
+        default:
+            printf("%4d", v);
+            break;
+        
+    }
 }
 
 void syscall_getc(ForthVM *vm) {
@@ -50,6 +67,23 @@ void syscall_getc(ForthVM *vm) {
 void syscall_putc(ForthVM *vm) {
     int i = Serial::putc(vm->pop());
     vm->push(i);
+}
+
+void syscall_inline(ForthVM *vm) {
+    // address of the buffer struct
+    uint16_t buf = vm->pop();
+    char *cbuf = vm->ram()->addressOfChar(buf+4);
+    if(fgets(cbuf, 127, stdin) != NULL) {
+        // There will now be a null-terminated string in the buffer
+        // calculate the end and store that in buf+2
+        vm->ram()->put(buf+2, buf + 4 + strlen(cbuf));
+        // Current buffer pointer is just the start of the buffer
+        vm->ram()->put(buf,buf+4);
+    }
+}
+
+void syscall_flush(ForthVM *vm) {
+    fflush(stdout);
 }
 
 /**
@@ -66,6 +100,8 @@ class TIL {
         _vm.addSyscall(SYSCALL_DOT, syscall_dot);
         _vm.addSyscall(SYSCALL_GETC, syscall_getc);
         _vm.addSyscall(SYSCALL_PUTC, syscall_putc);
+        _vm.addSyscall(SYSCALL_INLINE, syscall_inline);
+        _vm.addSyscall(SYSCALL_FLUSH, syscall_flush);
 
     }
     ~TIL() {}
@@ -150,12 +186,12 @@ class TIL {
         _vm.load(0,0,OP_POPR, REG_I,0);
         // NEXT
         _nextAddr = _vm.get(REG_PC);
-        _vm.load(0,0,OP_FETCH, REG_WA, REG_I); 
+        _vm.load(0,0,OP_LDIX, REG_WA, REG_I); 
         _vm.load(0,0,OP_LDAI, 2); // next word
         _vm.load(0,0,OP_ADD,REG_I, REG_A);
         // RUN
         _runAddr = _vm.get(REG_PC);
-        _vm.load(0,0,OP_FETCH, REG_CA, REG_WA);
+        _vm.load(0,0,OP_LDIX, REG_CA, REG_WA);
         _vm.load(0,0,OP_ADD,REG_WA,REG_A);
         _vm.load(0,0,OP_LD,REG_PC,REG_CA);
     }
@@ -292,7 +328,7 @@ class TIL {
 
     void _endPrimitive() {
         _vm.load(0,0,OP_JP, 0);
-        _vm.load(_nextAddr);
+        _vm.load(_runAddr);
     }
 
     uint16_t _startSecondary(const char *name) {

@@ -10,84 +10,115 @@ class AssemblyVocabulary {
     public:
     AssemblyVocabulary() {
 
-        for(int i=0; i<64; i++) opnames[i] = NULL;
+        for(int i=0; i<256; i++) opnames[i] = NULL;
 
-
-        /**
-         * No arguments
-         */ 
-        opnames[OP_RET] = "RET";
-        opnames[OP_HALT] = "HALT";
         opnames[OP_NOP] = "NOP";
 
-        /**
-         *  Two arguments
-         */
-        opnames[OP_LD] = "LD"; // Ra <- Rb  
-        opnames[OP_ADD] = "ADD";  // Ra <- Ra + Rb
-        opnames[OP_SUB] = "SUB"; // Ra <- Ra - Rb
-        opnames[OP_MUL] = "MUL"; // Ra <- Ra * Rb
-        opnames[OP_DIV] = "DIV"; // Ra <- Ra / Rb
-        opnames[OP_AND] = "AND"; // Ra <- Ra and Rb
-        opnames[OP_OR] = "OR"; // Ra <- Ra or Rb
-        opnames[OP_XOR] = "XOR"; // Ra <- Ra xor Rb
-        opnames[OP_CMP] = "CMP"; // CMP Ra,Rb
+        opnames[OP_MOV] = "MOV";
+        opnames[OP_MOVI] = "MOVI";
+        opnames[OP_MOVIL] = "MOVIL";
+        opnames[OP_MOVAI] = "MOVAI";
+        opnames[OP_MOVBI] = "MOVBI";
 
-        // Written STAIX SP,I to mean (SP + I) <- A
-        opnames[OP_STAIX] = "STAIX";   // (Ra + Rb) <- RA
-        opnames[OP_STBIX] = "STBIX";   // (Ra + Rb) <- RB
-        // Written STAIXB WC,I to mean (WA + I) <- AL
-        opnames[OP_STAIXB] = "STAIXB";   // (Ra + Rb) <- RA
-        opnames[OP_STBIXB] = "STBIXB";   // (Ra + Rb) <- RB
-        opnames[OP_FETCH] = "FETCH"; // Ra <- (Rb)
-        opnames[OP_ST ] = "ST";   // (Ra) <- Rb
+        opnames[OP_LD] = "LD";
+        opnames[OP_LD_B] = "LD_B";
+        opnames[OP_LDAX] = "LDAX";
+        opnames[OP_LDBX] = "LDBX";
+        opnames[OP_LDAX_B] = "LDAX_b";
+        opnames[OP_LDBX_B] = "LDBX_B";
 
-        /**
-         * register and 3-bit tiny immediates
-         */
-        opnames[OP_LDI] = "LDI";  // Ra <- #num3 - load tiny numbers
-        opnames[OP_STI] = "STI";   // (Ra) <- #num3
-        opnames[OP_ADDI] = "ADDI";  // Ra <- Ra + #num3 (signed)
-        opnames[OP_CMPI] = "CMPI"; // CMP Ra,#num3
+        opnames[OP_STI] = "STI";
+        opnames[OP_STAI] = "STAI";
+        opnames[OP_STBI] = "STBI";
+        opnames[OP_STIL] = "STIL";
+        opnames[OP_STI_B] = "STI_B";
+        opnames[OP_STAI_B] = "STAI_B";
+        opnames[OP_STBI_B] = "STBI_B";
+                
+        opnames[OP_ST] = "ST";
+        opnames[OP_ST_B] = "ST_B";
 
-        /**
-         *  6-bit immediates
-         */
-        opnames[OP_LDAI] = "LDAI";   // RA <- #num6 - load medium numbers
-        opnames[OP_LDBI] = "LDBI";   // RB <- #num6 - load medium numbers
-        opnames[OP_STAI] = "STAI";   // (RA) <- #num6 stores the sign-extended word
-        opnames[OP_STBI] = "STBI";   // (RB) <- #num6
-        // Byte-oriented - stores the low-order byte at the calculated byte-address
-        opnames[OP_STAIB] = "STAIB"; // (RA) <- #num6 where (RA) is the byte address
-        opnames[OP_STBIB] = "STBIB"; // (RA) <- #num6
-        opnames[OP_ADDAI] = "ADDAI"; //RA <- RA + #num6 (signed)
-        opnames[OP_ADDBI] = "ADDBI"; //RB <- RB + #num6 (signed)
-        opnames[OP_CMPAI] = "CMPAI"; // CMP RA,#num6
-        opnames[OP_CMPBI] = "CMPBI"; // CMP RB,#num6
-        opnames[OP_JR] = "JR";       // PC <- PC + #num6 << 1
-        opnames[OP_CALLR] = "CALLR"; // PC <- PC + #num6 << 1
-        opnames[OP_SYSCALL] = "SYSCALL"; // call a high-level routine <call.6>
-        
-        // arga and long immediates
-        opnames[OP_LDL]  = "LDL";   // Ra <- #num16
-        opnames[OP_STL]  = "STL";   // (Ra) <- #num16
-        opnames[OP_ADDL]  = "ADDL"; // Ra <- Ra + #num16
-        opnames[OP_CMPL]  = "CMPL"; // CMP Ra,#num16
-        opnames[OP_JPIDX] = "JPIDX"; // PC <- Ra + #num16
+        opnames[OP_STXA] = "STXA";
+        opnames[OP_STXB] = "STXB";
+        opnames[OP_STXA_B] = "STXA_B";
+        opnames[OP_STXB_B] = "STXB_B";
 
-        // long immediates, arga and argb ignored
-        opnames[OP_JP]    = "JP";   // PC <- #num16
-        opnames[OP_CALL]  = "CALL"; // PC <- #num16
+        opnames[OP_PUSHD] = "PUSHD";
+        opnames[OP_PUSHR] = "PUSHR";
+        opnames[OP_POPD] = "POPD";
+        opnames[OP_POPR] = "POPR";
 
-        // single register arguments (in arga slot, argb slot is ignored)
-        opnames[OP_PUSHD] = "PUSHD"; // (SP) <- Ra, INC SP
-        opnames[OP_PUSHR] = "PUSHR"; // (RS) <- Ra, INC RS
-        opnames[OP_POPD] = "POPD";   // DEC SP, Ra <- (SP)
-        opnames[OP_POPR] = "POPR";   // DEC RS, Ra <- (RS)
-        opnames[OP_NOT] = "NOT";     // Ra <- !Ra
-        opnames[OP_SL] = "SL";       // Ra <- Ra << 1
-        opnames[OP_SR] = "SR";       // Ra <- Ra >> 1
+        opnames[OP_ADD] = "ADD";
+        opnames[OP_ADDI] = "ADDI";
+        opnames[OP_ADDAI] = "ADDAI";
+        opnames[OP_ADDBI] = "ADDBI";
+        opnames[OP_ADDIL] = "ADDIL";
 
+        opnames[OP_SUB] = "SUB";
+        opnames[OP_SUBI] = "SUBI";
+        opnames[OP_SUBAI] = "SUBAI";
+        opnames[OP_SUBBI] = "SUBBI";
+        opnames[OP_SUBIL] = "SUBIL";
+
+        opnames[OP_MUL] = "MUL";
+        opnames[OP_DIV] = "DIV";
+
+        opnames[OP_AND] = "AND";
+        opnames[OP_OR] = "OR";
+        opnames[OP_XOR] = "XOR";
+        opnames[OP_NOT] = "NOT";
+
+        opnames[OP_SL] = "SL";
+        opnames[OP_SR] = "SR";
+        opnames[OP_RL] = "RL";
+        opnames[OP_RLC] = "RLC";
+        opnames[OP_RR] = "RR";
+        opnames[OP_RRC] = "RRC";
+
+        opnames[OP_BIT] = "BIT";
+        opnames[OP_SET] = "SET";
+        opnames[OP_CLR] = "CLR";
+
+        opnames[OP_SLI] = "SLI";
+        opnames[OP_SRI] = "SRI";
+        opnames[OP_RLI] = "RLI";
+        opnames[OP_RLCI] = "RLCI";
+        opnames[OP_RRI] = "RRI";
+        opnames[OP_RRCI] = "RRCI";
+
+        opnames[OP_BITI] = "BITI";
+        opnames[OP_SETI] = "SETI";
+        opnames[OP_CLRI] = "CLRI";
+
+        opnames[OP_CMP] = "CMP";
+        opnames[OP_CMPI] = "CMPI";
+        opnames[OP_CMPAI] = "CMPAI";
+        opnames[OP_CMPBI] = "CMPBI";
+
+        opnames[OP_RET] = "RET";
+        opnames[OP_SYSCALL] = "SYSCALL";
+        opnames[OP_HALT] = "HALT";
+        opnames[OP_BRK] = "BRK";
+
+        opnames[OP_JP] = "JP";
+        opnames[OP_JR] = "JR";
+        opnames[OP_JX] = "JX";
+        opnames[OP_JXL] = "JXL";
+
+        opnames[OP_CALL] = "CALL";
+        opnames[OP_CALLR] = "CALLR";
+        opnames[OP_CALLX] = "CALLX";
+        opnames[OP_CALLXL] = "CALLXL";
+
+
+        argnames[REG_0] = "R0";
+        argnames[REG_1] = "R1";
+        argnames[REG_2] = "R2";
+        argnames[REG_3] = "R3";
+        argnames[REG_4] = "R4";
+        argnames[REG_5] = "R5";
+        argnames[REG_6] = "R6";
+        argnames[REG_7] = "R7";
         argnames[REG_A] = "A";
         argnames[REG_B] = "B";
         argnames[REG_PC] = "PC";
@@ -103,31 +134,33 @@ class AssemblyVocabulary {
         ccnames[COND_M] = "M";
 
         directives[0] = "ORG";
+        directives[1] = "DATA";
+        directives[2] = "SDATA";
 
     }
 
     const char *opname(uint8_t opcode) {
-        if(opcode > 63) return NULL;
+        if(opcode > 255) return NULL;
         return opnames[opcode];
     }
    
     const char *argname(uint8_t arg) {
-        if(arg > 7) return NULL;
+        if(arg > 15) return NULL;
         return argnames[arg];
     }
    
     const char *ccname(uint8_t cc) {
-        if(cc > 63) return NULL;
+        if(cc > 3) return NULL;
         return ccnames[cc];
     }
 
     const char *directive(uint8_t dir) {
-        if(dir > 1) return NULL;
+        if(dir > 2) return NULL;
         return directives[dir];
     }
 
     int findOpcode(char *source, int pos, int len) {
-        for(int i=0; i<64; i++) {
+        for(int i=0; i<256; i++) {
             if(opnames[i] != NULL && (int)strlen(opnames[i]) == len) {
                 int equal = true;
                 for(int j=0; j<len; j++) {
@@ -142,7 +175,7 @@ class AssemblyVocabulary {
     }
 
     int findArg(char *source, int pos, int len) {
-        for(int i=0; i<8; i++) {
+        for(int i=0; i<16; i++) {
             if((int)strlen(argnames[i]) == len) {
                 int equal = true;
                 for(int j=0; j<len; j++) {
@@ -157,7 +190,7 @@ class AssemblyVocabulary {
     }
 
     int findDirective(char *source, int pos, int len) {
-        for(int i=0; i<1; i++) {
+        for(int i=0; i<3; i++) {
             if((int)strlen(directives[i]) == len) {
                 int equal = true;
                 for(int j=0; j<len; j++) {
@@ -173,9 +206,9 @@ class AssemblyVocabulary {
 
     protected:
 
-        const char *opnames[64];
-        const char *argnames[8];
+        const char *opnames[256];
+        const char *argnames[16];
         const char *ccnames[4];
-        const char *directives[1];
+        const char *directives[3];
 };
 #endif
