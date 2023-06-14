@@ -16,6 +16,7 @@ class Assembler
 public:
 
     static inline char *NAME_EXPECTED = "Name expected";
+    static inline char *ALIAS_EXPECTED = "Alias expected";
     static inline char *REGISTER_NAME_EXPECTED = "Register name expected";  
     static inline char *DIRECTIVE_EXPECTED = "Directive expected";
     static inline char *NUMBER_EXPECTED = "Number expected";
@@ -91,6 +92,19 @@ public:
             tok = tok->next;
         }
         return NULL;
+    }
+
+    Token *getLabel(uint16_t addr) {
+        Token *tok = tokens;
+        while (tok != NULL)
+        {
+            if (tok->type == TOKEN_TYPE_LABEL && tok->address == addr)
+            {
+                return tok;
+            }
+            tok = tok->next;
+        }
+        return NULL;        
     }
 
     bool slurp(const char *fileName)
@@ -178,6 +192,12 @@ public:
                     sym->token = tok;
                 }
                 break;
+            case TOKEN_TYPE_DIRECTIVE:
+                if(tok->isAlias()) {
+                    vocab.setAlias(tok->arga, tok->str);
+                }
+                break;
+
             default:
                 break;
             }
@@ -1020,6 +1040,16 @@ public:
         return false;
     }
 
+    bool isStar(char c) 
+    {
+        return c == '*';
+    }
+
+    bool isAliasChar(char c)
+    {  
+        return isAlphaNumeric(c) || isStar(c);
+    }
+
     bool isTerminator(char c)
     {
         const char *terminators = " ;\n";
@@ -1102,6 +1132,12 @@ public:
                 return tok;
             }
             break;
+        case DIRECTIVE_TYPE_ALIAS:
+            if (!getAlias(tok))
+            {
+                return tok;
+            }
+            break;        
         case DIRECTIVE_TYPE_SDATA:
             if (parseString(tok) == -1)
             {
@@ -1114,6 +1150,13 @@ public:
         }
 
         return tok;
+    }
+
+    bool getAlias(Token *tok) {
+        if(getArg(tok) && comma(tok) && getAliasName(tok)) {
+            return true;
+        }
+        return false;
     }
 
     Token *getOpcode()
@@ -1586,7 +1629,7 @@ public:
             return error(tok, NUMBER_OR_LABEL_EXPECTED);
         }
         return true;
-    }
+    } 
 
     // move the name following idx to the token's str
     // set the symoblic flag
@@ -1609,6 +1652,40 @@ public:
             if (!isAlphaNumeric(source[idx]))
             {
                 return error(tok, NAME_EXPECTED);
+            }
+            idx++;
+            pos++;
+        }
+        int len = idx - here;        char *name = (char *)malloc(len + 1); // +1 for the ending \0
+        strncpy(name, &source[idx - len], len);
+        name[len] = '\0';
+        tok->str = name;
+        tok->symbolic = true;
+        return true;
+    }
+
+
+    // move the name following idx to the token's str
+    // set the symoblic flag
+    bool getAliasName(Token *tok)
+    {
+        int here = idx;
+        idx++;
+        pos++;
+        if (idx == sourceLen)
+        {
+            return error(tok, ALIAS_EXPECTED);
+        }
+        skipSpaces();
+        while (idx < sourceLen)
+        {
+            if (isSpaceSemiOrEOL(source[idx]))
+            {
+                break;
+            }
+            if (!isAliasChar(source[idx]))
+            {
+                return error(tok, ALIAS_EXPECTED);
             }
             idx++;
             pos++;
@@ -2176,13 +2253,21 @@ public:
         while (idx < sourceLen)
         {
             c = source[idx];
-            if ((c == sep) || (c == '\n'))
-            {
-                break;
+            if(c == '\\') {
+                found = true;
+                inc();
+                inc();
+                len++;
+                len++;
+            } else {
+                if ((c == sep) || (c == '\n'))
+                {
+                    break;
+                }
+                found = true;
+                inc();
+                len++;
             }
-            found = true;
-            inc();
-            len++;
         }
 
         if (found)

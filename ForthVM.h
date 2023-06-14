@@ -472,8 +472,7 @@ public:
 
     void _cmp(uint8_t a, uint8_t b) {
         uint32_t r = _regs[a] - _regs[b];
-        _c = (_regs[a] < _regs[b]);
-        _z = (r == 0);
+        _flags(r);
     }
 
     void _cmpi(uint8_t a, uint8_t n) {

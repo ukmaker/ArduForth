@@ -11,6 +11,11 @@ class AssemblyVocabulary {
     AssemblyVocabulary() {
 
         for(int i=0; i<256; i++) opnames[i] = NULL;
+        for(int i=0; i<65; i++) {
+            for(int j=0; j<16; j++) {
+                aliases[j][i] = '\0';
+            }
+        }
 
         opnames[OP_NOP] = "NOP";
 
@@ -136,7 +141,12 @@ class AssemblyVocabulary {
         directives[0] = "ORG";
         directives[1] = "DATA";
         directives[2] = "SDATA";
+        directives[3] = "ALIAS";
 
+    }
+
+    void setAlias(uint8_t argname, const char *alias) {
+        strcpy(aliases[argname],alias);
     }
 
     const char *opname(uint8_t opcode) {
@@ -174,6 +184,21 @@ class AssemblyVocabulary {
         return -1;
     }
 
+    int findAlias(char *source, int pos, int len) {
+        for(int i=0; i<16; i++) {
+            if((int)strlen(aliases[i]) == len) {
+                int equal = true;
+                for(int j=0; j<len; j++) {
+                    if(source[pos + j] != aliases[i][j]) {
+                        equal = false;
+                    }
+                }
+                if(equal) return i;
+            }
+        }
+        return -1;
+    }
+
     int findArg(char *source, int pos, int len) {
         for(int i=0; i<16; i++) {
             if((int)strlen(argnames[i]) == len) {
@@ -186,11 +211,11 @@ class AssemblyVocabulary {
                 if(equal) return i;
             }
         }
-        return -1;
+        return findAlias(source, pos, len);
     }
 
     int findDirective(char *source, int pos, int len) {
-        for(int i=0; i<3; i++) {
+        for(int i=0; i<4; i++) {
             if((int)strlen(directives[i]) == len) {
                 int equal = true;
                 for(int j=0; j<len; j++) {
@@ -209,6 +234,7 @@ class AssemblyVocabulary {
         const char *opnames[256];
         const char *argnames[16];
         const char *ccnames[4];
-        const char *directives[3];
+        const char *directives[4];
+        char aliases[16][65];
 };
 #endif

@@ -45,6 +45,14 @@ bool runAssemblerTests;
 bool runGenerateTestCode;
 bool verbose;
 
+void syscall_debug(ForthVM *vm) {
+    // WA points to the word to be executed
+    // get the associated label and print it
+    uint16_t wa = vm->get(REG_WA);
+    //debugger.printWALabel(wa);
+}
+
+
 bool getArgs(int argc, char **argv) {
 
     int index;
@@ -105,12 +113,14 @@ bool loadInnerInterpreter() {
 void attachSyscalls() {
     vm.addSyscall(SYSCALL_PRINTC, syscall_printC);
     vm.addSyscall(SYSCALL_TYPE, syscall_type);
+    vm.addSyscall(SYSCALL_TYPELN, syscall_typeln);
     vm.addSyscall(SYSCALL_DOT, syscall_dot);
     vm.addSyscall(SYSCALL_GETC, syscall_getc);
     vm.addSyscall(SYSCALL_PUTC, syscall_putc);
     vm.addSyscall(SYSCALL_INLINE, syscall_inline);
     vm.addSyscall(SYSCALL_FLUSH, syscall_flush);
     vm.addSyscall(SYSCALL_NUMBER, syscall_number);
+    vm.addSyscall(SYSCALL_DEBUG, syscall_debug);
 }
 
 int main(int argc, char **argv) {
@@ -134,16 +144,19 @@ int main(int argc, char **argv) {
     }
     if(loadInnerInterpreter()) {
       dumper.dump(&fasm);
+      dumper.writeCPP(&fasm);
       fasm.writeRAM(&ram);
 
       debugger.setAssembler(&fasm);
       debugger.setVM(&vm);
       debugger.reset();
-      debugger.setLabelBreakpoint1("TOKEN_MOVE");
-      debugger.setLabelBreakpoint2("RUN");
+      //debugger.setBreakpoint1(0x238);
+      debugger.setLabelBreakpoint1("STAR_UNTIL_CA");
+     // debugger.setLabelBreakpoint2("TOKEN_END");
       ram.setWatch(0x5d4);
-      //debugger.setShowForthWordsOnly();
-      debugger.setBump(10);
+      debugger.setShowForthWordsOnly();
+     // debugger.setVerbose(true);
+      //debugger.setBump(10);
       debugger.writeProtect("DICTIONARY_END");
       debugger.run();
     } else {

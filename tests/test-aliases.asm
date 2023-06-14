@@ -1,0 +1,11 @@
+; Rename some registers
+
+.ORG 0
+%DICTIONARY_POINTER: 2
+
+TEST:
+    .ALIAS R0,DP
+    .ALIAS R1,*DP
+
+    MOVI DP,%DICTIONARY_POINTER
+    LD *DP,DP

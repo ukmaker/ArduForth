@@ -18,6 +18,7 @@
 #define DIRECTIVE_TYPE_ORG 0
 #define DIRECTIVE_TYPE_DATA 1
 #define DIRECTIVE_TYPE_SDATA 2
+#define DIRECTIVE_TYPE_ALIAS 3
 
 /*
 Syntax:
@@ -152,6 +153,10 @@ class Token {
 
     bool isStringData() {
         return isDirective() && (opcode == DIRECTIVE_TYPE_SDATA);
+    }
+
+    bool isAlias() {
+        return isDirective() && (opcode == DIRECTIVE_TYPE_ALIAS);
     }
 
     bool isLocation() {

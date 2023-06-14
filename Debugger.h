@@ -57,10 +57,21 @@ public:
             setBreakpoint2(addr);
         }
     }
+    
+    void printWALabel(uint16_t wa) {
+        Token *label = _asm->getLabel(wa);
+        if(label != NULL) {
+            printf("%s\n", label->name);
+        }
+    }
 
     void writeProtect(const char *label) {
         uint16_t addr = _asm->getLabelAddress(label);
         _vm->ram()->writeProtect(0,addr);
+    }
+
+    void setVerbose(bool v) {
+        _verbose = v;
     }
 
     void breakpoint()
@@ -73,7 +84,7 @@ public:
         {
             printf("2*");
         }
-        else
+        else if(_verbose)
         {
             printf("  ");
         }
@@ -138,19 +149,19 @@ public:
         }
 
         if (label != NULL) {
-            if(_showWords) {
+            if(_verbose && _showWords) {
                 uint16_t indent = 0x2000 - _vm->get(REG_RS);
                 while(indent > 0) {
                     printf(" ");
                     indent--;
                 }
             }
-            printf("%s\n", label);
+            if(_verbose) printf("%s\n", label);
         }
 
         breakpoint();
 
-        if(_showWords) return;
+        if(!_verbose || _showWords) return;
         printf("%04x - %04x D[%04x] R[%04x] [S%d O%d Z%d C%d] [0:%04x 1:%04x 2:%04x 3:%04x 4:%04x 5:%04x 6:%04x 7:%04x",
                pc,
                _vm->ram()->get(pc),
@@ -538,6 +549,7 @@ protected:
     bool _showWords = false;
     uint16_t _bump = 0;
     uint16_t _steps = 0;
+    bool _verbose = false;
 
     int8_t _sex(uint8_t n, uint8_t b)
     {

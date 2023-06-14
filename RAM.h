@@ -79,6 +79,7 @@ class RAM {
      void _checkW(uint16_t addr) {
         _check(addr);
         if((addr & 1) != 0) {
+
             printf("WARNING: unaligned access - %d\n", addr);
         }
      }
