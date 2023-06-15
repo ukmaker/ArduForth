@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <malloc.h>
-#include "RAM.h"
+#include "Memory.h"
 
 class Assembler
 {
@@ -538,7 +538,7 @@ public:
         }
     }
 
-    void writeRAM(RAM *ram)
+    void writeMemory(Memory *ram)
     {
         Token *tok = tokens;
         const char *c;
@@ -563,7 +563,7 @@ public:
                     written = 0;
                     while (*c != '\0')
                     {
-                        ram->putByte(tok->address + written, *c);
+                        ram->putC(tok->address + written, *c);
                         written++;
                         c++;
                     }
@@ -585,7 +585,7 @@ public:
                 written = 0;
                 while (*c != '\0')
                 {
-                    ram->putByte(tok->address + written, *c);
+                    ram->putC(tok->address + written, *c);
                     written++;
                     c++;
                 }
@@ -594,8 +594,8 @@ public:
 
             case TOKEN_TYPE_OPCODE:
             {
-                ram->putByte(tok->address + 1, tok->highByte());
-                ram->putByte(tok->address, tok->lowByte());
+                ram->putC(tok->address + 1, tok->highByte());
+                ram->putC(tok->address, tok->lowByte());
                 switch (tok->opcode)
                 {
                 case OP_MOVIL:

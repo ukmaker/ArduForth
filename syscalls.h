@@ -5,7 +5,7 @@
 #include "Serial.h"
 #include <string.h>
 
-#define SYSCALL_PRINTC 0
+#define SYSCALL_DEBUG 0
 #define SYSCALL_TYPE 1
 #define SYSCALL_TYPELN 2
 #define SYSCALL_DOT 3
@@ -14,17 +14,6 @@
 #define SYSCALL_INLINE 6
 #define SYSCALL_FLUSH 7
 #define SYSCALL_NUMBER 8
-#define SYSCALL_DEBUG 9
-
-void syscall_printC(ForthVM *vm)
-{
-    // Syscall to print the char on the top of the stack
-    // ( c - )
-    uint16_t v = vm->pop();
-    char c = (char)v;
-
-    printf("%c", c);
-}
 
 void syscall_type(ForthVM *vm)
 {
@@ -60,23 +49,27 @@ void syscall_dot(ForthVM *vm)
     switch (base)
     {
     case 16:
-        printf("%04x", v);
+        printf("0x%04x", v);
         break;
     case 2:
-        for (uint8_t i = 0; i < 16; i++)
+    {
+        printf("0b");
+        uint16_t mask = 0x8000;
+        while (mask != 0)
         {
-            if (v & 1)
+            if (v & mask)
                 printf("1");
             else
                 printf("0");
 
-            v >>= 1;
+            mask >>= 1;
         }
         printf("\n");
-        break;
+    }
+    break;
     case 10:
     default:
-        printf("%4d", v);
+        printf("%d", v);
         break;
     }
 }
@@ -90,7 +83,6 @@ void syscall_getc(ForthVM *vm)
 void syscall_putc(ForthVM *vm)
 {
     int i = Serial::putc(vm->pop());
-    // vm->push(i);
 }
 
 void syscall_inline(ForthVM *vm)
@@ -129,8 +121,10 @@ void syscall_number(ForthVM *vm)
     uint16_t len = vm->ram()->get(dp);
     char *cbuf = (char *)vm->ram()->addressOfChar(dp + 2);
     // put a null byte at the end
-    vm->ram()->putByte(dp + len + 2, 0);
+    vm->ram()->putC(dp + len + 2, 0);
     int i, r;
+    i = 0;
+    char c;
 
     switch (base)
     {
@@ -138,7 +132,19 @@ void syscall_number(ForthVM *vm)
         r = sscanf(cbuf, "%x", &i);
         break;
     case 2:
-        r = sscanf(cbuf, "%x", &i);
+        r = 0;
+        while ((c = *cbuf++) != '\0') {
+            i <<= 1;
+            if(c == '1') {
+                i += 1;
+                r = 1;
+            } else if(c == '0') {
+                r = 1;
+            } else {
+                break;
+            }
+        }
+        
         break;
     case 10:
     default:

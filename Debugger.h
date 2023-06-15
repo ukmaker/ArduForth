@@ -65,11 +65,6 @@ public:
         }
     }
 
-    void writeProtect(const char *label) {
-        uint16_t addr = _asm->getLabelAddress(label);
-        _vm->ram()->writeProtect(0,addr);
-    }
-
     void setVerbose(bool v) {
         _verbose = v;
     }

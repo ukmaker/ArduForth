@@ -1,7 +1,7 @@
 #ifndef UKMAKER_FORTHVM_H
 #define UKMAKER_FORTHVM_H
 
-#include "RAM.h"
+#include "Memory.h"
 #include "Arduino.h"
 #include "ForthIS.h"
 
@@ -13,7 +13,7 @@ class ForthVM
 {
 
 public:
-    ForthVM(RAM *ram, Syscall *syscalls, size_t numSyscalls)
+    ForthVM(Memory *ram, Syscall *syscalls, size_t numSyscalls)
     :
     _ram(ram), _syscalls(syscalls), _numSyscalls(numSyscalls)
     {
@@ -136,14 +136,14 @@ public:
     }
 
     uint8_t readByte(uint16_t addr) {
-        return _ram->getByte(addr);
+        return _ram->getC(addr);
     }
 
     uint16_t read(uint16_t addr) {
         return _ram->get(addr);
     }
 
-    RAM *ram() {
+    Memory *ram() {
         return _ram;
     }
 
@@ -151,12 +151,10 @@ public:
 
     bool _halted;
 
-    RAM *_ram;
+    Memory *_ram;
     Syscall *_syscalls;
     size_t _numSyscalls;
 
-    // The inner interpreter. This is the key to everything
-    //
     // Registers
     uint16_t _regs[16];
 
@@ -173,15 +171,43 @@ public:
             return;
         }
 
+        bool ccapply = false;
+        bool ccinvert = false;
+        uint8_t cc = 0;
+        bool skip = false;
+
         uint16_t instr = _ram->get(_regs[REG_PC]);
         // Decode the opcode
-        uint8_t cc = (instr & CC_MASK) >> CC_BITS;
-        bool ccapply = (instr & CC_APPLY_MASK) >> CC_APPLY_BIT;
-        bool ccinvert = (instr & CC_INV_MASK) >> CC_INV_BIT;
         uint8_t op = (instr & OP_MASK) >> OP_BITS;
         if((instr & JP_OR_CALL_MASK) != 0) {
+            ccapply = (instr & CC_APPLY_MASK) >> CC_APPLY_BIT;
+            ccinvert = (instr & CC_INV_MASK) >> CC_INV_BIT;
+            cc = (instr & CC_MASK) >> CC_BITS;
             op = (instr & JP_OR_CALL_OP_MASK) >> OP_BITS;
+            if(ccapply) {
+
+                switch (cc)
+                {
+                    case COND_C:
+                        skip = !_c;
+                        break;
+                    case COND_Z:
+                        skip = !_z;
+                        break;
+                    case COND_M:
+                        skip = !_sign;
+                        break;
+                    case COND_P:
+                        skip = !_odd;
+                        break;
+                    default:
+                        break;
+                }
+
+                if(ccinvert) skip = !skip;
+            }
         }
+
         uint8_t arga = (instr & ARGA_MASK) >> ARGA_BITS;
         uint8_t argb = (instr & ARGB_MASK) >> ARGB_BITS;
         uint8_t u4 = argb;
@@ -189,29 +215,6 @@ public:
         int8_t n8 = _sex((arga << 4) + argb, 7);
 
          _regs[REG_PC]+=2;
-        bool skip = false;
-        if(ccapply) {
-
-            switch (cc)
-            {
-                case COND_C:
-                    skip = !_c;
-                    break;
-                case COND_Z:
-                    skip = !_z;
-                    break;
-                case COND_M:
-                    skip = !_sign;
-                    break;
-                case COND_P:
-                    skip = !_odd;
-                    break;
-                default:
-                    break;
-            }
-
-            if(ccinvert) skip = !skip;
-        }
 
         switch (op)
         {
@@ -242,7 +245,7 @@ public:
                 break;
 
             case OP_LD_B:
-                _regs[arga] = _ram->getByte(_regs[argb]);
+                _regs[arga] = _ram->getC(_regs[argb]);
                 break;
 
             case OP_LDAX:
@@ -254,11 +257,11 @@ public:
                 break;
 
             case OP_LDAX_B:
-                _regs[REG_A] = _ram->getByte(_regs[arga] + (n4 << 1));
+                _regs[REG_A] = _ram->getC(_regs[arga] + (n4 << 1));
                 break;
 
             case OP_LDBX_B:
-                _regs[REG_B] = _ram->getByte(_regs[arga] + (n4 << 1));
+                _regs[REG_B] = _ram->getC(_regs[arga] + (n4 << 1));
                 break;
 
             case OP_ST:
@@ -266,7 +269,7 @@ public:
                 break; // (Ra) <- Rb
 
            case OP_ST_B:
-                _ram->putByte(_regs[arga], _regs[argb]);
+                _ram->putC(_regs[arga], _regs[argb]);
                 break; // (Ra) <- Rb
 
             case OP_STI:
@@ -278,7 +281,7 @@ public:
                 break; // (Ra) <- #num6
 
            case OP_STBI:
-                _ram->putByte(_regs[REG_B], n8);
+                _ram->putC(_regs[REG_B], n8);
                 break; // (Ra) <- #num6
 
             case OP_STIL:
@@ -286,15 +289,15 @@ public:
                 break;
 
             case OP_STI_B:
-                _ram->putByte(_regs[arga], n4);
+                _ram->putC(_regs[arga], n4);
                 break; // (Ra) <- #num3
 
             case OP_STAI_B:
-                _ram->putByte(_regs[REG_A], n8);
+                _ram->putC(_regs[REG_A], n8);
                 break; // (Ra) <- #num6
 
            case OP_STBI_B:
-                _ram->putByte(_regs[REG_B], n8);
+                _ram->putC(_regs[REG_B], n8);
                 break; // (Ra) <- #num6
 
             case OP_STXA:
@@ -306,11 +309,11 @@ public:
                 break;
 
             case OP_STXA_B:
-                _ram->putByte(_regs[arga] + n4, _regs[REG_A]);
+                _ram->putC(_regs[arga] + n4, _regs[REG_A]);
                 break;
 
             case OP_STXB_B:
-                _ram->putByte(_regs[arga] + n4, _regs[REG_B]);
+                _ram->putC(_regs[arga] + n4, _regs[REG_B]);
                 break;
 
             case OP_PUSHD:
