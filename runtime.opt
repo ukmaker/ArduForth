@@ -14,9 +14,9 @@
 #include "runtime/ForthImage.h"
 
 
-uint8_t ram[16384];
+uint8_t ram[8192];
 
-UnsafeMemory mem(ram, 16384, 0x1000, rom, 4096, 0);
+UnsafeMemory mem(ram, 8192, 0x1000, rom, 4096, 0);
 
 Syscall syscalls[40];
 

@@ -9,7 +9,7 @@ class Dumper {
     Dumper() {}
     ~Dumper() {}
 
-    void writeCPP(Assembler *fasm, size_t romSize) {
+    void writeCPP(Assembler *fasm, Memory *mem, size_t romStart, size_t romSize) {
         FILE *fp = fopen("ForthImage.h", "w");
         fprintf(fp, "#ifndef UKMAKER_FORTH_IMAGE_H\n");
         fprintf(fp, "#define UKMAKER_FORTH_IMAGE_H\n");
@@ -25,6 +25,19 @@ class Dumper {
         }
         // Write the ROM image
         fprintf(fp, "const char rom[%d] = {\n",romSize);
+        for(size_t i=0; i<romSize-1; i++) {
+            if((i % 16) == 0) {
+                fprintf(fp, "/* 0x%04x */ ", (uint16_t)romStart + i);
+            }
+            fprintf(fp,"0x%02x, ", mem->getC(romStart + i));
+            if((i % 16) == 15) {
+                fprintf(fp, "\n");
+            }
+        }
+
+        fprintf(fp, "0x%02x", mem->getC(romStart + romSize -1));
+
+        fprintf(fp, "}; // rom\n");
 
         fprintf(fp, "#endif // UKMAKER_FORTH_IMAGE_H\n");
         

@@ -2,8 +2,8 @@
 #define UKMAKER_TEST_H
 
 #include "TestSuite.h"
-#include "ForthVM.h"
-#include "Assembler.h"
+#include "../runtime/ForthVM.h"
+#include "../tools/Assembler.h"
 
 class Test {
 

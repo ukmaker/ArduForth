@@ -10,9 +10,11 @@
 #SYSTEM:   0x0000 ; System reset vector
 #INNER:    0x0100 ; Inner interpreter starts here
 #MEMSIZE:  0x2000 ; Reserve 32K-bytes for Forth
-#VARSTART: 0x1000 ; Variables grow up from here
-#SPTOP:    0x1800 ; Data stack pointer grows down from here
-#RSTOP:    0x1ffe ; And the return stack from here
+#FENCE:    0x0FF4 ; Last word in the ROM
+#RAMSTART: 0x1000 ; Variables grow up from here
+#VARSTART: 0x2000 ; Variables grow up from here
+#SPTOP:    0x3800 ; Data stack pointer grows down from here
+#RSTOP:    0x3ffe ; And the return stack from here
                   ; This gives both stacks 2K bytes
 #LBUF_LEN:  128   ; Maximum length of the line buffer in chars
 #BASE_DEC: 10
@@ -51,7 +53,7 @@
 .ORG #SYSTEM ; Start vector is at address 0
 START: 
 
-  MOVIL A,DICTIONARY_END         ; Address of the cold-boot end of the dictionary
+  MOVIL A,#RAMSTART         ; Address of the cold-boot end of the dictionary
   MOVIL B,%DICTIONARY_POINTER
   ST B,A
 
@@ -1860,7 +1862,6 @@ FORGET_CA:
 .DATA STORE_WA     ; And the dictionary pointer
 .DATA SEMI
 
-CORE_VOCABULARY:
 STATE:
   .DATA 5
   .SDATA "STATE"
@@ -1872,6 +1873,18 @@ STATE_CA:
   MOVIL STATE,%STATE
   PUSHD STATE
   JP NEXT
+
+; The last word in the dictionary placed at the end of ROM before RAM starts
+.ORG #FENCE
+CORE_VOCABULARY:
+FENCE:
+  .DATA 0xc005
+  .SDATA "FENCE"
+  .DATA STATE
+FENCE_WA: .DATA COLON
+FENCE_CA:
+  .DATA SEMI
+
 
 DICTIONARY_END:
     .DATA 00

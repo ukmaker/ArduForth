@@ -15,6 +15,7 @@
 #define SYSCALL_FLUSH 7
 #define SYSCALL_NUMBER 8
 
+
 void syscall_type(ForthVM *vm)
 {
     // Syscall to print the string pointed to by the top of stack

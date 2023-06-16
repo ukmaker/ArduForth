@@ -22,7 +22,7 @@ class SafeMemory : public Memory {
 
 
     void put(uint16_t addr, uint16_t w) {
-        if(_checkWWrite(addr) == MEMORY_ACCESS_RAM) {
+        if(_checkWWrite(addr)) {
             *(uint16_t *)(_ram + addr - _ramStart) = w;
         }
     }
@@ -47,7 +47,7 @@ class SafeMemory : public Memory {
     }
 
     void putC(uint16_t addr, uint8_t c) {
-        if(_checkCWrite(addr) == MEMORY_ACCESS_RAM) {
+        if(_checkCWrite(addr)) {
             *(_ram + addr - _ramStart) = c;
         }
     }
@@ -95,16 +95,6 @@ class SafeMemory : public Memory {
     void attachUndefinedAccessCallback(InvalidAccess fp);
 
     protected:
-
-    uint8_t *_ram;
-    uint16_t _ramSize;
-    uint16_t _ramStart;
-    uint16_t _ramEnd;
-
-    const uint8_t *_rom;
-    uint16_t _romSize;
-    uint16_t _romStart;
-    uint16_t _romEnd;
 
     InvalidAccess _unalignedWrite;
     InvalidAccess _romWrite;

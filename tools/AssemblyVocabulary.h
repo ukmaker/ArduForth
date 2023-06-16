@@ -1,9 +1,9 @@
-#ifndef UKMAKE_ASSEMBLY_VOCABULARY_H
-#define UKMAKE_ASSEMBLY_VOCABULARY_H
+#ifndef UKMAKER_ASSEMBLY_VOCABULARY_H
+#define UKMAKER_ASSEMBLY_VOCABULARY_H
 
 #include <string.h>
 #include <stdint.h>
-#include "ForthIS.h"
+#include "../runtime/ForthIS.h"
 
 class AssemblyVocabulary {
 
