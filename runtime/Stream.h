@@ -1,6 +1,8 @@
 #ifndef STREAM_H
 #define STREAM_H
 
+#ifndef STM32F401xC
+
 class Stream {
 
     public:
@@ -23,5 +25,5 @@ class Stream {
 
     char *_line;
 };
-
+#endif
 #endif

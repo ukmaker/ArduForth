@@ -28,16 +28,16 @@ void syscall_type(ForthVM *vm)
     for (uint16_t i = 0; i < len; i++)
     {
         b = vm->readByte(dp + i);
-        printf("%c", b);
+        SerialUSB.printf("%c", b);
     }
-    fflush(stdout);
+    SerialUSB.flush();
 }
 
 void syscall_typeln(ForthVM *vm)
 {
     syscall_type(vm);
-    printf("\n");
-    fflush(stdout);
+    SerialUSB.printf("\n");
+    SerialUSB.flush();
 }
 
 void syscall_dot(ForthVM *vm)
@@ -50,7 +50,7 @@ void syscall_dot(ForthVM *vm)
     switch (base)
     {
     case 16:
-        printf("0x%04x", v);
+        SerialUSB.printf("0x%04x", v);
         break;
     case 2:
     {
@@ -59,31 +59,31 @@ void syscall_dot(ForthVM *vm)
         while (mask != 0)
         {
             if (v & mask)
-                printf("1");
+                SerialUSB.printf("1");
             else
-                printf("0");
+                SerialUSB.printf("0");
 
             mask >>= 1;
         }
-        printf("\n");
+        SerialUSB.printf("\n");
     }
     break;
     case 10:
     default:
-        printf("%d", v);
+        SerialUSB.printf("%d", v);
         break;
     }
 }
 
 void syscall_getc(ForthVM *vm)
 {
-    int c = Serial::getc();
+    int c = SerialUSB.read();
     vm->push(c);
 }
 
 void syscall_putc(ForthVM *vm)
 {
-    int i = Serial::putc(vm->pop());
+    int i = SerialUSB.print((char)vm->pop());
 }
 
 void syscall_inline(ForthVM *vm)
@@ -95,11 +95,13 @@ void syscall_inline(ForthVM *vm)
     uint16_t bufstart = buf + 4;
 
     uint8_t *cbuf = vm->ram()->addressOfChar(bufstart);
-    if (fgets((char *)cbuf, 127, stdin) != NULL)
+    size_t read;
+    while(!SerialUSB.available()) {}
+    if ((read = SerialUSB.readBytesUntil(0x0a, (char *)cbuf, 127)) != 0)
     {
         // There will now be a null-terminated string in the buffer
         // calculate the end and store that in buf+2
-        vm->ram()->put(bufend, bufstart + strlen((char *)cbuf));
+        vm->ram()->put(bufend, bufstart + read); //strlen((char *)cbuf));
         // Current buffer pointer is just the start of the buffer
         vm->ram()->put(bufidx, bufstart);
         vm->push(0x01);
@@ -112,7 +114,7 @@ void syscall_inline(ForthVM *vm)
 
 void syscall_flush(ForthVM *vm)
 {
-    fflush(stdout);
+    SerialUSB.flush();
 }
 
 void syscall_number(ForthVM *vm)

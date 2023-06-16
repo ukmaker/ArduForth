@@ -1,11 +1,8 @@
 /**
 * Run a ForthVM image previously created using the Assembler
 **/
-#include <stdio.h>
-#include <ctype.h>
-#include <stdlib.h>
-#include <unistd.h>
 
+#include <Arduino.h>
 #include "runtime/ForthConfiguration.h"
 #include "runtime/ForthVM.h"
 #include "runtime/UnsafeMemory.h"
@@ -45,10 +42,20 @@ void attachSyscalls()
 }
 
 
-int main(int argc, char **argv)
-{
+//int main(int argc, char **argv)
+
+void setup() {
+
+    SerialUSB.begin(9600);
+    SerialUSB.printf("Starting Forth..\n");
+    SerialUSB.flush();
     attachSyscalls();
     vm.reset();
+
+}
+void loop()
+{
+
     vm.run();
-    return 0;
+    //return 0;
 }
