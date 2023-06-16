@@ -166,4 +166,26 @@ void syscall_number(ForthVM *vm)
     }
 }
 
+// to interface with the underlying hardware
+// these syscalls are needed to do 32-bit reads and writes on an STM32
+void syscall_write_double(ForthVM *vm) {
+    uint16_t h = vm->pop();
+    uint16_t l = vm->pop();
+    uint32_t addr = l + (h << 16);
+    h = vm->pop();
+    l = vm->pop();
+    uint32_t data = l + (h << 16);
+    *(uint32_t *)addr = data;
+}
+
+void syscall_read_double(ForthVM *vm) {
+    uint16_t h = vm->pop();
+    uint16_t l = vm->pop();
+    uint32_t addr = l + (h << 16);
+    uint32_t data = *(uint32_t *)addr;
+    vm->push(data & 0x0000ffff);
+    vm->push(data >> 16);
+}
+
+
 #endif
