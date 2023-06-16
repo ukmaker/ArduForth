@@ -38,7 +38,8 @@ void attachSyscalls()
   vm.addSyscall(SYSCALL_INLINE, syscall_inline);
   vm.addSyscall(SYSCALL_FLUSH, syscall_flush);
   vm.addSyscall(SYSCALL_NUMBER, syscall_number);
-
+  vm.addSyscall(SYSCALL_D_AT, syscall_read_double);
+  vm.addSyscall(SYSCALL_D_STORE, syscall_write_double);
 }
 
 

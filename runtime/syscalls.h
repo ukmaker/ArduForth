@@ -14,6 +14,8 @@
 #define SYSCALL_INLINE 6
 #define SYSCALL_FLUSH 7
 #define SYSCALL_NUMBER 8
+#define SYSCALL_D_AT 9
+#define SYSCALL_D_STORE 10
 
 
 void syscall_type(ForthVM *vm)
@@ -36,7 +38,7 @@ void syscall_type(ForthVM *vm)
 void syscall_typeln(ForthVM *vm)
 {
     syscall_type(vm);
-    SerialUSB.printf("\n");
+    SerialUSB.print('\n');
     SerialUSB.flush();
 }
 
@@ -59,13 +61,13 @@ void syscall_dot(ForthVM *vm)
         while (mask != 0)
         {
             if (v & mask)
-                SerialUSB.printf("1");
+                SerialUSB.print('1');
             else
-                SerialUSB.printf("0");
+                SerialUSB.print('0');
 
             mask >>= 1;
         }
-        SerialUSB.printf("\n");
+        SerialUSB.print('\n');
     }
     break;
     case 10:
@@ -83,7 +85,7 @@ void syscall_getc(ForthVM *vm)
 
 void syscall_putc(ForthVM *vm)
 {
-    int i = SerialUSB.print((char)vm->pop());
+    SerialUSB.print((char)vm->pop());
 }
 
 void syscall_inline(ForthVM *vm)

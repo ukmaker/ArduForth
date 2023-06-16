@@ -111,7 +111,7 @@ bool getArgs(int argc, char **argv)
 
 bool loadInnerInterpreter()
 {
-  fasm.slurp("forth/core.asm");
+  fasm.slurp("forth/core.fasm");
   fasm.pass1();
   fasm.pass2();
   fasm.pass3();
