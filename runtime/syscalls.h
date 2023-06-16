@@ -1,9 +1,9 @@
 #ifndef UKMAKER_SYSCALLS_H
 #define UKMAKER_SYSCALLS_H
 
+#include <Arduino.h>
 #include "ForthVM.h"
 #include "Serial.h"
-#include <string.h>
 
 #define SYSCALL_DEBUG 0
 #define SYSCALL_TYPE 1
@@ -16,7 +16,10 @@
 #define SYSCALL_NUMBER 8
 #define SYSCALL_D_AT 9
 #define SYSCALL_D_STORE 10
-
+#define SYSCALL_D_ADD 11
+#define SYSCALL_D_SUB 12
+#define SYSCALL_D_MUL 13
+#define SYSCALL_D_DIV 14
 
 void syscall_type(ForthVM *vm)
 {
@@ -103,7 +106,7 @@ void syscall_inline(ForthVM *vm)
     {
         // There will now be a null-terminated string in the buffer
         // calculate the end and store that in buf+2
-        vm->ram()->put(bufend, bufstart + read); //strlen((char *)cbuf));
+        vm->ram()->put(bufend, bufstart + read - 1); //strlen((char *)cbuf));
         // Current buffer pointer is just the start of the buffer
         vm->ram()->put(bufidx, bufstart);
         vm->push(0x01);
@@ -187,6 +190,54 @@ void syscall_read_double(ForthVM *vm) {
     uint32_t data = *(uint32_t *)addr;
     vm->push(data & 0x0000ffff);
     vm->push(data >> 16);
+}
+
+void syscall_add_double(ForthVM *vm) {
+    uint16_t h = vm->pop();
+    uint16_t l = vm->pop();
+    uint32_t arga = l + (h << 16);   
+    h = vm->pop();
+    l = vm->pop();
+    uint32_t argb = l + (h << 16); 
+    uint32_t result = arga + argb;
+    vm->push(result & 0x0000ffff);
+    vm->push(result >> 16);
+}
+
+void syscall_sub_double(ForthVM *vm) {
+    uint16_t h = vm->pop();
+    uint16_t l = vm->pop();
+    uint32_t arga = l + (h << 16);   
+    h = vm->pop();
+    l = vm->pop();
+    uint32_t argb = l + (h << 16); 
+    uint32_t result = argb - arga;
+    vm->push(result & 0x0000ffff);
+    vm->push(result >> 16);
+}
+
+void syscall_mul_double(ForthVM *vm) {
+    uint16_t h = vm->pop();
+    uint16_t l = vm->pop();
+    uint32_t arga = l + (h << 16);   
+    h = vm->pop();
+    l = vm->pop();
+    uint32_t argb = l + (h << 16); 
+    uint32_t result = arga * argb;
+    vm->push(result & 0x0000ffff);
+    vm->push(result >> 16);
+}
+
+void syscall_div_double(ForthVM *vm) {
+    uint16_t h = vm->pop();
+    uint16_t l = vm->pop();
+    uint32_t arga = l + (h << 16);   
+    h = vm->pop();
+    l = vm->pop();
+    uint32_t argb = l + (h << 16); 
+    uint32_t result = argb / arga;
+    vm->push(result & 0x0000ffff);
+    vm->push(result >> 16);
 }
 
 
