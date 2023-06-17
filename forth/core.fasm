@@ -10,7 +10,7 @@
 #SYSTEM:   0x0000 ; System reset vector
 #INNER:    0x0100 ; Inner interpreter starts here
 #MEMSIZE:  0x2000 ; Reserve 32K-bytes for Forth
-#FENCE:    0x0FF4 ; Last word in the ROM
+#FENCE:    0x0FF2 ; Last word in the ROM
 #RAMSTART: 0x1000 ; Variables grow up from here
 #VARSTART: 0x2000 ; Variables grow up from here
 #SPTOP:    0x3800 ; Data stack pointer grows down from here
@@ -37,6 +37,11 @@
 #SYSCALL_D_SUB: 12
 #SYSCALL_D_MUL: 13
 #SYSCALL_D_DIV: 14
+#SYSCALL_D_SR: 15
+#SYSCALL_D_SL: 16
+#SYSCALL_D_AND: 17
+#SYSCALL_D_OR: 18
+#SYSCALL_D_INVERT: 19
 
 
 #MODE_EXECUTE: 0
@@ -93,6 +98,10 @@ STAR_RESTART: ; Restart from here if a runtime error occurs
 
   MOVIL A,#STATE_NOT_FOUND
   MOVIL B,%STATE
+  ST B,A
+
+  MOVIL A,0x0a
+  MOVIL B,%BASE
   ST B,A
 
   MOVIL I,OUTER_CA
@@ -170,10 +179,41 @@ IMMEDIATE_CA:
   ST B,A
   JP NEXT
 
+RUNTIME:
+  .DATA 7
+  .SDATA "RUNTIME"
+  .DATA IMMEDIATE
+RUNTIME_WA: .DATA RUNTIME_CA
+RUNTIME_CA:
+  MOVIL A,%CURRENT
+  LD B,A ; point to vocab
+  LD B,B ; point to word
+  LD A,B ; get the word length
+  MOVIL R0,0x4000
+  OR A,R0 ; Set the runtime bit
+  ST B,A
+  JP NEXT
+
+
+EXECUTIVE:
+  .DATA 9
+  .SDATA "EXECUTIVE"
+  .DATA RUNTIME
+EXECUTIVE_WA: .DATA EXECUTIVE_CA
+EXECUTIVE_CA:
+  MOVIL A,%CURRENT
+  LD B,A ; point to vocab
+  LD B,B ; point to word
+  LD A,B ; get the word length
+  MOVIL R0,0xC000
+  OR A,R0 ; Set the immediate and runtime bits
+  ST B,A
+  JP NEXT
+
 VOCABULARY:
   .DATA 10
   .SDATA "VOCABULARY"
-  .DATA IMMEDIATE
+  .DATA EXECUTIVE
 VOCABULARY_WA: .DATA COLON
 VOCABULARY_CA:
   .DATA BUILDS_WA
@@ -396,7 +436,7 @@ STORE_CA:
 D_AT:
   .DATA 2
   .SDATA "D@"
-  .DATA AT
+  .DATA STORE
 D_AT_WA: .DATA D_AT_CA
 D_AT_CA:
   SYSCALL #SYSCALL_D_AT
@@ -406,7 +446,7 @@ D_STORE:
   .DATA 2
   .SDATA "D!"
   .DATA D_AT
-D_STORE_WA: .DATA DP_STORE_CA
+D_STORE_WA: .DATA D_STORE_CA
 D_STORE_CA:
   SYSCALL #SYSCALL_D_STORE
   JP NEXT
@@ -415,16 +455,46 @@ D_ADD:
   .DATA 2
   .SDATA "D+"
   .DATA D_STORE
-D_ADD_WA: .DATA DP_ADD_CA
+D_ADD_WA: .DATA D_ADD_CA
 D_ADD_CA:
   SYSCALL #SYSCALL_D_ADD
+  JP NEXT
+
+
+D_AND:
+  .DATA 4
+  .SDATA "DAND"
+  .DATA D_ADD
+D_AND_WA: .DATA D_AND_CA
+D_AND_CA:
+  SYSCALL #SYSCALL_D_AND
+  JP NEXT
+
+
+D_OR:
+  .DATA 3
+  .SDATA "DOR"
+  .DATA D_AND
+D_OR_WA: .DATA D_OR_CA
+D_OR_CA:
+  SYSCALL #SYSCALL_D_OR
+  JP NEXT
+
+
+D_INVERT:
+  .DATA 7
+  .SDATA "DINVERT"
+  .DATA D_OR
+D_INVERT_WA: .DATA D_INVERT_CA
+D_INVERT_CA:
+  SYSCALL #SYSCALL_D_INVERT
   JP NEXT
 
 D_SUB:
   .DATA 2
   .SDATA "D-"
-  .DATA D_ADD
-D_SUB_WA: .DATA DP_SUB_CA
+  .DATA D_INVERT
+D_SUB_WA: .DATA D_SUB_CA
 D_SUB_CA:
   SYSCALL #SYSCALL_D_SUB
   JP NEXT
@@ -433,7 +503,7 @@ D_MUL:
   .DATA 2
   .SDATA "D*"
   .DATA D_SUB
-D_MUL_WA: .DATA DP_MUL_CA
+D_MUL_WA: .DATA D_MUL_CA
 D_MUL_CA:
   SYSCALL #SYSCALL_D_MUL
   JP NEXT
@@ -442,16 +512,64 @@ D_DIV:
   .DATA 2
   .SDATA "D/"
   .DATA D_MUL
-D_DIV_WA: .DATA DP_DIV_CA
+D_DIV_WA: .DATA D_DIV_CA
 D_DIV_CA:
   SYSCALL #SYSCALL_D_DIV
+  JP NEXT
+
+D_SR:
+  .DATA 3
+  .SDATA "D>>"
+  .DATA D_DIV
+D_SR_WA: .DATA D_SR_CA
+D_SR_CA:
+  SYSCALL #SYSCALL_D_SR
+  JP NEXT
+
+D_SL:
+  .DATA 3
+  .SDATA "D<<"
+  .DATA D_SR
+D_SL_WA: .DATA D_SL_CA
+D_SL_CA:
+  SYSCALL #SYSCALL_D_SL
+  JP NEXT
+
+D_SWAP:
+  .DATA 5
+  .SDATA "DSWAP"
+  .DATA D_SL
+D_SWAP_WA: .DATA D_SWAP_CA
+D_SWAP_CA:
+  POPD R0 ; H1
+  POPD R1 ; L1
+  POPD R2 ; H2
+  POPD R3 ; L2
+  PUSHD R1 ; L1
+  PUSHD R0 ; L1 H1
+  PUSHD R3 ; L1 H1 L2
+  PUSHD R2 ; L1 H1 L2 H2
+  JP NEXT
+
+D_DUP:
+  .DATA 4
+  .SDATA "DDUP"
+  .DATA D_SWAP
+D_DUP_WA: .DATA D_DUP_CA
+D_DUP_CA:
+  POPD R0 ; H1
+  POPD R1 ; L1
+  PUSHD R1 ; L1
+  PUSHD R0 ; L1 H1
+  PUSHD R1 ; L1
+  PUSHD R0 ; L1 H1
   JP NEXT
 
 
 PLUS:
   .DATA 1
   .SDATA "+"
-  .DATA D_DIV
+  .DATA D_DUP
 PLUS_WA: 
   .DATA PLUS_CA
 PLUS_CA:
@@ -1935,13 +2053,38 @@ STATE_CA:
   PUSHD STATE
   JP NEXT
 
+
+BACKSLASH: ; Forth word delimiting a \ comment 
+  .DATA 0xc001
+  .SDATA "\\"
+  .DATA STATE
+BACKSLASH_WA: .DATA COLON
+BACKSLASH_CA:
+  .DATA STAR_HASH_WA
+  .DATA 92 ; The backslash character
+  .DATA TOKEN_WA
+  .DATA DROP_WA
+  .DATA SEMI
+
+PAREN: ; Forth word delimiting a ( comment )
+  .DATA 0xc001
+  .SDATA "("
+  .DATA BACKSLASH
+PAREN_WA: .DATA COLON
+PAREN_CA:
+  .DATA STAR_HASH_WA
+  .DATA 41
+  .DATA TOKEN_WA
+  .DATA DROP_WA
+  .DATA SEMI
+
 ; The last word in the dictionary placed at the end of ROM before RAM starts
 .ORG #FENCE
 CORE_VOCABULARY:
 FENCE:
   .DATA 0xc005
   .SDATA "FENCE"
-  .DATA STATE
+  .DATA PAREN
 FENCE_WA: .DATA COLON
 FENCE_CA:
   .DATA SEMI

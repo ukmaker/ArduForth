@@ -1,7 +1,7 @@
 #ifndef UKMAKER_SYSCALLS_H
 #define UKMAKER_SYSCALLS_H
 
-#include <Arduino.h>
+#include "Arduino.h"
 #include "ForthVM.h"
 #include "Serial.h"
 
@@ -20,6 +20,11 @@
 #define SYSCALL_D_SUB 12
 #define SYSCALL_D_MUL 13
 #define SYSCALL_D_DIV 14
+#define SYSCALL_D_SR 15
+#define SYSCALL_D_SL 16
+#define SYSCALL_D_AND 17
+#define SYSCALL_D_OR 18
+#define SYSCALL_D_INVERT 19
 
 void syscall_type(ForthVM *vm)
 {
@@ -236,6 +241,62 @@ void syscall_div_double(ForthVM *vm) {
     l = vm->pop();
     uint32_t argb = l + (h << 16); 
     uint32_t result = argb / arga;
+    vm->push(result & 0x0000ffff);
+    vm->push(result >> 16);
+}
+
+// ( Dvalue Sshift -- Dvalue )
+void syscall_sr_double(ForthVM *vm) { 
+    uint16_t shift = vm->pop();
+    uint16_t h = vm->pop();
+    uint16_t l = vm->pop();
+    uint32_t val = l + (h << 16);   
+
+    uint32_t result = val >> shift;
+    vm->push(result & 0x0000ffff);
+    vm->push(result >> 16);
+}
+
+void syscall_sl_double(ForthVM *vm) {
+    uint16_t shift = vm->pop();
+    uint16_t h = vm->pop();
+    uint16_t l = vm->pop();
+    uint32_t val = l + (h << 16);   
+
+    uint32_t result = val << shift;
+    vm->push(result & 0x0000ffff);
+    vm->push(result >> 16);
+}
+
+void syscall_and_double(ForthVM *vm) {
+    uint16_t h = vm->pop();
+    uint16_t l = vm->pop();
+    uint32_t arga = l + (h << 16);   
+    h = vm->pop();
+    l = vm->pop();
+    uint32_t argb = l + (h << 16); 
+    uint32_t result = argb & arga;
+    vm->push(result & 0x0000ffff);
+    vm->push(result >> 16);
+}
+
+void syscall_or_double(ForthVM *vm) {
+    uint16_t h = vm->pop();
+    uint16_t l = vm->pop();
+    uint32_t arga = l + (h << 16);   
+    h = vm->pop();
+    l = vm->pop();
+    uint32_t argb = l + (h << 16); 
+    uint32_t result = argb | arga;
+    vm->push(result & 0x0000ffff);
+    vm->push(result >> 16);
+}
+
+void syscall_invert_double(ForthVM *vm) {
+    uint16_t h = vm->pop();
+    uint16_t l = vm->pop();
+    uint32_t arga = l + (h << 16);   
+    uint32_t result = ~arga;
     vm->push(result & 0x0000ffff);
     vm->push(result >> 16);
 }

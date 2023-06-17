@@ -43,7 +43,7 @@ class Serial {
             *buf++ = c;
             read++;
         }
-        if(read > 0) read--;
+        
         return read;
     }
 

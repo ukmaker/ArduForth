@@ -13,6 +13,7 @@ class Dumper {
         FILE *fp = fopen("ForthImage.h", "w");
         fprintf(fp, "#ifndef UKMAKER_FORTH_IMAGE_H\n");
         fprintf(fp, "#define UKMAKER_FORTH_IMAGE_H\n");
+        fprintf(fp, "#include \"Arduino.h\"\n");
         fprintf(fp,"/******************************\n");
         fprintf(fp, "* Constants\n");
         fprintf(fp, "*****************************/\n");
@@ -24,7 +25,7 @@ class Dumper {
             tok = tok->next;
         }
         // Write the ROM image
-        fprintf(fp, "const char rom[%d] = {\n",romSize);
+        fprintf(fp, "const uint8_t rom[%d] = {\n",romSize);
         for(size_t i=0; i<romSize-1; i++) {
             if((i % 16) == 0) {
                 fprintf(fp, "/* 0x%04x */ ", (uint16_t)romStart + i);

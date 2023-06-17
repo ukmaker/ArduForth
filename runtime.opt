@@ -43,7 +43,17 @@ void attachSyscalls()
   vm.addSyscall(SYSCALL_NUMBER, syscall_number);
   vm.addSyscall(SYSCALL_D_AT, syscall_read_double);
   vm.addSyscall(SYSCALL_D_STORE, syscall_write_double);
-}
+  vm.addSyscall(SYSCALL_D_ADD, syscall_add_double);
+  vm.addSyscall(SYSCALL_D_SUB, syscall_sub_double);
+  vm.addSyscall(SYSCALL_D_DIV, syscall_mul_double);
+  vm.addSyscall(SYSCALL_D_MUL, syscall_div_double);
+
+  vm.addSyscall(SYSCALL_D_SR, syscall_sr_double);
+  vm.addSyscall(SYSCALL_D_SL, syscall_sl_double);
+  vm.addSyscall(SYSCALL_D_AND, syscall_and_double);
+  vm.addSyscall(SYSCALL_D_OR, syscall_or_double);
+  vm.addSyscall(SYSCALL_D_INVERT, syscall_invert_double);
+  }
 
 
 int main(int argc, char **argv)

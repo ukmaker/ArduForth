@@ -24,11 +24,11 @@
 *
 * So here we define RAM to be sized 0x4000 to hold everything
 */
-uint8_t ram[0x4000];
+uint8_t ram[16384];
 
 uint8_t rom[32];
 
-UnsafeMemory mem(ram, 0x4000, 0, rom, 64, 0x4000);
+UnsafeMemory mem(ram, 16384, 0, rom, 64, 16384);
 
 Syscall syscalls[40];
 
@@ -111,7 +111,7 @@ bool getArgs(int argc, char **argv)
 
 bool loadInnerInterpreter()
 {
-  fasm.slurp("forth/core.asm");
+  fasm.slurp("forth/core.fasm");
   fasm.pass1();
   fasm.pass2();
   fasm.pass3();
@@ -137,7 +137,15 @@ void attachSyscalls()
   vm.addSyscall(SYSCALL_NUMBER, syscall_number);
   vm.addSyscall(SYSCALL_D_AT, syscall_read_double);
   vm.addSyscall(SYSCALL_D_STORE, syscall_write_double);
-
+  vm.addSyscall(SYSCALL_D_ADD, syscall_add_double);
+  vm.addSyscall(SYSCALL_D_SUB, syscall_sub_double);
+  vm.addSyscall(SYSCALL_D_DIV, syscall_mul_double);
+  vm.addSyscall(SYSCALL_D_MUL, syscall_div_double);
+  vm.addSyscall(SYSCALL_D_SR, syscall_sr_double);
+  vm.addSyscall(SYSCALL_D_SL, syscall_sl_double);
+  vm.addSyscall(SYSCALL_D_AND, syscall_and_double);
+  vm.addSyscall(SYSCALL_D_OR, syscall_or_double);
+  vm.addSyscall(SYSCALL_D_INVERT, syscall_invert_double);
 }
 
 int main(int argc, char **argv)
