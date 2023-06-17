@@ -1,7 +1,7 @@
 #ifndef UKMAKER_SYSCALLS_H
 #define UKMAKER_SYSCALLS_H
 
-#include "Arduino.h"
+#include <Arduino.h>
 #include "ForthVM.h"
 #include "Serial.h"
 
@@ -14,8 +14,8 @@
 #define SYSCALL_INLINE 6
 #define SYSCALL_FLUSH 7
 #define SYSCALL_NUMBER 8
-#define SYSCALL_D_AT 9
-#define SYSCALL_D_STORE 10
+#define SYSCALL_H_AT 9
+#define SYSCALL_H_STORE 10
 #define SYSCALL_D_ADD 11
 #define SYSCALL_D_SUB 12
 #define SYSCALL_D_MUL 13
@@ -178,7 +178,7 @@ void syscall_number(ForthVM *vm)
 
 // to interface with the underlying hardware
 // these syscalls are needed to do 32-bit reads and writes on an STM32
-void syscall_write_double(ForthVM *vm) {
+void syscall_write_host(ForthVM *vm) {
     uint16_t h = vm->pop();
     uint16_t l = vm->pop();
     uint32_t addr = l + (h << 16);
@@ -188,7 +188,7 @@ void syscall_write_double(ForthVM *vm) {
     *(uint32_t *)addr = data;
 }
 
-void syscall_read_double(ForthVM *vm) {
+void syscall_read_host(ForthVM *vm) {
     uint16_t h = vm->pop();
     uint16_t l = vm->pop();
     uint32_t addr = l + (h << 16);
