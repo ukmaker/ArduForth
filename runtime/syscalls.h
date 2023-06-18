@@ -1,7 +1,7 @@
 #ifndef UKMAKER_SYSCALLS_H
 #define UKMAKER_SYSCALLS_H
 
-#include <Arduino.h>
+#include "Arduino.h"
 #include "ForthVM.h"
 #include "Serial.h"
 
@@ -25,6 +25,7 @@
 #define SYSCALL_D_AND 17
 #define SYSCALL_D_OR 18
 #define SYSCALL_D_INVERT 19
+#define SYSCALL_DOTC 20
 
 void syscall_type(ForthVM *vm)
 {
@@ -66,6 +67,41 @@ void syscall_dot(ForthVM *vm)
     {
         printf("0b");
         uint16_t mask = 0x8000;
+        while (mask != 0)
+        {
+            if (v & mask)
+                SerialUSB.print('1');
+            else
+                SerialUSB.print('0');
+
+            mask >>= 1;
+        }
+        SerialUSB.print('\n');
+    }
+    break;
+    case 10:
+    default:
+        SerialUSB.printf("%d", v);
+        break;
+    }
+}
+
+void syscall_dot_c(ForthVM *vm)
+{
+    // Syscall to print the low byte of a value on the stack
+    //
+    // ( v base - )
+    int base = vm->pop();
+    int v = (uint8_t) vm->pop();
+    switch (base)
+    {
+    case 16:
+        SerialUSB.printf("0x%02x", v);
+        break;
+    case 2:
+    {
+        printf("0b");
+        uint16_t mask = 0x80;
         while (mask != 0)
         {
             if (v & mask)
@@ -127,53 +163,187 @@ void syscall_flush(ForthVM *vm)
     SerialUSB.flush();
 }
 
+void _parse_binary(ForthVM *vm, char *cbuf, uint16_t len) {
+    uint16_t v = 0;
+    bool valid = true;
+    for(uint16_t i=0; i<len; i++) {
+        char c = *cbuf;
+        cbuf++;
+        if(c == '0') {
+            v = v << 1;
+        } else if(c == '1') {
+            v = (v << 1) + 1;
+        } else {
+            valid = false;
+        }
+        if(!valid) break;
+    }
+    if(valid) {
+        vm->push(v);
+    }
+    vm->push(valid ? 1 : 0);
+}
+
+int cToI(char c) {
+    // Attempt to convert c to a valid number
+    // recognises 0-9, A-F, a-f
+    if(c >= '0' && c <= '9') {
+        return c - '0';
+    }
+
+    if(c >= 'a' && c <= 'f') {
+        return c - 'a' + 10;
+    }
+
+    if(c >= 'A' && c <= 'F') {
+        return c - 'A' + 10;
+    }
+
+    return -1;
+}
+
+void _parse_hex(ForthVM *vm, char *cbuf, uint16_t len) {
+    uint16_t v = 0;
+    bool valid = true;
+    for(uint16_t i=0; i<len; i++) {
+        char c = *cbuf;
+        cbuf++;
+        int h = cToI(c);
+        if(h == -1) {
+            valid = false;
+            break;
+        }
+        v = (v << 4) + h;
+    }
+    if(valid) {
+        vm->push(v);
+    }
+    vm->push(valid ? 1 : 0);    
+}
+
+void _parse_decimal(ForthVM *vm, char *cbuf, uint16_t len, bool negative) {
+    uint16_t v = 0;
+    bool valid = true;
+    for(uint16_t i=0; i<len; i++) {
+        char c = *cbuf;
+        cbuf++;
+        int h = cToI(c);
+        if(h == -1 || h > 9) {
+            valid = false;
+            break;
+        }
+        v = (v * 10) + h;
+    }
+    if(negative) v = -v;
+    if(valid) {
+        vm->push(v);
+    }
+    vm->push(valid ? 1 : 0);    
+}
+
+void _parse_char(ForthVM *vm, char *cbuf, uint16_t len) {
+    uint16_t v = 0;
+    bool valid = true;
+    if(len == 0 || len > 3) {
+        vm->push(0);
+        return;
+    }
+    if(*cbuf == '\\' && len == 3) {
+        cbuf++;
+        len--;
+        switch(*cbuf) {
+            case 'n': v = '\n'; break;
+            case 't': v = '\t'; break;
+            case 'r': v = '\r'; break;
+            case '0': v = 0; break;
+            default: vm->push(0); return;
+        }
+        cbuf++;
+        if(*cbuf != '\'') {
+            vm->push(0);
+        } else {
+            vm->push(v);
+            vm->push(1);
+        }
+        return;
+    }
+
+    if(len == 3) {
+        vm->push(0);
+        return;
+    }
+
+    if(*(cbuf+1) != '\'') {
+        vm->push(0);
+        return;
+    }
+
+    vm->push(*cbuf);
+    vm->push(1);
+}
+/**
+ * Attempt to convert the current token into a number
+ * This does not use random weird characters to indicate 
+ * the base as does e.g. GForth
+ * 1. The system BASE variable is ignored for parsing
+ *    it is only used for output. This way ambiguity is
+ *    avoided.
+ * 2. Supported bases are 
+ *    decimal - no prefix
+ *    hex     - prefix 0x
+ *    binary  - prefix 0b
+ * 3. A leading '-' indicates a negative number 
+ *    for decimal numbers only
+ *    is an error for other bases
+ * 4. a character literal may be represented
+ *    'c'      - the trailing ' is not optional as in GForth
+ *    '\n'     - backslashes are allowed for \n, \t, \r and \0
+ * 
+*/
 void syscall_number(ForthVM *vm)
 {
     uint16_t base = vm->pop();
     uint16_t dp = vm->pop();
     uint16_t len = vm->ram()->get(dp);
     char *cbuf = (char *)vm->ram()->addressOfChar(dp + 2);
-    // put a null byte at the end
-    vm->ram()->putC(dp + len + 2, 0);
-    int i, r;
-    i = 0;
-    char c;
-
-    switch (base)
-    {
-    case 16:
-        r = sscanf(cbuf, "%x", &i);
-        break;
-    case 2:
-        r = 0;
-        while ((c = *cbuf++) != '\0') {
-            i <<= 1;
-            if(c == '1') {
-                i += 1;
-                r = 1;
-            } else if(c == '0') {
-                r = 1;
-            } else {
-                break;
-            }
-        }
-        
-        break;
-    case 10:
-    default:
-        r = sscanf(cbuf, "%d", &i);
-        break;
-    }
-
-    if (r == 1)
-    {
-        vm->push(i);
-        vm->push(1);
-    }
-    else
-    {
+    // is there even something to parse?
+    if(len == 0) {
         vm->push(0);
+        return;
     }
+
+    if(len == 1) {
+        return _parse_decimal(vm, cbuf, len, false);
+    }
+
+    if(*cbuf == '-') {
+        cbuf++;
+        len--;
+        return _parse_decimal(vm, cbuf, len, true);
+    }
+
+    if(*cbuf == '\'') {
+        cbuf++;
+        len--;
+        return _parse_char(vm, cbuf, len);
+    }
+
+    if(len >= 3 && *cbuf == '0') {
+        // check for leading base specifier
+        if(*(cbuf+1) == 'b') {
+            cbuf+=2;
+            len -=2;
+            return _parse_binary(vm, cbuf, len);
+        }
+
+        if(*(cbuf+1) == 'x') {
+            cbuf+=2;
+            len -=2;
+            return _parse_hex(vm, cbuf, len);
+        }
+    }
+
+    _parse_decimal(vm, cbuf, len, false);
 }
 
 // to interface with the underlying hardware

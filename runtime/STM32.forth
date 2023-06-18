@@ -32,10 +32,10 @@ HEX : PORT-BASE ( port-number -- port-base-address-double ) 0x400 * 0x4002 ;
 
 : PINMODE! ( mode pin-number port-number -- ) ( PINMODE-INPUT 12 PORTA MODE! )
     PINMODE ( get the address of the mode register) ( mode pin-number Dreg-addr )
-    DDUP D@ ( get the current value of the register ) ( mode pin-number Dreg-addr Dvalue )
+    DDUP H@ ( get the current value of the register ) ( mode pin-number Dreg-addr Dvalue )
     4 PICK PIN-MODEMASK DINVERT DAND ( mask out the bits we're about to change ) ( mode pin-number Dreg-addr Dmasked-value )
     5 PICK 0x00 6 PICK ( mode pin-number Dreg-addr Dmasked-value Dmode pin-number )
     2 * D<< ( mode bits to the correct position ) ( mode pin-number Dreg-addr Dmasked-value Dmode-shifted )
-    DOR DSWAP D!
+    DOR DSWAP H!
     DROP DROP
 ;

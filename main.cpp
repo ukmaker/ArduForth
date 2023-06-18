@@ -15,6 +15,7 @@
 #include "tests/SlurpTests.h"
 #include "tests/RangeTests.h"
 #include "tests/LabelTests.h"
+#include "tests/ConstantTests.h"
 
 /*
 * core.asm defines
@@ -43,6 +44,7 @@ VMTests vmTests(testSuite, &vm, &fasm);
 RangeTests rangeTests(testSuite, &vm, &fasm);
 LabelTests labelTests(testSuite, &vm, &fasm);
 SlurpTests slurpTests(testSuite, &vm, &fasm);
+ConstantTests constantTests(testSuite, &vm, &fasm);
 
 int tests = 0;
 int passed = 0;
@@ -146,10 +148,14 @@ void attachSyscalls()
   vm.addSyscall(SYSCALL_D_SL, syscall_sl_double);
   vm.addSyscall(SYSCALL_D_AND, syscall_and_double);
   vm.addSyscall(SYSCALL_D_OR, syscall_or_double);
+
+  vm.addSyscall(SYSCALL_DOTC, syscall_dot_c);
 }
 
 int main(int argc, char **argv)
 {
+
+  constantTests.run();
 
   // testAssembler();
   // testRanges();

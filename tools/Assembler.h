@@ -1643,7 +1643,7 @@ public:
             return error(tok, NAME_EXPECTED);
         }
 
-        while (idx < sourceLen)
+        while (idx <= sourceLen)
         {
             if (isSpaceSemiOrEOL(source[idx]))
             {

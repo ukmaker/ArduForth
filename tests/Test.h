@@ -46,6 +46,14 @@ class Test {
         assertString(tok->name, name, "Should parse label");
     }
 
+   void shouldGetAConstant(const char *name, uint16_t value) {
+        printf("         shouldGetConstant %s\n", name);
+        Token *tok = fasm->getToken();
+        assertEquals(tok->type, TOKEN_TYPE_CONST, "Type should be CONST");
+        assertString(tok->name, name, "Name");
+        assertEquals(tok->value, value, "Value");
+    }
+
 
     void skipTokens(int n) {
         for(int i=0; i<n; i++) {

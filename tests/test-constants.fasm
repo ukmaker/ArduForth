@@ -1,0 +1,8 @@
+; Check that similar constant names are not confused
+#SYSCALL_DOT: 1
+#SYSCALL_DOT_C: 2
+.ORG 0
+.DATA #SYSCALL_DOT
+.DATA #SYSCALL_DOT_C
+SYSCALL #SYSCALL_DOT
+SYSCALL #SYSCALL_DOT_C
