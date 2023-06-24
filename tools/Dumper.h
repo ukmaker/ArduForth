@@ -123,9 +123,16 @@ class Dumper {
                             printf("%04x ", tok->address);
                             printf(".DATA: %04x\n", tok->value); 
                             break;
-                        case DIRECTIVE_TYPE_SDATA: 
+                        case DIRECTIVE_TYPE_PLAIN_STRING: 
                             printf("%04x ", tok->address);
                             printf(".SDATA: \"%s\"\n", tok->str); 
+                            break;
+                        case DIRECTIVE_TYPE_NWORD_STRING: 
+                        case DIRECTIVE_TYPE_RWORD_STRING: 
+                        case DIRECTIVE_TYPE_IWORD_STRING: 
+                        case DIRECTIVE_TYPE_XWORD_STRING: 
+                            printf("%04x ", tok->address);
+                            printf("%04x .SDATA: \"%s\"\n", fasm->headerWord(tok), tok->str); 
                             break;
                         default: break;
                     }

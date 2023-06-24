@@ -9,6 +9,7 @@
 #include "tools/Assembler.h"
 #include "tools/Dumper.h"
 #include "tools/Debugger.h"
+#include "tools/host_syscalls.h"
 
 #include "tests/Test.h"
 #include "tests/VMTests.h"
@@ -146,6 +147,10 @@ void attachSyscalls()
   vm.addSyscall(SYSCALL_D_SL, syscall_sl_double);
   vm.addSyscall(SYSCALL_D_AND, syscall_and_double);
   vm.addSyscall(SYSCALL_D_OR, syscall_or_double);
+
+  vm.addSyscall(SYSCALL_FOPEN, syscall_fopen);
+  vm.addSyscall(SYSCALL_FCLOSE, syscall_fclose);
+  vm.addSyscall(SYSCALL_FREAD, syscall_fread);
 }
 
 int main(int argc, char **argv)

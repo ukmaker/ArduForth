@@ -61,11 +61,10 @@ void syscall_dot(ForthVM *vm)
     switch (base)
     {
     case 16:
-        SerialUSB.printf("0x%04x", v);
+        SerialUSB.printf("%04x", v);
         break;
     case 2:
     {
-        printf("0b");
         uint16_t mask = 0x8000;
         while (mask != 0)
         {

@@ -1,9 +1,13 @@
 #ifndef UKMAKER_HOST_SYSCALLS_H
 #define UKMAKER_HOST_SYSCALLS_H
 
-#include "Arduino.h"
+#include "../runtime/Arduino.h"
 #include "../runtime/ForthVM.h"
 #include <stdio.h>
+
+#define SYSCALL_FOPEN 21
+#define SYSCALL_FCLOSE 22
+#define SYSCALL_FREAD 23
 
 /**
  * Syscalls to be used during development
@@ -13,25 +17,34 @@
 
 static FILE *reader;
 static FILE *writer;
-
+// ( name-address type -- success )
 void syscall_fopen(ForthVM *vm) {
     uint16_t type = vm->pop(); // 0 == read ; 1 = write
-    uint16_t fname = vm->pop();
-    char *name = (char *)vm->ram()->addressOfChar(fname);
+    uint16_t fname = vm->pop(); // points to a Forth string
+    char *name = (char *)vm->ram()->addressOfChar(fname+2);
+    uint16_t len = vm->read(fname);
+    len = len & 0x3fff; // Mask off the immediate/exec bits
+    char *cname;
+    cname = (char *)malloc(len+1);
+    for(uint16_t i=0; i<len; i++ ) {
+        cname[i] = vm->readByte(fname + 2 + i);
+    }
+    cname[len] = '\0';
 
     const char *r = "r";
     const char *w = "w";
     bool success = true;
 
     if(type == 0) {
-        reader = fopen(name, r);
+        reader = fopen(cname, r);
         if(reader == NULL) success = false;
     } else {
-        writer = fopen(name, w);
+        writer = fopen(cname, w);
         if(writer == NULL) success = false;
     }
 
     vm->push(success ? 1 : 0);
+    free(cname);
 }
 
 void syscall_fclose(ForthVM *vm) {

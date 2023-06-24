@@ -71,7 +71,7 @@ public:
 
     void breakpoint()
     {
-        if (_vm->get(REG_PC) == _breakpoint1)
+        if (_vm->get(REG_I) == _breakpoint2)
         {
             printf("1*");
         }

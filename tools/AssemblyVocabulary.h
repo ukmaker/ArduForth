@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdint.h>
 #include "../runtime/ForthIS.h"
+#include "Token.h"
 
 class AssemblyVocabulary {
 
@@ -138,10 +139,14 @@ class AssemblyVocabulary {
         ccnames[COND_P] = "P";
         ccnames[COND_M] = "M";
 
-        directives[0] = "ORG";
-        directives[1] = "DATA";
-        directives[2] = "SDATA";
-        directives[3] = "ALIAS";
+        directives[DIRECTIVE_TYPE_ORG] = "ORG";
+        directives[DIRECTIVE_TYPE_DATA] = "DATA";
+        directives[DIRECTIVE_TYPE_ALIAS] = "ALIAS";
+        directives[DIRECTIVE_TYPE_PLAIN_STRING] = "SDATA";
+        directives[DIRECTIVE_TYPE_NWORD_STRING] = "N";
+        directives[DIRECTIVE_TYPE_RWORD_STRING] = "R";
+        directives[DIRECTIVE_TYPE_IWORD_STRING] = "I";
+        directives[DIRECTIVE_TYPE_XWORD_STRING] = "X";
 
     }
 
@@ -165,7 +170,7 @@ class AssemblyVocabulary {
     }
 
     const char *directive(uint8_t dir) {
-        if(dir > 2) return NULL;
+        if(dir > 7) return NULL;
         return directives[dir];
     }
 
@@ -215,7 +220,7 @@ class AssemblyVocabulary {
     }
 
     int findDirective(char *source, int pos, int len) {
-        for(int i=0; i<4; i++) {
+        for(int i=0; i<8; i++) {
             if((int)strlen(directives[i]) == len) {
                 int equal = true;
                 for(int j=0; j<len; j++) {
@@ -234,7 +239,7 @@ class AssemblyVocabulary {
         const char *opnames[256];
         const char *argnames[16];
         const char *ccnames[4];
-        const char *directives[4];
+        const char *directives[8];
         char aliases[16][65];
 };
 #endif
