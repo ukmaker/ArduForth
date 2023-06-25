@@ -187,7 +187,7 @@ int main(int argc, char **argv)
     debugger.setVM(&vm);
     debugger.reset();
 
-    debugger.setBreakpoint1(0x0d2a);
+    //debugger.setBreakpoint1(0x0d2a);
    //debugger.setLabelBreakpoint2("TWO_DOTS_CA");
     // debugger.setLabelBreakpoint2("TOKEN_END");
     // ram.setWatch(0x5d4);

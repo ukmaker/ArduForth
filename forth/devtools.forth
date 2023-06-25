@@ -66,14 +66,54 @@
 
 : ['] [ ' *# , ' *# , ] , ' , ; IMMEDIATE
 
+: WORDLEN ( word-header -- word-len )
+    0x1fff AND
+;
+
+( print the word at addr )
+( print a maximum of 64 chars, printable chars only )
+: .SAFE-WORD ( addr -- )
+    DUP @ WORDLEN ( addr len )
+    DUP 64 > ( addr len flag)
+    IF 
+        DROP 64
+    THEN
+
+    OVER 2+ + SWAP 2+ ( addr+2+len addr+2 )
+    DO
+        I C@ ?PRINTABLE IF EMIT ELSE DROP ASPACE EMIT THEN
+    LOOP
+;
+
+: &quot 0x22 ;
+: &dot 0x2e ;
+
 ( attempt to print the word at the address )
 ( if the word is one of the literal handlers )
 ( for string or numbers, then print the name and value )
 ( leaves the address of the next word on the stack )
-: .WORD-OR-INLINE ( addr -- next-addr )
-
+: .XT ( addr -- next-addr )
+    DUP @ ( addr instr )
+    CASE
+        ['] *#        OF 2+ DUP @ .                ENDOF
+        ['] *"        OF 2+ DUP &dot EMIT &quot EMIT ASPACE EMIT .SAFE-WORD &quot EMIT DUP @ + ALIGN ENDOF
+        ['] *S"       OF 2+ DUP &dot EMIT 0x53 EMIT &quot EMIT ASPACE EMIT .SAFE-WORD &quot EMIT DUP @ + ALIGN ENDOF
+        ['] *+LOOP    OF ." *+LOOP" 2 +            ENDOF
+        ['] *LOOP     OF ." *LOOP" 2 +   BREAKPOINT          ENDOF
+        ['] *DO       OF ." *DO"                   ENDOF
+        ['] *ELSE     OF ." *ELSE" 2 +             ENDOF
+        ['] *IF       OF ." *IF" 2 +               ENDOF
+        ['] *ESAC     OF ." *ESAC"                 ENDOF
+        ['] *OF_ENDOF OF ." *OF_ENDOF" 2 +         ENDOF
+        ['] *OF       OF ." *OF" 2 +               ENDOF
+        ['] *UNTIL    OF ." *UNTIL" 2 +            ENDOF
+        ( default )
+        CA>WA .SAFE-WORD
+    ESAC
+    2+
 ;
 : DECOMPILE ( ca -- )
+    BASE @ SWAP HEX
     CA>WA
     DUP .WORD CRET
     DUP IS-CODE
@@ -84,18 +124,14 @@
         BEGIN 
             DUP @ 0x0106 = ( is this semi ? ) 
             NOT IF
-                CASE
-                    ['] *# OF 2+ DUP @ . CRET 2+ ENDOF
-                    ['] *" OF 2+ DUP .WORD CRET DUP @ + 2+ ENDOF
-                    ( default )
-                    DUP @ CA>WA .WORD CRET
-                    2+
-                ESAC
+                DUP . ASPACE EMIT .XT ASPACE EMIT CRET
                 0
             ELSE
                 DROP
                 1
             THEN
         UNTIL
+        CRET
     THEN
+    BASE !
 ;
