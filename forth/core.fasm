@@ -10,8 +10,8 @@
 #SYSTEM:   0x0000 ; System reset vector
 #INNER:    0x0100 ; Inner interpreter starts here
 #MEMSIZE:  0x2000 ; Reserve 8K-bytes for Forth
-#FENCE:    0x12F2 ; Last word in the ROM
-#RAMSTART: 0x1300 ; Variables grow up from here
+#FENCE:    0x13F2 ; Last word in the ROM
+#RAMSTART: 0x1400 ; Variables grow up from here
 #VARSTART: 0x2000 ; Variables grow up from here
 #SPTOP:    0x3800 ; Data stack pointer grows down from here
 #RSTOP:    0x3ffe ; And the return stack from here
@@ -135,7 +135,6 @@ NEXT:
   LD WA,I ; WA <- (I)
   ADDI I,2
 RUN:
-  SYSCALL #SYSCALL_DEBUG
   LD CA,WA
   ADDI WA,2
   MOV PC,CA
@@ -1188,10 +1187,68 @@ WA_TO_CB_CA:
   PUSHD A
   JP NEXT
 
+;  : CA>WA 
+;    ( try to convert a CA to a Word address )
+;    ( put a sanity check in place in case we can't find the WA )
+;    2 - ( skip over the link word )
+;    64
+;    SWAP
+;    BEGIN
+;        SWAP DUP 0 = NOT 
+;        ( addr count )
+;        IF
+;            ( OK to continue )
+;            1 - ( addr count-- )
+;            SWAP 
+;            2 - DUP @ 0x8000 AND ( got to the header? )
+;            ( count addr flag)
+;            IF 1 ELSE 0 THEN
+;        ELSE
+;            DROP DROP 0 _UNKNOWN 0
+;        THEN
+;    ( count addr flag )
+;    UNTIL
+;    SWAP DROP
+; ;
+
+CA_TO_WA:
+  .N "CA>WA"
+  .DATA WA_TO_CB
+CA_TO_WA_WA: .DATA COLON
+CA_TO_WA_CA:
+  .DATA STAR_HASH_WA .DATA 2 .DATA MINUS_WA
+  .DATA STAR_HASH_WA .DATA 64 .DATA SWAP_WA
+CA_TO_WA_LOOP:
+  .DATA SWAP_WA .DATA DUP_WA .DATA STAR_HASH_WA .DATA 0
+  .DATA EQUALS_WA .DATA NOT_WA
+  .DATA STAR_IF_WA .DATA STAR_IF_LEAVE
+  .DATA STAR_HASH_WA .DATA 1 .DATA MINUS_WA
+  .DATA SWAP_WA
+  .DATA STAR_HASH_WA .DATA 2 .DATA MINUS_WA 
+  .DATA DUP_WA .DATA AT_WA
+  .DATA STAR_HASH_WA .DATA 0x8000 .DATA AND_WA
+  .DATA STAR_IF_WA .DATA CA_TO_WA_NOT_A_HEADER
+  .DATA STAR_HASH_WA .DATA 1
+  .DATA STAR_ELSE_WA .DATA CA_TO_WA_HEADER_THEN
+CA_TO_WA_NOT_A_HEADER:
+  .DATA STAR_HASH_WA .DATA 0
+CA_TO_WA_HEADER_THEN:
+  .DATA STAR_ELSE_WA .DATA CA_TO_WA_UNTIL
+STAR_IF_LEAVE:
+  .DATA DROP_WA .DATA DROP_WA
+  .DATA STAR_HASH_WA .DATA 0
+  .DATA STAR_LIT_WA .DATA 13 .SDATA "-- UNKNOWN --"
+  .DATA STAR_HASH_WA .DATA 0
+CA_TO_WA_UNTIL:
+  .DATA STAR_UNTIL_WA
+  .DATA CA_TO_WA_LOOP
+  .DATA SWAP_WA .DATA DROP_WA
+  .DATA SEMI
+
 
 CREATE:
   .N "CREATE"
-  .DATA WA_TO_CB
+  .DATA CA_TO_WA
 CREATE_WA: .DATA COLON
 CREATE_CA:
   .DATA ENTRY_WA      ;( -- WA of last entry )
@@ -1642,10 +1699,147 @@ STAR_UNTIL_DONE:
   ADDI I,2
   JP NEXT
 
+CASE:
+  .I "CASE"
+  .DATA STAR_UNTIL
+CASE_WA: .DATA COLON
+CASE_CA: 
+  .DATA STAR_HASH_WA .DATA 0
+  .DATA SEMI
+
+; CASE someValue v1 OF ... ENDOF v2 OF ... ENDOF ESAC 
+; code *OF a1 ... a1:*ENDOF ax *OF a3 ... a3:*ENDOF ax ax:*ESAC
+;         (a0)                    (a2)
+; CASE 0 ; Number of OF clauses to the stack
+;
+; OF    -> ' *OF , HERE ( push here to the stack ) SWAP 1+ ( increment number of clauses )
+; ENDOF -> HERE SWAP ! ' *ENDOF , HERE 2 ALLOT 
+; 
+; OF ( 0 -- a0 1 )             ENDOF ( a1 1 )
+; OF ( a1 1 -- a1 2 a2 )       ENDOF ( a1 a3 2 )
+; OF ( a1 a3 2 -- a1 a3 3 a4 ) ENDOF ( a1 a3 a5 3 )
+
+CASE_OF:
+  .I "OF"
+  .DATA CASE
+CASE_OF_WA: .DATA CASE_OF_CA
+CASE_OF_CA:
+; R0 - Address of *OF
+; R1 - Address of DP
+; R2 - value of DP
+; R3 - number of clauses
+  .ALIAS R0,*OF
+  .ALIAS R1,DP
+  .ALIAS R2,*DP
+  .ALIAS R3,NUM
+
+  POPD NUM
+  ADDI NUM,1
+  MOVIL *OF,STAR_OF_WA
+  MOVIL DP,%DICTIONARY_POINTER
+  LD *DP,DP
+  ST *DP,*OF ; Compile *OF
+  ADDI *DP,2 ; point to location of jump word
+  PUSHD *DP  ; save the location
+  PUSHD NUM  ; Number of clauses
+  ADDI *DP,2 ; next location for the definition
+  ST DP,*DP
+  JP NEXT  
+
+
+ENDOF:
+  .I "ENDOF"
+  .DATA CASE_OF
+ENDOF_WA:
+  .DATA ENDOF_CA
+ENDOF_CA:
+  ; TOS contains the location of the word to use for the IF relative jump
+  ; R0 - Address of DP
+  ; R1 - Value of DP (HERE)
+  ; R2 - location of jump address
+  POPD R3 ; Number of clauses
+  POPD R2 ; Address of previous *OF + 2
+  MOVIL R0,%DICTIONARY_POINTER
+  LD R1,R0
+  ADDI R1,4
+  ST R2,R1   ; Save it in the jump location
+  MOVIL A,STAR_OF_ENDOF_WA
+  ADDI R1,-4
+  ST R1,A  ; Compile to the current definition
+  ADDI R1,2
+  PUSHD R1
+  PUSHD R3
+  ADDI R1,2
+  ST R0,R1
+  JP NEXT
+
+ESAC:
+  .I "ESAC"
+  .DATA ENDOF
+ESAC_WA: .DATA ESAC_CA
+ESAC_CA:
+  ; number of jump locations to fill in is TOS
+  POPD R0
+  MOVIL R1,%DICTIONARY_POINTER
+  LD R1,R1
+  MOVIL R2,STAR_ESAC_WA
+  ST R1,R2
+  ADDI R1,2
+  MOVIL R2,%DICTIONARY_POINTER
+  ST R2,R1
+  ADDI R1,-2
+
+ESAC_LOOP:
+  AND R0,R0
+  JR[Z] ESAC_LOOP_DONE
+  ADDI R0,-1
+  POPD R2
+  ST R2,R1
+  JR ESAC_LOOP
+
+ESAC_LOOP_DONE:
+  JP NEXT
+
+
+STAR_OF:
+  .R "*OF"
+  .DATA ESAC
+STAR_OF_WA:
+  .DATA STAR_OF_CA
+STAR_OF_CA:
+; ( v1 v2 -- v1 )
+  POPD A 
+  POPD B
+  PUSHD B
+  CMP A,B
+  JR[Z] STAR_OF_RUN
+  LD I,I ; Jump to after the *ENDOF
+  JP NEXT
+STAR_OF_RUN:
+  ADDI I,2
+  JP NEXT
+
+STAR_OF_ENDOF:
+  .R "*OF_ENDOF"
+  .DATA STAR_OF
+STAR_OF_ENDOF_WA:
+  .DATA STAR_OF_ENDOF_CA
+STAR_OF_ENDOF_CA:
+  LD I,I ; Jump to the *ESAC
+  JP NEXT
+
+STAR_ESAC:
+  .N "*ESAC"
+  .DATA STAR_OF_ENDOF
+STAR_ESAC_WA: .DATA STAR_ESAC_CA
+STAR_ESAC_CA:
+  POPD R0 ; Drop the comparison value
+  JP NEXT
+
 
 IF:
   .I "IF"
-  .DATA STAR_UNTIL
+  .DATA STAR_ESAC
 IF_WA:
   .DATA IF_CA
 IF_CA:

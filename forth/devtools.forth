@@ -38,35 +38,9 @@
 
 : [ 0 MODE ! ; IMMEDIATE
 : ] 1 MODE ! ;
-: UNKNOWN ." WORD UNKNOWN" ;
-' UNKNOWN CONSTANT _UNKNOWN
 
-: CA>WA 
-    ( try to convert a CA to a Word address )
-    ( put a sanity check in place in case we can't find the WA )
-    2 - ( skip over the link word )
-    64
-    SWAP
-    BEGIN
-        SWAP DUP 0 = NOT 
-        ( addr count )
-        IF
-            ( OK to continue )
-            1 - ( addr count-- )
-            SWAP 
-            2 - DUP @ 0x8000 AND ( got to the header? )
-            ( count addr flag)
-            IF 1 ELSE 0 THEN
-        ELSE
-            DROP DROP 0 _UNKNOWN 0
-        THEN
-    ( count addr flag )
-    UNTIL
-    SWAP DROP
-;
-
-: IS-CODE ( wa -- flag ) 
-    WA>CA DUP @ 2 - = 
+: IS-CODE ( ca -- flag ) 
+    DUP @ 2 - = 
 ;
 
 : ?PREV-WORD  ( wa -- wa true || wa -- wa false )
@@ -99,7 +73,8 @@
 : .WORD-OR-INLINE ( addr -- next-addr )
 
 ;
-: DECOMPILE ( wa -- )
+: DECOMPILE ( ca -- )
+    CA>WA
     DUP .WORD CRET
     DUP IS-CODE
     IF
@@ -109,8 +84,13 @@
         BEGIN 
             DUP @ 0x0106 = ( is this semi ? ) 
             NOT IF
-                DUP @ CA>WA .WORD CRET
-                2+
+                CASE
+                    ['] *# OF 2+ DUP @ . CRET 2+ ENDOF
+                    ['] *" OF 2+ DUP .WORD CRET DUP @ + 2+ ENDOF
+                    ( default )
+                    DUP @ CA>WA .WORD CRET
+                    2+
+                ESAC
                 0
             ELSE
                 DROP

@@ -75,7 +75,7 @@ public:
         {
             printf("1*");
         }
-        else if (_vm->get(REG_PC) == _breakpoint2)
+        else if (_vm->get(REG_PC) == _breakpoint1)
         {
             printf("2*");
         }

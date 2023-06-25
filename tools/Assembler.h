@@ -649,7 +649,6 @@ public:
                         written++;
                         c++;
                     }
-                    printf("\n");
                 }
                 break;
 
