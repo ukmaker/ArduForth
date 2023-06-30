@@ -10,8 +10,8 @@
 #SYSTEM:   0x0000 ; System reset vector
 #INNER:    0x0100 ; Inner interpreter starts here
 #MEMSIZE:  0x2000 ; Reserve 8K-bytes for Forth
-#FENCE:    0x13F2 ; Last word in the ROM
-#RAMSTART: 0x1400 ; Variables grow up from here
+#FENCE:    0x15F2 ; Last word in the ROM
+#RAMSTART: 0x1600 ; Variables grow up from here
 #VARSTART: 0x2000 ; Variables grow up from here
 #SPTOP:    0x3800 ; Data stack pointer grows down from here
 #RSTOP:    0x3ffe ; And the return stack from here
@@ -46,7 +46,8 @@
 #SYSCALL_FOPEN: 21
 #SYSCALL_FCLOSE: 22
 #SYSCALL_FREAD: 23
-
+#SYSCALL_WRITE_CPP: 21
+#SYSCALL_COMPARE: 22
 
 #MODE_EXECUTE: 0
 #MODE_COMPILE: 1
@@ -2230,13 +2231,25 @@ WORDS_LOOP:
   .DATA DROP_WA
   .DATA SEMI
 
+COMPARE: ; ( c-addr1 c-addr2 -- result )
+; Compare the strings
+; result = -1 if str1 < str2
+; result = 0 if strings are equal
+; result = 1 if str1 > str2
+  .N "COMPARE"
+  .DATA WORDS
+COMPARE_WA: .DATA COMPARE_CA
+COMPARE_CA:
+  SYSCALL #SYSCALL_COMPARE
+  JP NEXT
+
 
 ; Search the dictionary for the current token
 ; Searches the vocabulary pointed to by CURRENT
 ; Return the WA on the stack if a match is found, or zero
 SEARCH:
     .N "SEARCH"
-    .DATA WORDS
+    .DATA COMPARE
 SEARCH_WA:
     .DATA SEARCH_CA
 SEARCH_CA:
@@ -2435,7 +2448,7 @@ QUESTION_CA:
   .DATA RESTART_WA
   .DATA SEMI
 
-TICK: ; ( -- wa )
+TICK: ; ( -- ca )
   .N "'"
   .DATA QUESTION
 TICK_WA: .DATA COLON
@@ -2635,7 +2648,13 @@ READ_FILE_DONE:
   .DATA FCLOSE_WA
   .DATA SEMI
 
-
+WRITE_CPP:
+  .N "WRITE-CPP"
+  .DATA READ_FILE
+WRITE_CPP_WA: .DATA WRITE_CPP_CA
+WRITE_CPP_CA:
+  SYSCALL #SYSCALL_WRITE_CPP
+  JP NEXT
 
 ; The last word in the dictionary placed at the end of ROM before RAM starts
 .ORG #FENCE
@@ -2643,7 +2662,7 @@ CORE_VOCABULARY:
 FENCE:
   
   .X "FENCE"
-  .DATA READ_FILE
+  .DATA WRITE_CPP
 FENCE_WA: .DATA COLON
 FENCE_CA:
   .DATA SEMI

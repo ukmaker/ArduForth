@@ -44,46 +44,6 @@ class Dumper {
         
 
         fclose(fp);
-/**
-
-                    break;
-                case TOKEN_TYPE_LABEL:  
-                    printf("%04x ", tok->address);
-                    printf("%s: \n", tok->name); 
-                    break;
-                case TOKEN_TYPE_OPCODE: 
-                    printf("%04x   ", tok->address);
-                    printOpcode(fasm, tok);
-                    printf("\n"); 
-                    break;
-                case TOKEN_TYPE_STR:  
-                    printf("%04x ", tok->address);
-                    printf("%s: %s\n", tok->name, tok->str); 
-                    break;
-                case TOKEN_TYPE_VAR:  
-                    printf("%04x ", tok->address);
-                    printf("%s: %04x\n", tok->name, tok->value); 
-                    break;
-                case TOKEN_TYPE_DIRECTIVE:  
-                    
-                    switch(tok->opcode) {
-                        case DIRECTIVE_TYPE_ORG: printf(".ORG: %04x\n", tok->value); break;
-                        case DIRECTIVE_TYPE_DATA: 
-                            printf("%04x ", tok->address);
-                            printf(".DATA: %04x\n", tok->value); 
-                            break;
-                        case DIRECTIVE_TYPE_SDATA: 
-                            printf("%04x ", tok->address);
-                            printf(".SDATA: \"%s\"\n", tok->str); 
-                            break;
-                        default: break;
-                    }
-                break;
-                default: break;
-            }
-            tok = tok->next;
-        }  
-            **/
     }
 
     void dump(Assembler *fasm) {

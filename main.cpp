@@ -129,6 +129,10 @@ bool loadInnerInterpreter()
   return !fasm.hasErrors();
 }
 
+void syscall_write_cpp(ForthVM *vm) {
+  dumper.writeCPP(&fasm, &mem, 0, 8192);
+}
+
 void attachSyscalls()
 {
   vm.addSyscall(SYSCALL_DEBUG, syscall_debug);
@@ -156,6 +160,9 @@ void attachSyscalls()
   vm.addSyscall(SYSCALL_FOPEN, syscall_fopen);
   vm.addSyscall(SYSCALL_FCLOSE, syscall_fclose);
   vm.addSyscall(SYSCALL_FREAD, syscall_fread);
+  vm.addSyscall(SYSCALL_COMPARE, syscall_compare);
+
+  vm.addSyscall(SYSCALL_WRITE_CPP, syscall_write_cpp);
 }
 
 int main(int argc, char **argv)
