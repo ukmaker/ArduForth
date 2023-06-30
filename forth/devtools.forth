@@ -87,6 +87,11 @@
 
 : &quot 0x22 ;
 : &dot 0x2e ;
+: &sp 0x20 ;
+: .&quot &quot EMIT ;
+: .&dot &dot EMIT ;
+: .&sp &sp EMIT ;
+: .&dotquotsp &dot EMIT &quot EMIT ASPACE EMIT ;
 
 ( attempt to print the word at the address )
 ( if the word is one of the literal handlers )
@@ -96,13 +101,13 @@
     DUP @ ( addr instr )
     CASE
         ['] *#        OF 2+ DUP @ .                ENDOF
-        ['] *"        OF 2+ DUP &dot EMIT &quot EMIT ASPACE EMIT .SAFE-WORD &quot EMIT DUP @ + ALIGN ENDOF
-        ['] *S"       OF 2+ DUP &dot EMIT 0x53 EMIT &quot EMIT ASPACE EMIT .SAFE-WORD &quot EMIT DUP @ + ALIGN ENDOF
+        ['] *"        OF 2+ DUP .&dotquotsp .SAFE-WORD .&quot DUP @ + ALIGN ENDOF
+        ['] *S"       OF 2+ DUP .&dot 0x53 EMIT .&quot .&sp .SAFE-WORD .&quot DUP @ + ALIGN ENDOF
         ['] *+LOOP    OF ." *+LOOP" 2 +            ENDOF
-        ['] *LOOP     OF ." *LOOP" 2 +   BREAKPOINT          ENDOF
+        ['] *LOOP     OF ." *LOOP" 2 +             ENDOF
         ['] *DO       OF ." *DO"                   ENDOF
-        ['] *ELSE     OF ." *ELSE" 2 +             ENDOF
-        ['] *IF       OF ." *IF" 2 +               ENDOF
+        ['] *ELSE     OF ." *ELSE " 2 +  DUP @ .           ENDOF
+        ['] *IF       OF ." *IF " 2 +   DUP @ .            ENDOF
         ['] *ESAC     OF ." *ESAC"                 ENDOF
         ['] *OF_ENDOF OF ." *OF_ENDOF" 2 +         ENDOF
         ['] *OF       OF ." *OF" 2 +               ENDOF
@@ -135,3 +140,5 @@
     THEN
     BASE !
 ;
+
+: SEE ' DUP IF DECOMPILE ELSE DROP THEN ;
