@@ -9,9 +9,9 @@
 ;
 #SYSTEM:   0x0000 ; System reset vector
 #INNER:    0x0100 ; Inner interpreter starts here
-#MEMSIZE:  0x2000 ; Reserve 32K-bytes for Forth
-#FENCE:    0x0FF2 ; Last word in the ROM
-#RAMSTART: 0x1000 ; Variables grow up from here
+#MEMSIZE:  0x2000 ; Reserve 8K-bytes for Forth
+#FENCE:    0x15F2 ; Last word in the ROM
+#RAMSTART: 0x1600 ; Variables grow up from here
 #VARSTART: 0x2000 ; Variables grow up from here
 #SPTOP:    0x3800 ; Data stack pointer grows down from here
 #RSTOP:    0x3ffe ; And the return stack from here
@@ -46,12 +46,24 @@
 #SYSCALL_FOPEN: 21
 #SYSCALL_FCLOSE: 22
 #SYSCALL_FREAD: 23
-
+#SYSCALL_WRITE_CPP: 21
+#SYSCALL_COMPARE: 22
 
 #MODE_EXECUTE: 0
 #MODE_COMPILE: 1
 #STATE_NOT_FOUND: 0
 #STATE_FOUND: 1
+
+#HEADER_MASK: 0x1fff
+#HEADER_HEADER_BIT: 15
+#HEADER_SCOPE_BITS: 13
+#HEADER_SCOPE_NORMAL: 0
+#HEADER_SCOPE_RUNTIME: 1
+#HEADER_SCOPE_IMMEDIATE: 2
+#HEADER_SCOPE_EXECUTIVE: 3
+#HEADER_IMMEDIATE: 0xc000
+#HEADER_RUNTIME: 0xa000
+#HEADER_EXECUTIVE: 0xe000
 
 .ORG #VARSTART
 %BASE: 2               ; Current system numeric base
@@ -124,7 +136,6 @@ NEXT:
   LD WA,I ; WA <- (I)
   ADDI I,2
 RUN:
-  SYSCALL #SYSCALL_DEBUG
   LD CA,WA
   ADDI WA,2
   MOV PC,CA
@@ -141,8 +152,7 @@ MSG_SP_UNDERFLOW:   .DATA 15 .SDATA "Stack underflow"
 MSG_RS_UNDERFLOW:   .DATA 22 .SDATA "Return stack underflow"
 
 BUILDS:
-  .DATA 7
-  .SDATA "<BUILDS"
+  .N "<BUILDS"
   .DATA 0
 BUILDS_WA: .DATA COLON
 BUILDS_CA:
@@ -152,8 +162,7 @@ BUILDS_CA:
   .DATA SEMI
 
 DOES:
-  .DATA 5
-  .SDATA "DOES>"
+  .N "DOES>"
   .DATA BUILDS
 DOES_WA: .DATA COLON
 DOES_CA:
@@ -169,8 +178,7 @@ DOES_CA:
   JP NEXT
 
 IMMEDIATE:
-  .DATA 9
-  .SDATA "IMMEDIATE"
+  .N "IMMEDIATE"
   .DATA DOES
 IMMEDIATE_WA: .DATA IMMEDIATE_CA
 IMMEDIATE_CA:
@@ -178,14 +186,13 @@ IMMEDIATE_CA:
   LD B,A ; point to vocab
   LD B,B ; point to word
   LD A,B ; get the word length
-  MOVIL R0,0x8000
+  MOVIL R0,#HEADER_IMMEDIATE
   OR A,R0 ; Set the immediate bit
   ST B,A
   JP NEXT
 
 RUNTIME:
-  .DATA 7
-  .SDATA "RUNTIME"
+  .N "RUNTIME"
   .DATA IMMEDIATE
 RUNTIME_WA: .DATA RUNTIME_CA
 RUNTIME_CA:
@@ -193,15 +200,14 @@ RUNTIME_CA:
   LD B,A ; point to vocab
   LD B,B ; point to word
   LD A,B ; get the word length
-  MOVIL R0,0x4000
+  MOVIL R0,#HEADER_RUNTIME
   OR A,R0 ; Set the runtime bit
   ST B,A
   JP NEXT
 
 
 EXECUTIVE:
-  .DATA 9
-  .SDATA "EXECUTIVE"
+  .N "EXECUTIVE"
   .DATA RUNTIME
 EXECUTIVE_WA: .DATA EXECUTIVE_CA
 EXECUTIVE_CA:
@@ -209,14 +215,13 @@ EXECUTIVE_CA:
   LD B,A ; point to vocab
   LD B,B ; point to word
   LD A,B ; get the word length
-  MOVIL R0,0xC000
+  MOVIL R0,#HEADER_EXECUTIVE
   OR A,R0 ; Set the immediate and runtime bits
   ST B,A
   JP NEXT
 
 VOCABULARY:
-  .DATA 10
-  .SDATA "VOCABULARY"
+  .N "VOCABULARY"
   .DATA EXECUTIVE
 VOCABULARY_WA: .DATA COLON
 VOCABULARY_CA:
@@ -231,8 +236,7 @@ VOCABULARY_CA:
 CORE:   ; My definition. Should really be as defined using VOCABULARY
         ; But I don't understand how that works yet
         ; And it needs to store values in ram, not the code-body of the word
-  .DATA 4
-  .SDATA "CODE"
+  .N "CODE"
   .DATA VOCABULARY
 CORE_WA: .DATA CORE_CA
 CORE_CA:
@@ -242,8 +246,7 @@ CORE_CA:
   JP NEXT
 
 STAR_LIT:
-  .DATA 2
-  .SDATA "*\""
+  .N "*\""
   .DATA CORE
 STAR_LIT_WA: .DATA STAR_LIT_CA
 STAR_LIT_CA:
@@ -256,24 +259,22 @@ STAR_LIT_CA:
   JP NEXT
 
 BREAKPOINT:
-  .DATA 10
-  .SDATA "BREAKPOINT"
+  .N "BREAKPOINT"
   .DATA STAR_LIT
 BREAKPOINT_WA: .DATA BREAKPOINT_CA
 BREAKPOINT_CA:
+  SYSCALL #SYSCALL_DEBUG 
   JP NEXT
 
 RESTART:
-  .DATA 7
-  .SDATA "RESTART"
+  .N "RESTART"
   .DATA BREAKPOINT
 RESTART_WA: .DATA STAR_RESTART
 
 ; Test the stacks for underflow
 ; If there is underflow then print a message and restart
 STAR_STACK:
-  .DATA 6
-  .SDATA "*STACK"
+  .N "*STACK"
   .DATA RESTART
 STAR_STACK_WA: .DATA STAR_STACK_CA
 STAR_STACK_CA:
@@ -288,7 +289,7 @@ STAR_STACK_CHECK_RS:
   MOVIL R0,#RSTOP
   SUB R0,RS
   JR[NC] STAR_STACK_OK
-  MOVIL A,MSG_RS_UNDERFLOW
+  MOVIL A,MSG_RS_UNDERFLOW    
   PUSHD A
   SYSCALL #SYSCALL_TYPELN
   JP STAR_RESTART
@@ -296,8 +297,7 @@ STAR_STACK_OK:
   JP NEXT
 
 TYPE:
-  .DATA 4           ; Length of TYPE
-  .SDATA "TYPE"     ; And the string's characters
+  .N "TYPE"  
   .DATA STAR_STACK   
 TYPE_WA:
   .DATA TYPE_CA    ; This is the word address of TYPE
@@ -306,18 +306,16 @@ TYPE_CA:             ; The Code address
   JP NEXT
 
 TYPELN:
-  .DATA 6           ; Length of TYPE
-  .SDATA "TYPELN"     ; And the string's characters
+  .N "TYPELN"     ; And the string's characters
   .DATA TYPE   
 TYPELN_WA:
-  .DATA TYPE_CA    ; This is the word address of TYPE
+  .DATA TYPELN_CA    ; This is the word address of TYPE
 TYPELN_CA:             ; The Code address
   SYSCALL #SYSCALL_TYPELN
   JP NEXT
 
 EMIT:
-  .DATA 4
-  .SDATA "EMIT"
+  .N "EMIT"
   .DATA TYPELN
 EMIT_WA: .DATA EMIT_CA
 EMIT_CA:
@@ -325,8 +323,7 @@ EMIT_CA:
   JP NEXT
 
 MESSAGE: ; Print a system message ( n -- )
-  .DATA 7
-  .SDATA "MESSAGE"
+  .N "MESSAGE"
   .DATA EMIT
 MESSAGE_WA: .DATA MESSAGE_CA
 MESSAGE_CA:
@@ -347,8 +344,7 @@ MESSAGE_FOUND:
   JP NEXT
 
 DOT:  ; The Forth word "." to print the value on the top of the stack
-  .DATA 1
-  .SDATA "."
+  .N "."
   .DATA MESSAGE
 DOT_WA:
   .DATA DOT_CA
@@ -359,9 +355,8 @@ DOT_CA:
   SYSCALL #SYSCALL_DOT
   JP NEXT
 
-DOT_C:  ; The Forth word "." to print the value on the top of the stack
-  .DATA 2
-  .SDATA ".C"
+DOT_C:  ; The Forth word ".C" to print the value on the top of the stack
+  .N ".C"
   .DATA DOT
 DOT_C_WA:
   .DATA DOT_C_CA
@@ -373,8 +368,7 @@ DOT_C_CA:
   JP NEXT
 
 MODE:
-  .DATA 4
-  .SDATA "MODE"
+  .N "MODE"
   .DATA DOT_C
 MODE_WA:
   .DATA MODE_CA
@@ -384,8 +378,7 @@ MODE_CA:
   JP NEXT
 
 BASE:
-  .DATA 4
-  .SDATA "BASE"
+  .N "BASE"
   .DATA MODE
 BASE_WA: .DATA BASE_CA
 BASE_CA:
@@ -394,8 +387,7 @@ BASE_CA:
   JP NEXT
 
 HEX:
-  .DATA 3
-  .SDATA "HEX"
+  .N "HEX"
   .DATA BASE
 HEX_WA: .DATA HEX_CA
 HEX_CA:
@@ -405,8 +397,7 @@ HEX_CA:
   JP NEXT
 
 DECIMAL:
-  .DATA 7
-  .SDATA "DECIMAL"
+  .N "DECIMAL"
   .DATA HEX
 DECIMAL_WA: .DATA DECIMAL_CA
 DECIMAL_CA:
@@ -416,8 +407,7 @@ DECIMAL_CA:
   JP NEXT
 
 BINARY:
-  .DATA 6
-  .SDATA "BINARY"
+  .N "BINARY"
   .DATA DECIMAL
 BINARY_WA: .DATA BINARY_CA
 BINARY_CA:
@@ -427,8 +417,7 @@ BINARY_CA:
   JP NEXT
 
 AT:
-  .DATA 1
-  .SDATA "@"
+  .N "@"
   .DATA BINARY
 AT_WA:
   .DATA AT_CA
@@ -438,10 +427,22 @@ AT_CA:
   PUSHD A
   JP NEXT
 
-STORE:
-  .DATA 1
-  .SDATA "!"
+C_AT:
+  .N "C@"
   .DATA AT
+C_AT_WA:
+  .DATA C_AT_CA
+C_AT_CA:
+  POPD A
+  LD B,A
+  MOVIL A,0xff
+  AND B,A
+  PUSHD B
+  JP NEXT
+
+STORE:
+  .N "!"
+  .DATA C_AT
 STORE_WA:
   .DATA STORE_CA
 STORE_CA:
@@ -451,8 +452,7 @@ STORE_CA:
   JP NEXT
 
 H_AT:
-  .DATA 2
-  .SDATA "H@"
+  .N "H@"
   .DATA STORE
 H_AT_WA: .DATA H_AT_CA
 H_AT_CA:
@@ -460,8 +460,7 @@ H_AT_CA:
   JP NEXT
 
 H_STORE:
-  .DATA 2
-  .SDATA "H!"
+  .N "H!"
   .DATA H_AT
 H_STORE_WA: .DATA H_STORE_CA
 H_STORE_CA:
@@ -469,8 +468,7 @@ H_STORE_CA:
   JP NEXT
 
 D_AT:
-  .DATA 2
-  .SDATA "D@"
+  .N "D@"
   .DATA H_STORE
 D_AT_WA: .DATA D_AT_CA
 D_AT_CA:
@@ -484,8 +482,7 @@ D_AT_CA:
   JP NEXT
 
 D_STORE:
-  .DATA 2
-  .SDATA "D!"
+  .N "D!"
   .DATA D_AT
 D_STORE_WA: .DATA D_STORE_CA
 D_STORE_CA:
@@ -499,8 +496,7 @@ D_STORE_CA:
   JP NEXT
 
 D_ADD:
-  .DATA 2
-  .SDATA "D+"
+  .N "D+"
   .DATA D_STORE
 D_ADD_WA: .DATA D_ADD_CA
 D_ADD_CA:
@@ -509,8 +505,7 @@ D_ADD_CA:
 
 
 D_AND:
-  .DATA 4
-  .SDATA "DAND"
+  .N "DAND"
   .DATA D_ADD
 D_AND_WA: .DATA D_AND_CA
 D_AND_CA:
@@ -519,8 +514,7 @@ D_AND_CA:
 
 
 D_OR:
-  .DATA 3
-  .SDATA "DOR"
+  .N "DOR"
   .DATA D_AND
 D_OR_WA: .DATA D_OR_CA
 D_OR_CA:
@@ -529,8 +523,7 @@ D_OR_CA:
 
 
 D_INVERT:
-  .DATA 7
-  .SDATA "DINVERT"
+  .N "DINVERT"
   .DATA D_OR
 D_INVERT_WA: .DATA D_INVERT_CA
 D_INVERT_CA:
@@ -538,8 +531,7 @@ D_INVERT_CA:
   JP NEXT
 
 D_SUB:
-  .DATA 2
-  .SDATA "D-"
+  .N "D-"
   .DATA D_INVERT
 D_SUB_WA: .DATA D_SUB_CA
 D_SUB_CA:
@@ -547,8 +539,7 @@ D_SUB_CA:
   JP NEXT
 
 D_MUL:
-  .DATA 2
-  .SDATA "D*"
+  .N "D*"
   .DATA D_SUB
 D_MUL_WA: .DATA D_MUL_CA
 D_MUL_CA:
@@ -556,8 +547,7 @@ D_MUL_CA:
   JP NEXT
 
 D_DIV:
-  .DATA 2
-  .SDATA "D/"
+  .N "D/"
   .DATA D_MUL
 D_DIV_WA: .DATA D_DIV_CA
 D_DIV_CA:
@@ -565,8 +555,7 @@ D_DIV_CA:
   JP NEXT
 
 D_SR:
-  .DATA 3
-  .SDATA "D>>"
+  .N "D>>"
   .DATA D_DIV
 D_SR_WA: .DATA D_SR_CA
 D_SR_CA:
@@ -574,8 +563,7 @@ D_SR_CA:
   JP NEXT
 
 D_SL:
-  .DATA 3
-  .SDATA "D<<"
+  .N "D<<"
   .DATA D_SR
 D_SL_WA: .DATA D_SL_CA
 D_SL_CA:
@@ -583,8 +571,7 @@ D_SL_CA:
   JP NEXT
 
 D_SWAP:
-  .DATA 5
-  .SDATA "DSWAP"
+  .N "DSWAP"
   .DATA D_SL
 D_SWAP_WA: .DATA D_SWAP_CA
 D_SWAP_CA:
@@ -599,8 +586,7 @@ D_SWAP_CA:
   JP NEXT
 
 D_DUP:
-  .DATA 4
-  .SDATA "DDUP"
+  .N "DDUP"
   .DATA D_SWAP
 D_DUP_WA: .DATA D_DUP_CA
 D_DUP_CA:
@@ -614,8 +600,7 @@ D_DUP_CA:
 
 
 PLUS:
-  .DATA 1
-  .SDATA "+"
+  .N "+"
   .DATA D_DUP
 PLUS_WA: 
   .DATA PLUS_CA
@@ -627,8 +612,7 @@ PLUS_CA:
   JP NEXT
 
 PLUS_STORE:
-  .DATA 2
-  .SDATA "+!"
+  .N "+!"
   .DATA PLUS
 PLUS_STORE_WA: .DATA PLUS_STORE_CA
 PLUS_STORE_CA:
@@ -640,8 +624,7 @@ PLUS_STORE_CA:
   JP NEXT
 
 MINUS:
-  .DATA 1
-  .SDATA "-"
+  .N "-"
   .DATA PLUS_STORE
 MINUS_WA: 
   .DATA MINUS_CA
@@ -653,8 +636,7 @@ MINUS_CA:
   JP NEXT
 
 TIMES:
-  .DATA 1
-  .SDATA "*"
+  .N "*"
   .DATA MINUS
 TIMES_WA: 
   .DATA TIMES_CA
@@ -666,8 +648,7 @@ TIMES_CA:
   JP NEXT
 
 DIV:
-  .DATA 1
-  .SDATA "/"
+  .N "/"
   .DATA TIMES
 DIV_WA: 
   .DATA DIV_CA
@@ -679,8 +660,7 @@ DIV_CA:
   JP NEXT
 
 AND:
-  .DATA 3
-  .SDATA "AND"
+  .N "AND"
   .DATA DIV
 AND_WA: 
   .DATA AND_CA
@@ -692,8 +672,7 @@ AND_CA:
   JP NEXT
 
 OR:
-  .DATA 2
-  .SDATA "OR"
+  .N "OR"
   .DATA AND
 OR_WA: .DATA OR_CA
 OR_CA:
@@ -704,8 +683,7 @@ OR_CA:
   JP NEXT
 
 NOT:
-  .DATA 3
-  .SDATA "NOT"
+  .N "NOT"
   .DATA OR
 NOT_WA: .DATA NOT_CA
 NOT_CA:
@@ -721,8 +699,7 @@ NOT_IS_ZERO:
   JP NEXT
 
 INVERT:
-  .DATA 6
-  .SDATA "INVERT"
+  .N "INVERT"
   .DATA NOT
 INVERT_WA: .DATA INVERT_CA
 INVERT_CA:
@@ -732,27 +709,146 @@ INVERT_CA:
   JP NEXT
 
 EQUALS:
-  .DATA 1
-  .SDATA "="
+  .N "="
   .DATA INVERT
 EQUALS_WA: .DATA EQUALS_CA
 EQUALS_CA:
   POPD A
   POPD B
   CMP A,B
-  JR[NZ] NOT_EQUALS
+  JR[NZ] EQUALS_FALSE
   MOVI A,1
   PUSHD A
   JP NEXT
-NOT_EQUALS:
+EQUALS_FALSE:
   MOVI A,0
   PUSHD A
   JP NEXT
 
-SL:
-  .DATA 2
-  .SDATA "<<"
+NOT_EQUALS:
+  .N "!="
   .DATA EQUALS
+NOT_EQUALS_WA: .DATA NOT_EQUALS_CA
+NOT_EQUALS_CA:
+  POPD A
+  POPD B
+  CMP A,B
+  JR[NZ] NOT_EQUALS_TRUE
+  MOVI A,0
+  PUSHD A
+  JP NEXT
+NOT_EQUALS_TRUE:
+  MOVI A,1
+  PUSHD A
+  JP NEXT
+
+GT:
+  .N ">"
+  .DATA NOT_EQUALS
+GT_WA: .DATA GT_CA
+GT_CA:
+  POPD A
+  POPD B
+  JR LT_COMPARE
+
+GTE:
+  .N ">="
+  .DATA GT
+GTE_WA: .DATA GTE_CA
+GTE_CA:
+  POPD A
+  POPD B
+  JR LTE_COMPARE
+
+; Default less-than works for signed numbers
+LT:
+  .N "<"
+  .DATA GTE
+LT_WA: .DATA LT_CA
+LT_CA:
+  POPD B
+  POPD A
+LT_COMPARE:
+  CMP A,B
+  JR[Z] LT_FALSE
+LT_NOT_EQUAL:
+  MOV R0,A
+  XOR R0,B ; Compare signs
+  BITI R0,15
+  JR[Z] LT_SAME_SIGN
+  ; Signs are different, so the negative one is <
+  BITI A,15
+  JR[Z] LT_FALSE
+  JR LT_TRUE
+
+LT_SAME_SIGN:
+  ; We can just do a normal compare
+  CMP A,B
+  JR[C] LT_TRUE
+
+LT_FALSE:
+  MOVI A,0
+  PUSHD A
+  JP NEXT
+
+LT_TRUE:
+  MOVI A,1
+  PUSHD A
+  JP NEXT
+
+
+LTE:
+  .N "<="
+  .DATA LT
+LTE_WA: .DATA LTE_CA
+LTE_CA:
+  POPD B
+  POPD A
+LTE_COMPARE:
+  CMP A,B
+  JR[Z] LT_TRUE
+  JR LT_NOT_EQUAL
+
+
+; Unsigned comparisons
+ULT:
+  .N "U<"
+  .DATA LTE
+ULT_WA: .DATA ULT_CA
+ULT_CA:
+  POPD B
+  POPD A
+  CMP A,B
+  JR[C] ULT_TRUE
+  MOVI A,0
+  PUSHD A
+  JP NEXT
+ULT_TRUE:
+  MOVI A,1
+  PUSHD A
+  JP NEXT  
+
+; Unsigned comparisons
+UGT:
+  .N "U>"
+  .DATA ULT
+UGT_WA: .DATA UGT_CA
+UGT_CA:
+  POPD A
+  POPD B
+  CMP A,B
+  JR[C] UGT_TRUE
+  MOVI A,0
+  PUSHD A
+  JP NEXT
+UGT_TRUE:
+  MOVI A,1
+  PUSHD A
+  JP NEXT  
+
+SL:
+  .N "<<"
+  .DATA UGT
 SL_WA: .DATA SL_CA
 SL_CA:
   POPD B
@@ -762,8 +858,7 @@ SL_CA:
   JP NEXT
 
 SR:
-  .DATA 2
-  .SDATA ">>"
+  .N ">>"
   .DATA SL
 SR_WA: .DATA SR_CA
 SR_CA:
@@ -774,8 +869,7 @@ SR_CA:
   JP NEXT
 
 ALIGN:
-  .DATA 5
-  .SDATA "ALIGN"
+  .N "ALIGN"
   .DATA SR
 ALIGN_WA:
   .DATA ALIGN_CA
@@ -787,8 +881,7 @@ ALIGN_CA:
   JP NEXT
 
 DUP:
-  .DATA 3
-  .SDATA "DUP"
+  .N "DUP"
   .DATA ALIGN
 DUP_WA: .DATA DUP_CA
 DUP_CA:
@@ -799,8 +892,7 @@ DUP_CA:
 
 ; ( 1 2 3 -- 2 3 1 )
 ROT:
-  .DATA 3
-  .SDATA "ROT"
+  .N "ROT"
   .DATA DUP
 ROT_WA: .DATA ROT_CA
 ROT_CA:
@@ -813,12 +905,11 @@ ROT_CA:
   JP NEXT
 
 ; ( 1 2 3 -- 3 1 2 )
-RROT:
-  .DATA 4
-  .SDATA "RROT"
+LROT:
+  .N "LROT"
   .DATA ROT
-RROT_WA: .DATA RROT_CA
-RROT_CA:
+LROT_WA: .DATA LROT_CA
+LROT_CA:
   POPD R3
   POPD R2
   POPD R1
@@ -829,9 +920,8 @@ RROT_CA:
 
 ; ( xn .. x0 u -- xn .. x0 xu)
 PICK:
-  .DATA 4
-  .SDATA "PICK"
-  .DATA RROT
+  .N "PICK"
+  .DATA LROT
 PICK_WA: .DATA PICK_CA
 PICK_CA:
   POPD R0
@@ -844,8 +934,7 @@ PICK_CA:
   JP NEXT
 
 SWAP:
-  .DATA 4
-  .SDATA "SWAP"
+  .N "SWAP"
   .DATA PICK
 SWAP_WA: .DATA SWAP_CA
 SWAP_CA:
@@ -856,8 +945,7 @@ SWAP_CA:
   JP NEXT
 
 DROP:
-  .DATA 4
-  .SDATA "DROP"
+  .N "DROP"
   .DATA SWAP
 DROP_WA:
   .DATA DROP_CA
@@ -866,8 +954,7 @@ DROP_CA:
   JP NEXT
 
 OVER:
-  .DATA 4
-  .SDATA "OVER"
+  .N "OVER"
   .DATA DROP
 OVER_WA: .DATA OVER_CA
 OVER_CA:
@@ -879,8 +966,7 @@ OVER_CA:
   JP NEXT
 
 INDEX_I:
-  .DATA 1
-  .SDATA "I"
+  .N "I"
   .DATA OVER
 INDEX_I_WA: .DATA INDEX_I_CA
 INDEX_I_CA:
@@ -890,36 +976,25 @@ INDEX_I_CA:
   JP NEXT
 
 INDEX_J:
-  .DATA 1
-  .SDATA "J"
+  .N "J"
   .DATA INDEX_I
 INDEX_J_WA: .DATA INDEX_J_CA
 INDEX_J_CA:
-  POPR A
-  POPR B
-  PUSHR B
-  PUSHR A
-  PUSHD B
+  LDAX RS,3 ; words
+  PUSHD A
   JP NEXT
 
 INDEX_K:
-  .DATA 1
-  .SDATA "K"
+  .N "K"
   .DATA INDEX_J
 INDEX_K_WA: .DATA INDEX_K_CA
 INDEX_K_CA:
-  POPR R0
-  POPR R1
-  POPR R2
-  PUSHR R2
-  PUSHR R1
-  PUSHD R0
-  PUSHD R2
+  LDAX RS,5 ; words
+  PUSHD A
   JP NEXT
 
 COMMA:
-  .DATA 1
-  .SDATA ","
+  .N ","
   .DATA INDEX_K
 COMMA_WA: .DATA COMMA_CA
 COMMA_CA:
@@ -933,8 +1008,7 @@ COMMA_CA:
   JP NEXT
 
 FLUSH:  ; Flush stdout
-  .DATA 5
-  .SDATA "FLUSH"
+  .N "FLUSH"
   .DATA COMMA
 FLUSH_WA:
     .DATA FLUSH_CA
@@ -945,8 +1019,7 @@ FLUSH_CA:
 
 
 ASPACE:           ; Forth word to push a space char to the stack
-  .DATA 6
-  .SDATA "ASPACE"
+  .N "ASPACE"
   .DATA FLUSH
 ASPACE_WA:
   .DATA ASPACE_CA
@@ -956,8 +1029,7 @@ ASPACE_CA:
   JP NEXT
 
 ONEPLUS:
-  .DATA 2
-  .SDATA "1+"
+  .N "1+"
   .DATA ASPACE
 ONEPLUS_WA: .DATA ONEPLUS_CA
 ONEPLUS_CA:
@@ -967,8 +1039,7 @@ ONEPLUS_CA:
   JP NEXT
 
 TWOPLUS:
-  .DATA 2
-  .SDATA "2+"
+  .N "2+"
   .DATA ONEPLUS
 TWOPLUS_WA: .DATA TWOPLUS_CA
 TWOPLUS_CA:
@@ -978,8 +1049,7 @@ TWOPLUS_CA:
   JP NEXT
 
 ONEMINUS:
-  .DATA 2
-  .SDATA "1-"
+  .N "1-"
   .DATA TWOPLUS
 ONEMINUS_WA: .DATA ONEMINUS_CA
 ONEMINUS_CA:
@@ -989,8 +1059,7 @@ ONEMINUS_CA:
   JP NEXT
 
 TWOMINUS:
-  .DATA 2
-  .SDATA "2-"
+  .N "2-"
   .DATA ONEMINUS
 TWOMINUS_WA: .DATA TWOMINUS_CA
 TWOMINUS_CA:
@@ -1000,8 +1069,7 @@ TWOMINUS_CA:
   JP NEXT
 
 SCODE:
-  .DATA 5
-  .SDATA "SCODE"
+  .N "SCODE"
   .DATA TWOMINUS
 SCODE_WA:
   .DATA COLON
@@ -1011,8 +1079,7 @@ SCODE_CA:
   .DATA SEMI
 
 RFROM:
-  .DATA 2
-  .SDATA "R>"
+  .N "R>"
   .DATA SCODE
 RFROM_WA:
   .DATA RFROM_CA
@@ -1022,8 +1089,7 @@ RFROM_CA:
   JP NEXT
 
 TOR:
-  .DATA 2
-  .SDATA ">R"
+  .N ">R"
   .DATA RFROM
 TOR_WA:
   .DATA TOR_CA
@@ -1033,8 +1099,7 @@ TOR_CA:
   JP NEXT
 
 ENTRY:
-  .DATA 5
-  .SDATA "ENTRY"
+  .N "ENTRY"
   .DATA TOR
 ENTRY_WA:
   .DATA COLON
@@ -1045,8 +1110,7 @@ ENTRY_CA:
   .DATA SEMI
 
 DP:
-  .DATA 2
-  .SDATA "DP"
+  .N "DP"
   .DATA ENTRY
 DP_WA: .DATA DP_CA
 DP_CA:
@@ -1055,8 +1119,7 @@ DP_CA:
   JP NEXT
 
 DP_STORE:
-  .DATA 3
-  .SDATA "DP!"
+  .N "DP!"
   .DATA DP
 DP_STORE_WA: .DATA DP_STORE_CA
 DP_STORE_CA:
@@ -1066,8 +1129,7 @@ DP_STORE_CA:
   JP NEXT
 
 TWO_PLUS:
-  .DATA 2
-  .SDATA "2+"
+  .N "2+"
   .DATA DP_STORE
 TWO_PLUS_WA: .DATA TWO_PLUS_CA
 TWO_PLUS_CA:
@@ -1077,8 +1139,7 @@ TWO_PLUS_CA:
   JP NEXT
 
 WA_TO_LA:
-  .DATA 5
-  .SDATA "WA>LA"
+  .N "WA>LA"
   .DATA TWO_PLUS
 WA_TO_LA_WA: .DATA WA_TO_LA_CA
 WA_TO_LA_CA:
@@ -1086,6 +1147,8 @@ WA_TO_LA_CA:
   POPD A
   MOV B,A
   LD A,B ; Length to A
+  MOVIL R0, 0x1fff
+  AND A,R0
   ADD A,B
   ADDI A,3
   CLRI A,0 ; Word-align
@@ -1093,8 +1156,7 @@ WA_TO_LA_CA:
   JP NEXT
 
 WA_TO_CA:
-  .DATA 5
-  .SDATA "WA>CA"
+  .N "WA>CA"
   .DATA WA_TO_LA
 WA_TO_CA_WA: .DATA WA_TO_CA_CA
 WA_TO_CA_CA:
@@ -1102,6 +1164,8 @@ WA_TO_CA_CA:
   POPD A
   MOV B,A
   LD A,B ; Length to A
+  MOVIL R0, 0x1fff
+  AND A,R0
   ADD A,B
   ADDI A,5
   CLRI A,0 ; Word-align
@@ -1109,8 +1173,7 @@ WA_TO_CA_CA:
   JP NEXT
 
 WA_TO_CB:
-  .DATA 5
-  .SDATA "WA>CB"
+  .N "WA>CB"
   .DATA WA_TO_CA
 WA_TO_CB_WA: .DATA WA_TO_CB_CA
 WA_TO_CB_CA:
@@ -1118,36 +1181,111 @@ WA_TO_CB_CA:
   POPD A
   MOV B,A
   LD A,B ; Length to A
+  MOVIL R0, 0x1fff
+  AND A,R0
   ADD A,B
   ADDI A,7
   CLRI A,0 ; Word-align
   PUSHD A
   JP NEXT
 
+;  : CA>WA 
+;    ( try to convert a CA to a Word address )
+;    ( put a sanity check in place in case we can't find the WA )
+;    2 - ( skip over the link word )
+;    64
+;    SWAP
+;    BEGIN
+;        SWAP DUP 0 = NOT 
+;        ( addr count )
+;        IF
+;            ( OK to continue )
+;            1 - ( addr count-- )
+;            SWAP 
+;            2 - DUP @ 0x8000 AND ( got to the header? )
+;            ( count addr flag)
+;            IF 1 ELSE 0 THEN
+;        ELSE
+;            DROP DROP 0 _UNKNOWN 0
+;        THEN
+;    ( count addr flag )
+;    UNTIL
+;    SWAP DROP
+; ;
+
+CA_TO_WA:
+  .N "CA>WA"
+  .DATA WA_TO_CB
+CA_TO_WA_WA: .DATA COLON
+CA_TO_WA_CA:
+  .DATA STAR_HASH_WA .DATA 2 .DATA MINUS_WA
+  .DATA STAR_HASH_WA .DATA 64 .DATA SWAP_WA
+CA_TO_WA_LOOP:
+  .DATA SWAP_WA .DATA DUP_WA .DATA STAR_HASH_WA .DATA 0
+  .DATA EQUALS_WA .DATA NOT_WA
+  .DATA STAR_IF_WA .DATA STAR_IF_LEAVE
+  .DATA STAR_HASH_WA .DATA 1 .DATA MINUS_WA
+  .DATA SWAP_WA
+  .DATA STAR_HASH_WA .DATA 2 .DATA MINUS_WA 
+  .DATA DUP_WA .DATA AT_WA
+  .DATA STAR_HASH_WA .DATA 0x8000 .DATA AND_WA
+  .DATA STAR_IF_WA .DATA CA_TO_WA_NOT_A_HEADER
+  .DATA STAR_HASH_WA .DATA 1
+  .DATA STAR_ELSE_WA .DATA CA_TO_WA_HEADER_THEN
+CA_TO_WA_NOT_A_HEADER:
+  .DATA STAR_HASH_WA .DATA 0
+CA_TO_WA_HEADER_THEN:
+  .DATA STAR_ELSE_WA .DATA CA_TO_WA_UNTIL
+STAR_IF_LEAVE:
+  .DATA DROP_WA .DATA DROP_WA
+  .DATA STAR_HASH_WA .DATA 0
+  .DATA STAR_LIT_WA .DATA 13 .SDATA "-- UNKNOWN --"
+  .DATA STAR_HASH_WA .DATA 0
+CA_TO_WA_UNTIL:
+  .DATA STAR_UNTIL_WA
+  .DATA CA_TO_WA_LOOP
+  .DATA SWAP_WA .DATA DROP_WA
+  .DATA SEMI
+
 
 CREATE:
-  .DATA 6
-  .SDATA "CREATE"
-  .DATA WA_TO_CB
+  .N "CREATE"
+  .DATA CA_TO_WA
 CREATE_WA: .DATA COLON
 CREATE_CA:
   .DATA ENTRY_WA      ;( -- WA of last entry )
   .DATA ASPACE_WA
   .DATA TOKEN_WA      ;( .. -- WA LEN )
+  
   .DATA HERE_WA       ;( .. -- WA LEN HERE )
   .DATA CURRENT_WA    
   .DATA AT_WA         ;( .. -- WA LEN HERE [ADDR OF CURRENT VOCAB] )
   .DATA STORE_WA      ;( .. -- WA LEN )
+
+  ; Set the header bit in the word's length
+  .DATA DUP_WA
+  .DATA STAR_HASH_WA .DATA 0x8000
+  .DATA OR_WA
+  .DATA HERE_WA
+  .DATA STORE_WA
+  
+  ; Print the defined word
+  .DATA HERE_WA
+  .DATA DOT_WA .DATA ASPACE_WA .DATA EMIT_WA      ; print the address
+  
+  .DATA HERE_WA
+  .DATA DOT_WORD_WA .DATA ASPACE_WA .DATA EMIT_WA ; print the word
+  
+  .DATA Q_SP_WA .DATA DOT_WA .DATA CRET_WA        ; print the SP
+
   ; Bump the DP by the length of the token plus two for the length itself
   .DATA HERE_WA
   .DATA PLUS_WA       ; Add the length
-  .DATA STAR_HASH_WA
-  .DATA 2
-  .DATA PLUS_WA
+  .DATA TWO_PLUS_WA
   .DATA ALIGN_WA      ; now points to link
-  ; Point the DP at the new LA
   .DATA DP_WA
   .DATA STORE_WA      ; update the dictionary pointer
+
   ; Compile ENTRY
   .DATA COMMA_WA      ; point to the last entry
   .DATA HERE_WA
@@ -1156,8 +1294,8 @@ CREATE_CA:
   .DATA SEMI
 
 SEMICOLON:
-  .DATA 0xC001 ; This is an executive word
-  .SDATA ";"
+; This is an executive word
+  .X ";"
   .DATA CREATE
 SEMICOLON_WA: .DATA COLON
 SEMICOLON_CA:
@@ -1171,8 +1309,7 @@ SEMICOLON_CA:
   .DATA SEMI
 
 CURRENT:
-  .DATA 7
-  .SDATA "CURRENT"
+  .N "CURRENT"
   .DATA SEMICOLON
 CURRENT_WA:
   .DATA CURRENT_CA
@@ -1182,8 +1319,7 @@ CURRENT_CA:
   JP NEXT
 
 CONTEXT:
-  .DATA 7
-  .SDATA "CONTEXT"
+  .N "CONTEXT"
   .DATA CURRENT
 CONTEXT_WA:
   .DATA CONTEXT_CA
@@ -1192,10 +1328,20 @@ CONTEXT_CA:
   PUSHD A
   JP NEXT
 
-CASTORE:
-  .DATA 3
-  .SDATA "CA!"
+DEFINITIONS:
+  .N "DEFINITIONS"
   .DATA CONTEXT
+DEFINITIONS_WA: .DATA COLON
+DEFINITIONS_CA:
+  .DATA CONTEXT_WA
+  .DATA AT_WA
+  .DATA CURRENT_WA
+  .DATA STORE_WA
+  .DATA SEMI
+
+CASTORE:
+  .N "CA!"
+  .DATA DEFINITIONS
 CASTORE_WA:
   .DATA COLON
 CASTORE_CA:
@@ -1205,8 +1351,7 @@ CASTORE_CA:
   .DATA SEMI
 
 HERE:
-  .DATA 4
-  .SDATA "HERE"
+  .N "HERE"
   .DATA CASTORE
 HERE_WA: .DATA HERE_CA
 HERE_CA:
@@ -1216,8 +1361,7 @@ HERE_CA:
   JP NEXT
 
 CONSTANT:
-  .DATA 0x4008       ; This is a runtime only word
-  .SDATA "CONSTANT"
+  .N "CONSTANT"
   .DATA HERE
 CONSTANT_WA:
   .DATA COLON
@@ -1225,13 +1369,26 @@ CONSTANT_CA:
   .DATA CREATE_WA
   .DATA COMMA_WA
   .DATA SCODE_WA
+  LD A,WA
+  PUSHD A JP NEXT
 
-
+HEADER_TO_MODE:
+; ( headerWord -- modeBits )
+  .N "HEADER-TO-MODE"
+  .DATA CONSTANT
+HEADER_TO_MODE_WA: .DATA HEADER_TO_MODE_CA
+HEADER_TO_MODE_CA:
+  POPD A
+  MOVIL B,#HEADER_HEADER_BIT
+  CLR A,B
+  MOVIL B,#HEADER_SCOPE_BITS
+  SR A,B
+  PUSHD A
+  JP NEXT
 
 Q_EXECUTE:
-  .DATA 8
-  .SDATA "?EXECUTE"
-  .DATA CONSTANT
+  .N "?EXECUTE"
+  .DATA HEADER_TO_MODE
 Q_EXECUTE_WA:
   .DATA COLON
 
@@ -1251,9 +1408,10 @@ Q_EXECUTE_WA:
 Q_EXECUTE_CA:
   .DATA DUP_WA           ; ( addr - addr addr )
   .DATA AT_WA            ; (addr addr -- addr len )
+  .DATA HEADER_TO_MODE_WA
   .DATA STAR_HASH_WA
-  .DATA 13
-  .DATA SR_WA            ; Get the bits in 2,1 (addr len -- addr (len>>13))
+  .DATA 2
+  .DATA SL_WA            ; Get the bits in 2,1 (addr len -- addr (len>>13))
   .DATA MODE_WA
   .DATA AT_WA            ; Get the mode bit
   .DATA OR_WA            ; AS bit 0
@@ -1347,8 +1505,7 @@ Q_EXECUTE_EXIT:
 
 ; ( -- num true ) | ( -- false )
 Q_NUMBER:
-  .DATA 7
-  .SDATA "?NUMBER"
+  .N "?NUMBER"
   .DATA Q_EXECUTE
 Q_NUMBER_WA: .DATA Q_NUMBER_CA
 Q_NUMBER_CA:
@@ -1362,8 +1519,7 @@ Q_NUMBER_CA:
   JP NEXT
 
 EXECUTE:
-  .DATA 7
-  .SDATA "EXECUTE"
+  .N "EXECUTE"
   .DATA Q_NUMBER
 EXECUTE_WA:
   .DATA EXECUTE_CA
@@ -1371,7 +1527,7 @@ EXECUTE_CA:
   POPD WA ; points to the NA
   MOV A,WA
   LD A,A ; Get the length
-  MOVIL B,0x3fff ; flags
+  MOVIL B,#HEADER_MASK ; flags
   AND A,B
   ADD WA,A
   ADDI WA,5 ; Skip over the name and link
@@ -1380,8 +1536,7 @@ EXECUTE_CA:
 
 ; ( sep - tokenLength )
 TOKEN:
-  .DATA 5
-  .SDATA "TOKEN"
+  .N "TOKEN"
   .DATA EXECUTE
 TOKEN_WA:
   .DATA TOKEN_CA
@@ -1477,8 +1632,7 @@ TOKEN_END:
 ; Returns a flag on the stack - false if no characters were read
 ; ( bufferAddress -- flag )
 INLINE:
-    .DATA 6
-    .SDATA "INLINE"
+    .N "INLINE"
     .DATA TOKEN
 INLINE_WA:
     .DATA INLINE_CA
@@ -1492,8 +1646,8 @@ INLINE_CA:
 ; Push the literal following this word to the stack
 ; and jump over it
 STAR_HASH:
-    .DATA 2
-    .SDATA "*#"
+; Compile time only
+    .I "*#"
     .DATA INLINE ; Link to INLINE
 STAR_HASH_WA:
     .DATA STAR_HASH_CA
@@ -1504,8 +1658,8 @@ STAR_HASH_CA:
     JP NEXT
 
 BEGIN:
-  .DATA 0x8005
-  .SDATA "BEGIN"
+; Compile time only
+  .I "BEGIN"
   .DATA STAR_HASH
 BEGIN_WA: .DATA BEGIN_CA
 BEGIN_CA:
@@ -1515,8 +1669,8 @@ BEGIN_CA:
   JP NEXT
 
 UNTIL:
-  .DATA 0x8005
-  .SDATA "UNTIL"
+; Compile time only
+  .I "UNTIL"
   .DATA BEGIN
 UNTIL_WA: .DATA UNTIL_CA
 UNTIL_CA:
@@ -1533,8 +1687,8 @@ UNTIL_CA:
   JP NEXT
 
 STAR_UNTIL:
-  .DATA 0x4006
-  .SDATA "*UNTIL"
+; Runime only
+  .R "*UNTIL"
   .DATA UNTIL
 STAR_UNTIL_WA: .DATA STAR_UNTIL_CA
 STAR_UNTIL_CA:
@@ -1547,11 +1701,146 @@ STAR_UNTIL_DONE:
   ADDI I,2
   JP NEXT
 
+CASE:
+  .I "CASE"
+  .DATA STAR_UNTIL
+CASE_WA: .DATA COLON
+CASE_CA: 
+  .DATA STAR_HASH_WA .DATA 0
+  .DATA SEMI
+
+; CASE someValue v1 OF ... ENDOF v2 OF ... ENDOF ESAC 
+; code *OF a1 ... a1:*ENDOF ax *OF a3 ... a3:*ENDOF ax ax:*ESAC
+;         (a0)                    (a2)
+; CASE 0 ; Number of OF clauses to the stack
+;
+; OF    -> ' *OF , HERE ( push here to the stack ) SWAP 1+ ( increment number of clauses )
+; ENDOF -> HERE SWAP ! ' *ENDOF , HERE 2 ALLOT 
+; 
+; OF ( 0 -- a0 1 )             ENDOF ( a1 1 )
+; OF ( a1 1 -- a1 2 a2 )       ENDOF ( a1 a3 2 )
+; OF ( a1 a3 2 -- a1 a3 3 a4 ) ENDOF ( a1 a3 a5 3 )
+
+CASE_OF:
+  .I "OF"
+  .DATA CASE
+CASE_OF_WA: .DATA CASE_OF_CA
+CASE_OF_CA:
+; R0 - Address of *OF
+; R1 - Address of DP
+; R2 - value of DP
+; R3 - number of clauses
+  .ALIAS R0,*OF
+  .ALIAS R1,DP
+  .ALIAS R2,*DP
+  .ALIAS R3,NUM
+
+  POPD NUM
+  ADDI NUM,1
+  MOVIL *OF,STAR_OF_WA
+  MOVIL DP,%DICTIONARY_POINTER
+  LD *DP,DP
+  ST *DP,*OF ; Compile *OF
+  ADDI *DP,2 ; point to location of jump word
+  PUSHD *DP  ; save the location
+  PUSHD NUM  ; Number of clauses
+  ADDI *DP,2 ; next location for the definition
+  ST DP,*DP
+  JP NEXT  
+
+
+ENDOF:
+  .I "ENDOF"
+  .DATA CASE_OF
+ENDOF_WA:
+  .DATA ENDOF_CA
+ENDOF_CA:
+  ; TOS contains the location of the word to use for the IF relative jump
+  ; R0 - Address of DP
+  ; R1 - Value of DP (HERE)
+  ; R2 - location of jump address
+  POPD R3 ; Number of clauses
+  POPD R2 ; Address of previous *OF + 2
+  MOVIL R0,%DICTIONARY_POINTER
+  LD R1,R0
+  ADDI R1,4
+  ST R2,R1   ; Save it in the jump location
+  MOVIL A,STAR_OF_ENDOF_WA
+  ADDI R1,-4
+  ST R1,A  ; Compile to the current definition
+  ADDI R1,2
+  PUSHD R1
+  PUSHD R3
+  ADDI R1,2
+  ST R0,R1
+  JP NEXT
+
+ESAC:
+  .I "ESAC"
+  .DATA ENDOF
+ESAC_WA: .DATA ESAC_CA
+ESAC_CA:
+  ; number of jump locations to fill in is TOS
+  POPD R0
+  MOVIL R1,%DICTIONARY_POINTER
+  LD R1,R1
+  MOVIL R2,STAR_ESAC_WA
+  ST R1,R2
+  ADDI R1,2
+  MOVIL R2,%DICTIONARY_POINTER
+  ST R2,R1
+  ADDI R1,-2
+
+ESAC_LOOP:
+  AND R0,R0
+  JR[Z] ESAC_LOOP_DONE
+  ADDI R0,-1
+  POPD R2
+  ST R2,R1
+  JR ESAC_LOOP
+
+ESAC_LOOP_DONE:
+  JP NEXT
+
+
+STAR_OF:
+  .R "*OF"
+  .DATA ESAC
+STAR_OF_WA:
+  .DATA STAR_OF_CA
+STAR_OF_CA:
+; ( v1 v2 -- v1 )
+  POPD A 
+  POPD B
+  CMP A,B
+  JR[Z] STAR_OF_RUN
+  PUSHD B
+  LD I,I ; Jump to after the *ENDOF
+  JP NEXT
+STAR_OF_RUN:
+  ADDI I,2
+  JP NEXT
+
+STAR_OF_ENDOF:
+  .R "*OF_ENDOF"
+  .DATA STAR_OF
+STAR_OF_ENDOF_WA:
+  .DATA STAR_OF_ENDOF_CA
+STAR_OF_ENDOF_CA:
+  LD I,I ; Jump to the *ESAC
+  JP NEXT
+
+STAR_ESAC:
+  .N "*ESAC"
+  .DATA STAR_OF_ENDOF
+STAR_ESAC_WA: .DATA STAR_ESAC_CA
+STAR_ESAC_CA:
+  JP NEXT
+
 
 IF:
-  .DATA 0x8002 ; Compile-time only
-  .SDATA "IF"
-  .DATA STAR_UNTIL
+  .I "IF"
+  .DATA STAR_ESAC
 IF_WA:
   .DATA IF_CA
 IF_CA:
@@ -1569,8 +1858,7 @@ IF_CA:
   JP NEXT
 
 ELSE:
-  .DATA 0x8004
-  .SDATA "ELSE"
+  .I "ELSE"
   .DATA IF
 ELSE_WA:
   .DATA ELSE_CA
@@ -1594,13 +1882,12 @@ ELSE_CA:
   JP NEXT
 
 THEN:
-  .DATA 0x8004
-  .SDATA "THEN"
+  .I "THEN"
   .DATA ELSE
 THEN_WA:
   .DATA THEN_CA
 THEN_CA:
-  ; TOS contains the location of the word to use for the IF  jump
+  ; TOS contains the location of the word to use for the IF/ELSE  jump
   POPD A
   MOVIL B,%DICTIONARY_POINTER ; Current dictionary location to B
   LD B,B
@@ -1608,8 +1895,7 @@ THEN_CA:
   JP NEXT  
 
 STAR_IF:
-  .DATA 0x4003 ; run-time only
-  .SDATA "*IF"
+  .R "*IF"
   .DATA THEN
 STAR_IF_WA:
   .DATA STAR_IF_CA
@@ -1621,8 +1907,7 @@ STAR_IF_CA:
   JP NEXT
 
 STAR_ELSE:
-  .DATA 0x4005
-  .SDATA "*ELSE"
+  .R "*ELSE"
   .DATA STAR_IF
 STAR_ELSE_WA:
   .DATA STAR_ELSE_CA
@@ -1631,8 +1916,7 @@ STAR_ELSE_CA:
   JP NEXT
 
 DO:
-  .DATA 0x8002
-  .SDATA "DO"
+  .I "DO"
   .DATA STAR_ELSE
 DO_WA: .DATA COLON
 DO_CA:
@@ -1644,8 +1928,7 @@ DO_CA:
   .DATA SEMI
 
 STAR_DO:
-  .DATA 3
-  .SDATA "*DO"
+  .R "*DO"
   .DATA DO
 STAR_DO_WA: .DATA STAR_DO_CA
 STAR_DO_CA:
@@ -1656,8 +1939,7 @@ STAR_DO_CA:
   JP NEXT
 
 LOOP:
-  .DATA 0x8004
-  .SDATA "LOOP"
+  .I "LOOP"
   .DATA STAR_DO
 LOOP_WA: .DATA COLON
 LOOP_CA:
@@ -1668,8 +1950,7 @@ LOOP_CA:
   .DATA SEMI
 
 PLUSLOOP:
-  .DATA 0x8005
-  .SDATA "+LOOP"
+  .I "+LOOP"
   .DATA LOOP
 PLUSLOOP_WA: .DATA COLON
 PLUSLOOP_CA:
@@ -1680,8 +1961,7 @@ PLUSLOOP_CA:
   .DATA SEMI
 
 STAR_LOOP:
-  .DATA 5
-  .SDATA "*LOOP"
+  .R "*LOOP"
   .DATA PLUSLOOP
 STAR_LOOP_WA: .DATA STAR_LOOP_CA
 STAR_LOOP_CA:
@@ -1701,8 +1981,7 @@ STAR_LOOP_MORE:
   JP NEXT
 
 STAR_PLUSLOOP:
-  .DATA 6
-  .SDATA "*+LOOP"
+  .R "*+LOOP"
   .DATA STAR_LOOP
 STAR_PLUSLOOP_WA: .DATA STAR_PLUSLOOP_CA
 STAR_PLUSLOOP_CA:
@@ -1714,19 +1993,25 @@ STAR_PLUSLOOP_CA:
   ; No return address
 
 Q_SP:
-  .DATA 3
-  .SDATA "?SP"
+  .N "?SP"
   .DATA STAR_PLUSLOOP
 Q_SP_WA: .DATA Q_SP_CA
 Q_SP_CA:
   PUSHD SP
   JP NEXT
 
+Q_RS:
+  .N "?RS"
+  .DATA Q_SP
+Q_RS_WA: .DATA Q_RS_CA
+Q_RS_CA:
+  PUSHD RS
+  JP NEXT
+
 ; Patch - fixup the dictionary to remove any half-compiled words
 PATCH:
-  .DATA 5
-  .SDATA "PATCH"
-  .DATA Q_SP
+  .N "PATCH"
+  .DATA Q_RS
 PATCH_WA: .DATA COLON
 PATCH_CA:
   .DATA MODE_WA
@@ -1744,8 +2029,7 @@ PATCH_DONE:
   .DATA SEMI
 
 OUTER:
-    .DATA 5
-    .SDATA "OUTER"
+    .N "OUTER"
     .DATA PATCH
 OUTER_WA:
     .DATA COLON
@@ -1761,47 +2045,56 @@ OUTER_LOOP:
     .DATA INLINE_WA
     .DATA STAR_IF_WA
     .DATA OUTER_LOOP
+    .DATA PROCESS_TOKENS_WA
+    .DATA STAR_ELSE_WA
+    .DATA OUTER_LOOP
+    .DATA SEMI
 
-OUTER_TOKEN_LOOP:
+PROCESS_TOKENS:
+    .N "PROCESS-TOKENS"
+    .DATA OUTER
+PROCESS_TOKENS_WA: .DATA COLON
+PROCESS_TOKENS_CA:
+PROCESS_TOKENS_LOOP:
     .DATA ASPACE_WA
     .DATA TOKEN_WA
     .DATA STAR_IF_WA
-    .DATA OUTER_LOOP ; Just jump back to get another line if no more tokens
+    .DATA PROCESS_TOKENS_EXIT ; Just jump back to get another line if no more tokens
     .DATA SEARCH_WA
     .DATA STAR_IF_WA
-    .DATA OUTER_NOT_A_WORD
+    .DATA PROCESS_TOKENS_NOT_A_WORD
     .DATA Q_EXECUTE_WA ; If the execute failed, discard the rest of the line
     .DATA NOT_WA
     .DATA STAR_IF_WA
-    .DATA OUTER_TOKEN_EXECUTED
+    .DATA PROCESS_TOKENS_EXECUTED
     .DATA PATCH_WA
     .DATA STAR_ELSE_WA
-    .DATA OUTER_LOOP
+    .DATA PROCESS_TOKENS_EXIT
 
-OUTER_TOKEN_EXECUTED:
+PROCESS_TOKENS_EXECUTED:
     .DATA STAR_ELSE_WA
-    .DATA OUTER_TOKEN_LOOP
+    .DATA PROCESS_TOKENS_LOOP
 
-OUTER_NOT_A_WORD:
+PROCESS_TOKENS_NOT_A_WORD:
     .DATA Q_NUMBER_WA
     .DATA STAR_IF_WA
-    .DATA OUTER_NOT_A_NUMBER
+    .DATA PROCESS_TOKENS_NOT_A_NUMBER
     ; Number is on the stack. 
     ; If we're in compile mode, enclose it
     .DATA MODE_WA
     .DATA AT_WA
     .DATA STAR_IF_WA
-    .DATA OUTER_NUM_TO_STACK
+    .DATA PROCESS_TOKENS_NUM_TO_STACK
     .DATA STAR_HASH_WA
     .DATA STAR_HASH_WA ; push the literal handler to the stack
     .DATA COMMA_WA     ; enclose it
     .DATA COMMA_WA     ; and he number
 
-OUTER_NUM_TO_STACK:
+PROCESS_TOKENS_NUM_TO_STACK:
     .DATA STAR_ELSE_WA
-    .DATA OUTER_TOKEN_LOOP ; Leave the number on the stack and loop
+    .DATA PROCESS_TOKENS_LOOP ; Leave the number on the stack and loop
 
-OUTER_NOT_A_NUMBER:
+PROCESS_TOKENS_NOT_A_NUMBER:
     .DATA STAR_HASH_WA
     .DATA MSG_UNKNOWN_TOKEN
     .DATA TYPE_WA
@@ -1809,15 +2102,15 @@ OUTER_NOT_A_NUMBER:
     .DATA AT_WA
     .DATA TYPE_WA
     .DATA STAR_ELSE_WA
-    .DATA OUTER_TOKEN_LOOP
+    .DATA PROCESS_TOKENS_LOOP
 
+PROCESS_TOKENS_EXIT:
     .DATA SEMI
 
 TRAP:               ; Used for debugging. Dumps the contents of the registers
                     ; But for now it just says Hello World!
-  .DATA 4
-  .SDATA "TRAP"
-  .DATA OUTER
+  .N "TRAP"
+  .DATA PROCESS_TOKENS
 TRAP_WA:
   .DATA TRAP_CA
 TRAP_CA:
@@ -1834,8 +2127,7 @@ TRAP1:
 
 ; ( addr -- len )
 WORD_LEN:
-  .DATA 8
-  .SDATA "WORD-LEN"
+  .N "WORD-LEN"
   .DATA TRAP
 WORD_LEN_WA: .DATA WORD_LEN_CA
 WORD_LEN_CA:
@@ -1843,12 +2135,12 @@ WORD_LEN_CA:
   LD A,A
   CLRI A,15
   CLRI A,14
+  CLRI A,13
   PUSHD A
   JP NEXT  
 
 DOT_WORD:
-  .DATA 5
-  .SDATA ".WORD"
+  .N ".WORD"
   .DATA WORD_LEN
 DOT_WORD_WA: .DATA DOT_WORD_CA
 DOT_WORD_CA:
@@ -1859,6 +2151,7 @@ DOT_WORD_CA:
   LD R1,R0 ; Len to R1
   CLRI R1,15
   CLRI R1,14
+  CLRI R1,13
   ADDI R0,2 ; point to word
 DOT_WORD_LOOP:
   LD_B R2,R0
@@ -1869,10 +2162,26 @@ DOT_WORD_LOOP:
   JR[NZ] DOT_WORD_LOOP
   JP NEXT
 
-NEXT_WORD:
-  .DATA 9
-  .SDATA "NEXT-WORD"
+DOT_SWORD:
+; Print a word placed on the D stack by S"
+  .N ".SWORD"
   .DATA DOT_WORD
+DOT_SWORD_WA: .DATA COLON
+DOT_SWORD_CA:
+  .DATA DOT_WORD_WA
+  .DATA DOT_SWORD_CODE
+DOT_SWORD_CODE: .DATA DOT_SWORD_ASM
+DOT_SWORD_ASM:
+  POPD R0 ; len
+  ADDI R0,1
+  CLRI R0,0
+  SUBI R0,2
+  ADD SP,R0
+  JP SEMICA
+
+NEXT_WORD:
+  .N "NEXT-WORD"
+  .DATA DOT_SWORD
 NEXT_WORD_WA: .DATA COLON
 NEXT_WORD_CA:
   ; ( addr -- addr )
@@ -1880,7 +2189,7 @@ NEXT_WORD_CA:
   .DATA DUP_WA
   .DATA AT_WA
   .DATA STAR_HASH_WA
-  .DATA 0x3fff
+  .DATA 0x1fff
   .DATA AND_WA
   .DATA PLUS_WA
   .DATA TWO_PLUS_WA
@@ -1890,8 +2199,7 @@ NEXT_WORD_CA:
 
 
 CRET:
-  .DATA 4
-  .SDATA "CRET"
+  .N "CRET"
   .DATA NEXT_WORD
 CRET_WA: .DATA CRET_CA
 CRET_CA:
@@ -1902,8 +2210,7 @@ CRET_CA:
 
 WORDS:
 ; List all the defined words
-  .DATA 5
-  .SDATA "WORDS"
+  .N "WORDS"
   .DATA CRET
 WORDS_WA: .DATA COLON
 WORDS_CA:
@@ -1924,14 +2231,25 @@ WORDS_LOOP:
   .DATA DROP_WA
   .DATA SEMI
 
+COMPARE: ; ( c-addr1 c-addr2 -- result )
+; Compare the strings
+; result = -1 if str1 < str2
+; result = 0 if strings are equal
+; result = 1 if str1 > str2
+  .N "COMPARE"
+  .DATA WORDS
+COMPARE_WA: .DATA COMPARE_CA
+COMPARE_CA:
+  SYSCALL #SYSCALL_COMPARE
+  JP NEXT
+
 
 ; Search the dictionary for the current token
 ; Searches the vocabulary pointed to by CURRENT
 ; Return the WA on the stack if a match is found, or zero
 SEARCH:
-    .DATA 6
-    .SDATA "SEARCH"
-    .DATA WORDS
+    .N "SEARCH"
+    .DATA COMPARE
 SEARCH_WA:
     .DATA SEARCH_CA
 SEARCH_CA:
@@ -1955,7 +2273,8 @@ SEARCH_NEXT:
   MOV R0,R6
   LD A,R2  ; get the length of the word
   CLRI A,15 ; Clear the immediate bit if it's set
-  CLRI A,14 ; Clear the run-time bit if it's set
+  CLRI A,14 ; Clear the immediate bit if it's set
+  CLRI A,13 ; Clear the run-time bit if it's set
   CMP A,R1 ; Same as the token?
   JR[Z] SEARCH_COMPARE
   ; Not the same, move to the next word
@@ -1995,8 +2314,9 @@ SEARCH_COMPARE_FOUND:
 
 SEARCH_COMPARE_FAIL:
   LD A,R3  ; get the length of the word
-  CLRI A,15 ; Clear the immediate bit if it's set
-  CLRI A,14 ; Clear the run-time bit if it's set
+  CLRI A,15 ; Clear the header bit
+  CLRI A,14 ; Clear the immediate bit if it's set
+  CLRI A,13 ; Clear the run-time bit if it's set
   ; Move to the next word
   ADD R3,A
   ADDI R3,3 ; CA now points to the link address
@@ -2007,8 +2327,7 @@ SEARCH_COMPARE_FAIL:
   JR SEARCH_EXIT
 
 TWO_DOTS: ; This is the public COLON routine
-  .DATA 1
-  .SDATA ":"
+  .N ":"
   .DATA SEARCH
 TWO_DOTS_WA: .DATA COLON
 TWO_DOTS_CA:
@@ -2028,8 +2347,7 @@ TWO_DOTS_CA:
 
 
 LIT:
-  .DATA 0x8002 ; IMMEDIATE
-  .SDATA ".\""
+  .I ".\""
   .DATA TWO_DOTS
 LIT_WA: .DATA COLON
 LIT_CA:
@@ -2043,10 +2361,85 @@ LIT_CA:
   .DATA PLUS_STORE_WA
   .DATA SEMI
 
-QUESTION:
-  .DATA 1
-  .SDATA "?"
+S_LIT: 
+; String literal
+; At compile-time, builds the string into the dictionary
+; At run-time (i.. at the command-line ) moves the string
+; to the return stack
+  .X "S\""
   .DATA LIT
+S_LIT_WA: .DATA COLON
+S_LIT_CA:
+  .DATA MODE_WA
+  .DATA AT_WA
+  .DATA STAR_IF_WA .DATA S_LIT_RUNTIME
+  ; compile-time
+  .DATA STAR_HASH_WA .DATA STAR_S_LIT_WA
+  .DATA COMMA_WA
+  .DATA STAR_HASH_WA .SDATA "\""
+  .DATA TOKEN_WA ; Move the string to the dictionary
+  .DATA TWO_PLUS_WA
+  .DATA ALIGN_WA
+  .DATA DP_WA
+  .DATA PLUS_STORE_WA
+  .DATA STAR_ELSE_WA .DATA S_LIT_DONE
+S_LIT_RUNTIME:
+  ; runtime - move the string to the return stack
+  .DATA STAR_HASH_WA .SDATA "\""
+  .DATA TOKEN_WA ; Move the string to the dictionary
+  .DATA DROP_WA
+  .DATA S_LIT_CODE
+S_LIT_CODE: .DATA S_LIT_ASM
+S_LIT_ASM:
+  .ALIAS R0,DP
+  .ALIAS R1,SDP
+  .ALIAS R2,IDX
+  .ALIAS R3,LEN
+  .ALIAS R4,TMP
+  .ALIAS R5,WRD
+
+  MOVIL DP,%DICTIONARY_POINTER
+  LD SDP,DP
+  LD LEN,SDP
+  ADDI LEN,3
+  CLRI LEN,0 ; Word align
+  MOV IDX,LEN
+  SUB SP,LEN ; Take space on the  stack
+  ADDI SP,2  ; Back up to align the stack pointer
+S_LIT_LOOP:
+  LD TMP,SDP
+  ST SP,TMP
+  ADDI SDP,2
+  ADDI SP,2
+  ADDI IDX,-2
+  JR[NZ] S_LIT_LOOP
+  SUB SP,LEN ;
+  MOV WRD,SP
+  ADDI SP,-2
+  PUSHD WRD   ; Push the return stack pointer to the data stack ready for .WORD
+S_LIT_CODE_DONE:
+  JP SEMICA
+
+; Exit for the compile code
+S_LIT_DONE:
+  .DATA SEMI
+
+STAR_S_LIT:
+  .R "*S\""
+  .DATA S_LIT
+STAR_S_LIT_WA: .DATA STAR_S_LIT_CA
+STAR_S_LIT_CA:
+  MOV A,I
+  LD B,I
+  ADD I,B
+  ADDI I,3
+  CLRI I,0 ; Word align
+  PUSHD A
+  JP NEXT
+
+QUESTION:
+  .N "?"
+  .DATA STAR_S_LIT
 QUESTION_WA: .DATA COLON
 QUESTION_CA:
   .DATA STAR_LIT_WA
@@ -2055,9 +2448,8 @@ QUESTION_CA:
   .DATA RESTART_WA
   .DATA SEMI
 
-TICK:
-  .DATA 1
-  .SDATA "'"
+TICK: ; ( -- ca )
+  .N "'"
   .DATA QUESTION
 TICK_WA: .DATA COLON
 TICK_CA:
@@ -2070,16 +2462,32 @@ TICK_CA:
   .DATA TICK_DONE 
   .DATA QUESTION 
 TICK_DONE:
+  .DATA WA_TO_CA_WA
+  .DATA  SEMI
+
+N_TICK: ; ( -- na )
+  .N "N'"
+  .DATA TICK
+N_TICK_WA: .DATA COLON
+N_TICK_CA:
+  .DATA ASPACE_WA
+  .DATA TOKEN_WA
+  .DATA DROP_WA
+  .DATA SEARCH_WA
+  .DATA NOT_WA 
+  .DATA STAR_IF_WA
+  .DATA N_TICK_DONE 
+  .DATA QUESTION 
+N_TICK_DONE:
   .DATA  SEMI
 
 FORGET: 
-  .DATA 6
-  .SDATA "FORGET"
-  .DATA TICK
+  .N "FORGET"
+  .DATA N_TICK
 FORGET_WA: .DATA COLON
 FORGET_CA:
 .DATA CURRENT_WA .DATA AT_WA .DATA CONTEXT_WA .DATA STORE_WA
-.DATA TICK_WA      ; Get the address of the word to forget
+.DATA N_TICK_WA      ; Get the address of the word to forget
 .DATA DUP_WA       ; copy it
 .DATA NEXT_WORD_WA ; address of previous word
 .DATA CURRENT_WA .DATA AT_WA
@@ -2089,8 +2497,7 @@ FORGET_CA:
 .DATA SEMI
 
 STATE:
-  .DATA 5
-  .SDATA "STATE"
+  .N "STATE"
   .DATA FORGET
 STATE_WA:
   .DATA STATE_CA
@@ -2102,8 +2509,7 @@ STATE_CA:
 
 
 BACKSLASH: ; Forth word delimiting a \ comment 
-  .DATA 0xc001
-  .SDATA "\\"
+  .X "\\"
   .DATA STATE
 BACKSLASH_WA: .DATA COLON
 BACKSLASH_CA:
@@ -2114,8 +2520,7 @@ BACKSLASH_CA:
   .DATA SEMI
 
 PAREN: ; Forth word delimiting a ( comment )
-  .DATA 0xc001
-  .SDATA "("
+  .X "("
   .DATA BACKSLASH
 PAREN_WA: .DATA COLON
 PAREN_CA:
@@ -2126,12 +2531,12 @@ PAREN_CA:
   .DATA SEMI
 
 CSPLIT:
-  .DATA 6
-  .SDATA "CSPLIT"
+  .N "CSPLIT"
   .DATA PAREN
 CSPLIT_WA: .DATA CSPLIT_CA
 CSPLIT_CA:
 ; Split the TOS into two bytes
+; ( word -- l h )
   POPD A
   MOV B,A
   MOVIL R0,0x00ff
@@ -2141,16 +2546,25 @@ CSPLIT_CA:
   PUSHD B
   JP NEXT
 
+DOT_TWO_BYTES:
+  .N ".2BYTES"
+  .DATA CSPLIT
+DOT_TWO_BYTES_WA: .DATA COLON
+DOT_TWO_BYTES_CA:
+  .DATA CSPLIT_WA
+  .DATA SWAP_WA
+  .DATA DOT_C_WA .DATA ASPACE_WA .DATA EMIT_WA 
+  .DATA DOT_C_WA
+  .DATA SEMI 
+
 DUMP:
-  .DATA 4
-  .SDATA "DUMP"
+  .N "DUMP"
   .DATA CSPLIT
 DUMP_WA: .DATA COLON
 DUMP_CA:
   ; Dump the word whose address is on the stack
-  ; Dump 40 words for now
-  .DATA DUP_WA
-  .DATA STAR_HASH_WA .DATA 40
+  ; ( WA numBytesToDump -- )
+  .DATA OVER_WA
   .DATA PLUS_WA
   .DATA SWAP_WA
   .DATA STAR_DO_WA
@@ -2173,8 +2587,7 @@ DUMP_LOOP:
   .DATA SEMI
 
 FOPEN:
-  .DATA 5
-  .SDATA "FOPEN"
+  .N "FOPEN"
   .DATA DUMP
 FOPEN_WA: .DATA FOPEN_CA
 FOPEN_CA:
@@ -2182,8 +2595,7 @@ FOPEN_CA:
   JP NEXT
 
 FCLOSE:
-  .DATA 6
-  .SDATA "FCLOSE"
+  .N "FCLOSE"
   .DATA FOPEN
 FCLOSE_WA: .DATA FCLOSE_CA
 FCLOSE_CA:
@@ -2191,25 +2603,66 @@ FCLOSE_CA:
   JP NEXT
 
 FREAD:
-  .DATA 5
-  .SDATA "FREAD"
+  .N "FREAD"
   .DATA FCLOSE
 FREAD_WA: .DATA FREAD_CA
 FREAD_CA:
+; ( -- bytes-read )
 ; Put the address of the line buffer on the stack
   MOVIL A,%LBUF_IDX
   PUSHD A
   SYSCALL #SYSCALL_FREAD
   JP NEXT
 
+FEOF:
+  .N "FEOF"
+  .DATA FREAD
+FEOF_WA: .DATA COLON
+FEOF_CA:
+  .DATA STAR_HASH_WA .DATA -1
+  .DATA SEMI
+
+READ_FILE:
+  .N "READ_FILE"
+  .DATA FEOF
+READ_FILE_WA: .DATA COLON
+READ_FILE_CA:
+  ; ( address-of-filename -- )
+  .DATA STAR_HASH_WA .DATA 0
+  .DATA FOPEN_WA
+  .DATA STAR_IF_WA .DATA READ_FILE_FAILED_OPEN
+READ_FILE_LOOP:
+  .DATA FREAD_WA
+  .DATA FEOF_WA
+  .DATA NOT_EQUALS_WA
+  .DATA STAR_IF_WA .DATA READ_FILE_DONE
+  .DATA PROCESS_TOKENS_WA
+  .DATA STAR_ELSE_WA
+  .DATA READ_FILE_LOOP
+READ_FILE_FAILED_OPEN:
+  .DATA STAR_LIT_WA .DATA 16
+  .SDATA "Cannot open file"
+  .DATA SEMI
+READ_FILE_DONE:
+  .DATA STAR_HASH_WA .DATA 0
+  .DATA FCLOSE_WA
+  .DATA SEMI
+
+WRITE_CPP:
+  .N "WRITE-CPP"
+  .DATA READ_FILE
+WRITE_CPP_WA: .DATA WRITE_CPP_CA
+WRITE_CPP_CA:
+  SYSCALL #SYSCALL_WRITE_CPP
+  JP NEXT
 
 ; The last word in the dictionary placed at the end of ROM before RAM starts
 .ORG #FENCE
 CORE_VOCABULARY:
 FENCE:
-  .DATA 0xc005
-  .SDATA "FENCE"
-  .DATA FREAD
+  
+  .X "FENCE"
+  .DATA WRITE_CPP
 FENCE_WA: .DATA COLON
 FENCE_CA:
   .DATA SEMI

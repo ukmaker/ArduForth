@@ -26,6 +26,8 @@
 #define SYSCALL_D_OR 18
 #define SYSCALL_D_INVERT 19
 #define SYSCALL_DOTC 20
+#define SYSCALL_WRITE_CPP 21
+#define SYSCALL_COMPARE 22
 
 void syscall_type(ForthVM *vm)
 {
@@ -61,11 +63,10 @@ void syscall_dot(ForthVM *vm)
     switch (base)
     {
     case 16:
-        SerialUSB.printf("0x%04x", v);
+        SerialUSB.printf("%04x", v);
         break;
     case 2:
     {
-        printf("0b");
         uint16_t mask = 0x8000;
         while (mask != 0)
         {
@@ -471,5 +472,36 @@ void syscall_invert_double(ForthVM *vm) {
     vm->push(result >> 16);
 }
 
+int do_compare(char *c1, char *c2, uint16_t l1, uint16_t l2) {
+
+    uint16_t i = 0;
+    uint16_t l = l1;
+    if(l1 > l2) {
+        l = l2;
+    }
+
+    while(i < l) {
+        if(*c1 < *c2) return -1;
+        if(*c1 > *c2) return 1;
+        c1++;
+        c2++;
+        i++;
+    }
+    if(l1 == l2) return 0;
+    if(l1 > l2) return 1;
+    return -1;
+}
+
+void syscall_compare(ForthVM *vm) {
+    uint16_t s2 = vm->pop();
+    uint16_t s1 = vm->pop();
+    uint16_t l1 = vm->get(s1);
+    uint16_t l2 = vm->get(s2);
+    char *c1 = (char*)vm->ram()->addressOfChar(s1+2);
+    char *c2 = (char*)vm->ram()->addressOfChar(s2+2);
+
+    int r = do_compare(c1, c2, l1, l2);
+    vm->push(r);
+}
 
 #endif

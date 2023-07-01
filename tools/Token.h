@@ -17,8 +17,14 @@
 
 #define DIRECTIVE_TYPE_ORG 0
 #define DIRECTIVE_TYPE_DATA 1
-#define DIRECTIVE_TYPE_SDATA 2
-#define DIRECTIVE_TYPE_ALIAS 3
+#define DIRECTIVE_TYPE_ALIAS 2
+
+// String directives to make building Forth words easier
+#define DIRECTIVE_TYPE_PLAIN_STRING 3 // Normal string (just bytes, unaligned)
+#define DIRECTIVE_TYPE_NWORD_STRING 4 // Normal Forth word, Aligned flags.len string
+#define DIRECTIVE_TYPE_RWORD_STRING 5 // Runtime only Forth word, Aligned flags.len string
+#define DIRECTIVE_TYPE_IWORD_STRING 6 // Immediate (compile-time only) Forth word, Aligned flags.len string
+#define DIRECTIVE_TYPE_XWORD_STRING 7 // Executive Forth word - has both compile-time and runtime behaviours, Aligned flags.len string
 
 /*
 Syntax:
@@ -80,8 +86,9 @@ class Token {
     int value = 0; 
     
     const char *str = NULL;
+    const char *strB = NULL;
 
-    // For an instruction or a directive
+    // For an instruction, a string or a directive
     uint8_t opcode = 0;
     uint8_t arga = 0;
     uint8_t argb = 0;
@@ -94,7 +101,6 @@ class Token {
     // num3 and num6 values may be taken from a constant definition
     // num16 may be a constant or the address of a variable or label
     bool symbolic = false;
-
 
     Token *next = NULL;
     Token *label = NULL;
@@ -152,7 +158,40 @@ class Token {
     }
 
     bool isStringData() {
-        return isDirective() && (opcode == DIRECTIVE_TYPE_SDATA);
+        return isDirective() && (
+            (opcode == DIRECTIVE_TYPE_PLAIN_STRING)
+            || (opcode == DIRECTIVE_TYPE_NWORD_STRING)
+            || (opcode == DIRECTIVE_TYPE_RWORD_STRING)
+            || (opcode == DIRECTIVE_TYPE_IWORD_STRING)
+            || (opcode == DIRECTIVE_TYPE_XWORD_STRING)
+        );
+    }
+
+    bool isHeader() {
+            return (opcode == DIRECTIVE_TYPE_NWORD_STRING)
+            || (opcode == DIRECTIVE_TYPE_RWORD_STRING)
+            || (opcode == DIRECTIVE_TYPE_IWORD_STRING)
+            || (opcode == DIRECTIVE_TYPE_XWORD_STRING);      
+    }
+
+    bool isPStringData() {
+        return isDirective() && (opcode == DIRECTIVE_TYPE_PLAIN_STRING);
+    }
+
+    bool isNStringData() {
+        return isDirective() && (opcode == DIRECTIVE_TYPE_PLAIN_STRING);
+    }
+
+    bool isRStringData() {
+        return isDirective() && (opcode == DIRECTIVE_TYPE_PLAIN_STRING);
+    }
+
+    bool isIStringData() {
+        return isDirective() && (opcode == DIRECTIVE_TYPE_PLAIN_STRING);
+    }
+
+    bool isXStringData() {
+        return isDirective() && (opcode == DIRECTIVE_TYPE_PLAIN_STRING);
     }
 
     bool isAlias() {
@@ -166,6 +205,17 @@ class Token {
 
     bool isError() {
         return type == TOKEN_TYPE_ERROR;
+    }
+
+    bool isSymbolic() {
+        return symbolic;
+    }
+
+    int strlen() {
+        if(isStringData()) {
+            return ::strlen(str);
+        }
+        return -1;
     }
 
     uint16_t opWord() {

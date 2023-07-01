@@ -133,7 +133,7 @@ public:
         }
 
         source[n] = '\0';
-        sourceLen = n - 1;
+       //sourceLen = n - 1;
 
         // fclose(file);
 
@@ -253,7 +253,7 @@ public:
                     }
                     addr += 2;
                 }
-                else if (tok->isStringData())
+                else if (tok->isPStringData())
                 {
                     // Must be a string
                     tok->address = addr;
@@ -263,6 +263,19 @@ public:
                         label = nextLabel();
                     }
                     addr += tok->value;
+                    if (addr & 1)
+                        addr++; // align to word boundaries
+                }
+                else if (tok->isHeader())
+                {
+                    // Must be a string
+                    tok->address = addr;
+                    if (label != NULL && tok->address == label->address)
+                    {
+                        tok->label = label;
+                        label = nextLabel();
+                    }
+                    addr += tok->value + 2; // allow space for the string and the length word
                     if (addr & 1)
                         addr++; // align to word boundaries
                 }
@@ -446,11 +459,40 @@ public:
         }
     }
 
+    uint16_t headerWord(Token *tok) {
+        int r = (1 << HEADER_HEADER_BIT);
+        if(tok->isHeader()) {
+            switch(tok->opcode) {
+                case DIRECTIVE_TYPE_NWORD_STRING:
+                    r |= tok->strlen() | (HEADER_SCOPE_NORMAL << HEADER_SCOPE_BITS);
+                    break;
+
+                case DIRECTIVE_TYPE_RWORD_STRING:
+                    r |= tok->strlen() | (HEADER_SCOPE_RUNTIME << HEADER_SCOPE_BITS);
+                    break;
+                    
+                case DIRECTIVE_TYPE_IWORD_STRING:
+                    r |= tok->strlen() | (HEADER_SCOPE_IMMEDIATE << HEADER_SCOPE_BITS);
+                    break;
+                    
+                case DIRECTIVE_TYPE_XWORD_STRING:
+                    r |= tok->strlen() | (HEADER_SCOPE_EXECUTIVE << HEADER_SCOPE_BITS);
+                    break;
+                    
+
+                default: break;
+            }
+        }
+
+        return r;
+    }
+
     void writeCode()
     {
         Token *tok = tokens;
         uint8_t written;
         const char *c;
+        uint16_t headerLen;
 
         while (tok != NULL)
         {
@@ -464,10 +506,31 @@ public:
                     printf("%04x %02x %02x\n", tok->address, (tok->value & 0xff00) >> 8, tok->value & 0xff);
                     break;
 
-                case DIRECTIVE_TYPE_SDATA:
+                case DIRECTIVE_TYPE_PLAIN_STRING:
                 {
                     c = tok->str;
                     written = 0;
+                    while (*c != '\0')
+                    {
+                        if (written % 8 == 0)
+                        {
+                            printf("\n%04x ", tok->address + written);
+                        }
+                        printf("%02x ", *c);
+                        written++;
+                        c++;
+                    }
+                    printf("\n");
+                }
+                case DIRECTIVE_TYPE_NWORD_STRING:
+                case DIRECTIVE_TYPE_RWORD_STRING:
+                case DIRECTIVE_TYPE_IWORD_STRING:
+                case DIRECTIVE_TYPE_XWORD_STRING:
+                {
+                    headerLen = headerWord(tok);
+                    c = tok->str;
+                    printf("\n%04x %02x %02x ", tok->address, headerLen & 0xff, headerLen >> 8);
+                    written = 2;
                     while (*c != '\0')
                     {
                         if (written % 8 == 0)
@@ -543,6 +606,7 @@ public:
         Token *tok = tokens;
         const char *c;
         int written;
+        uint16_t headerLen;
 
         while (tok != NULL)
         {
@@ -556,7 +620,7 @@ public:
                     ram->put(tok->address, tok->value);
                     break;
 
-                case DIRECTIVE_TYPE_SDATA:
+                case DIRECTIVE_TYPE_PLAIN_STRING:
                 {
                     c = tok->str;
                     // ram->put(tok->address, tok->value);
@@ -569,6 +633,25 @@ public:
                     }
                 }
                 break;
+                
+                case DIRECTIVE_TYPE_NWORD_STRING:
+                case DIRECTIVE_TYPE_RWORD_STRING:
+                case DIRECTIVE_TYPE_IWORD_STRING:
+                case DIRECTIVE_TYPE_XWORD_STRING:
+                {
+                    headerLen = headerWord(tok);
+                    c = tok->str;
+                    ram->put(tok->address, headerLen);
+                    written = 2;
+                    while (*c != '\0')
+                    {
+                        ram->putC(tok->address + written, *c);
+                        written++;
+                        c++;
+                    }
+                }
+                break;
+
                 default:
                     break;
                 }
@@ -687,19 +770,19 @@ public:
                     printf("ERROR: unknown symbol %s at line %d \n", tok->str, tok->line);
                     return false;
                 }
-                switch (sym->token->type)
-                {
-                case TOKEN_TYPE_CONST:
-                    tok->value = sym->token->value;
-                    break;
-                case TOKEN_TYPE_LABEL:
-                case TOKEN_TYPE_STR:
-                case TOKEN_TYPE_VAR:
-                    tok->value = sym->token->address;
-                    break;
-                default:
-                    break;
-                }
+                    switch (sym->token->type)
+                    {
+                    case TOKEN_TYPE_CONST:
+                        tok->value = sym->token->value;
+                        break;
+                    case TOKEN_TYPE_LABEL:
+                    case TOKEN_TYPE_STR:
+                    case TOKEN_TYPE_VAR:
+                        tok->value = sym->token->address;
+                        break;
+                    default:
+                        break;
+                    }
                 if (tok->opcode == OP_SUBI)
                 {
                     tok->arga = tok->value;
@@ -709,13 +792,13 @@ public:
                     tok->argb = tok->value;
                 }
 
-                if (tok->value > 7 || tok->value < -8)
-                {
-                    printf("ERROR: tiny value exceeded (%d) at line %d \n", tok->value, tok->line);
-                    return false;
-                }
+                    if (tok->value > 7 || tok->value < -8)
+                    {
+                        printf("ERROR: tiny value exceeded (%d) at line %d \n", tok->value, tok->line);
+                        return false;
+                    }
 
-                tok->symbolic = false;
+                    tok->symbolic = false;                    
                 break;
 
             // Defined register, 8-bit immediate
@@ -781,10 +864,10 @@ public:
             case OP_CALL:
                 sym = getSymbol(tok->str);
                 if (sym->token == NULL)
-                {
+                    {
                     printf("ERROR: unknown symbol %s at line %d \n", tok->str, tok->line);
-                    return false;
-                }
+                            return false;
+                        }
                 if (sym->token->isLabel() || sym->token->isVar() || sym->token->isStr())
                 {
                     tok->value = sym->token->address;
@@ -792,7 +875,7 @@ public:
                 else
                 {
                     tok->value = sym->token->value;
-                    if (tok->value > 32767 || tok->value < -32768)
+                    if (tok->value > 65535 || tok->value < -32768)
                     {
                         printf("ERROR: long value exceeded (%d) at line %d \n", tok->value, tok->line);
                         return false;
@@ -1138,7 +1221,11 @@ public:
                 return tok;
             }
             break;        
-        case DIRECTIVE_TYPE_SDATA:
+        case DIRECTIVE_TYPE_PLAIN_STRING:
+        case DIRECTIVE_TYPE_NWORD_STRING:
+        case DIRECTIVE_TYPE_RWORD_STRING:
+        case DIRECTIVE_TYPE_IWORD_STRING:
+        case DIRECTIVE_TYPE_XWORD_STRING:
             if (parseString(tok) == -1)
             {
                 return Token::error(line, pos, NUMBER_EXPECTED);
@@ -1153,7 +1240,7 @@ public:
     }
 
     bool getAlias(Token *tok) {
-        if(getArg(tok) && comma(tok) && getAliasName(tok)) {
+        if(getArgA(tok) && comma(tok) && getAliasName(tok)) {
             return true;
         }
         return false;
@@ -1659,8 +1746,8 @@ public:
         int len = idx - here;        char *name = (char *)malloc(len + 1); // +1 for the ending \0
         strncpy(name, &source[idx - len], len);
         name[len] = '\0';
-        tok->str = name;
-        tok->symbolic = true;
+            tok->str = name;
+            tok->symbolic = true;
         return true;
     }
 
@@ -1694,7 +1781,6 @@ public:
         strncpy(name, &source[idx - len], len);
         name[len] = '\0';
         tok->str = name;
-        tok->symbolic = true;
         return true;
     }
 
@@ -1736,7 +1822,7 @@ public:
         int here = idx;
         while (idx < sourceLen)
         {
-            if (!isAlphaNumeric(source[idx]))
+            if (!isAliasChar(source[idx]))
             {
                 break;
             }

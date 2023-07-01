@@ -144,10 +144,10 @@
 #define OP_CALLX 0xc2  // PC <- Ra + #num4.0
 #define OP_CALLXL 0xc3 // PC <- Ra + #num16
 
-#define COND_C 0
-#define COND_Z 1
-#define COND_P 2
-#define COND_M 3
+#define COND_C 0  // Carry
+#define COND_Z 1  // Zero
+#define COND_P 2  // Parity for no-arithmetic operations otherwise Ovverflow
+#define COND_M 3  // Minus - copy of bit 15 of the result
 
 #define CC_BITS 10
 #define CC_MASK (0x03 << CC_BITS)
@@ -166,6 +166,17 @@
 #define ARGB_BITS 0
 #define ARGA_MASK (0x0f << ARGA_BITS)
 #define ARGB_MASK (0x0f << ARGB_BITS)
+
+#define HEADER_BITS 8
+#define HEADER_MASK (0xff00)
+#define HEADER_HEADER_BIT 15
+#define HEADER_SCOPE_BITS 13
+#define HEADER_SCOPE_MASK (0x03 << HEADER_SCOPE_BITS)
+#define HEADER_SCOPE_NORMAL 0
+#define HEADER_SCOPE_RUNTIME 1
+#define HEADER_SCOPE_IMMEDIATE 2
+#define HEADER_SCOPE_EXECUTIVE 3
+
 
 
 #endif

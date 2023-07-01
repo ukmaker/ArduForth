@@ -54,6 +54,15 @@ class Test {
         assertEquals(tok->value, value, "Value");
     }
 
+   void shouldGetAnAlias(uint8_t reg, const char *alias) {
+        printf("         shouldGetAlias %s\n", alias);
+        Token *tok = fasm->getToken();
+        assertEquals(tok->type, TOKEN_TYPE_DIRECTIVE, "Type should be DIRECTIVE");
+        assertEquals(tok->opcode, DIRECTIVE_TYPE_ALIAS, "Should be an ALIAS");
+        assertEquals(tok->arga, reg, "Register");
+        assertString(tok->str, alias, "Alias");
+    }
+
 
     void skipTokens(int n) {
         for(int i=0; i<n; i++) {

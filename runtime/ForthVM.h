@@ -439,8 +439,7 @@ public:
                 break;
 
             case OP_SYSCALL:
-
-                if(_syscalls[n8] != NULL) {
+                if(n8 < _numSyscalls && _syscalls[n8] != NULL) {
                     _syscalls[n8](this);
                 }// call a high-level routine <call.6> 
 
@@ -458,107 +457,107 @@ public:
     void _add(uint8_t a, uint8_t b) {
         uint32_t r = _regs[a] + _regs[b];
         _regs[a] = r & 0xffff;
-        _flags(r);
+        _arithmeticFlags(r);
     }
 
     void _addi(uint8_t a, int8_t n) {
         uint32_t r = _regs[a] + n;
         _regs[a] = r & 0xffff;
-        _flags(r);
+        _arithmeticFlags(r);
     }
 
     void _addl(uint8_t a, uint16_t n) {
         uint32_t r = _regs[a] + n;
         _regs[a] = r & 0xffff;
-        _flags(r);
+        _arithmeticFlags(r);
     }
 
     void _cmp(uint8_t a, uint8_t b) {
         uint32_t r = _regs[a] - _regs[b];
-        _flags(r);
+        _arithmeticFlags(r);
     }
 
     void _cmpi(uint8_t a, uint8_t n) {
         uint32_t r = _regs[a] - n;
-        _flags(r);
+        _arithmeticFlags(r);
     }
 
     void _cmpl(uint8_t a, uint16_t n) {
         uint32_t r = _regs[a] - n;
-        _flags(r);
+        _arithmeticFlags(r);
     }
 
     void _sub(uint8_t a, uint8_t b) {
         uint32_t r = _regs[a] - _regs[b];
         _regs[a] = r & 0xffff;
-        _flags(r);
+        _arithmeticFlags(r);
     }
 
     void _subi(uint8_t a, int8_t n) {
         uint32_t r = _regs[a] - n;
         _regs[a] = r & 0xffff;
-        _flags(r);
+        _arithmeticFlags(r);
     }
 
     void _subi4(uint8_t a, int8_t n) {
-        uint32_t r = n - _regs[a];
+        uint32_t r = _regs[a] - n;
         _regs[a] = r & 0xffff;
-        _flags(r);
+        _arithmeticFlags(r);
     }
 
     void _subl(uint8_t a, uint16_t n) {
         uint32_t r = _regs[a] - n;
         _regs[a] = r & 0xffff;
-        _flags(r);
+        _arithmeticFlags(r);
     }
 
    void _mul(uint8_t a, uint8_t b) {
         uint32_t r = _regs[a] * _regs[b];
         _regs[a] = r & 0xffff;
-        _flags(r);
+        _arithmeticFlags(r);
     }
 
   void _div(uint8_t a, uint8_t b) {
         uint16_t r = _regs[a] / _regs[b];
         _regs[a] = r;
-        _flags(r);
+        _arithmeticFlags(r);
     }
 
     void _and(uint8_t a, uint8_t b) {
         uint16_t r = _regs[a] & _regs[b];
         _regs[a] = r;
-        _flags(r);
+        _booleanFlags(r);
     }
 
     void _or(uint8_t a, uint8_t b) {
         uint16_t r = _regs[a] | _regs[b];
         _regs[a] = r;
-        _flags(r);
+        _booleanFlags(r);
     }
 
     void _not(uint8_t a) {
         uint16_t r = ~_regs[a];
         _regs[a] = r;
-        _flags(r);
+        _booleanFlags(r);
     }
 
     void _xor(uint8_t a, uint8_t b) {
         uint16_t r = _regs[a] ^ _regs[b];
         _regs[a] = r;
-        _flags(r);
+        _booleanFlags(r);
     }
 
     void _sl(uint8_t a, uint8_t n) {
         uint32_t r = _regs[a] << n;
         _regs[a] = r & 0xffff;
-        _flags(r);
+        _booleanFlags(r);
     }
 
     void _sr(uint8_t a, uint8_t n) {
         uint16_t r = _regs[a] >> n;
         bool c = _regs[a] & 1;
         _regs[a] = r;
-        _flags(r);
+        _booleanFlags(r);
         _c = c;
     }
 
@@ -566,7 +565,7 @@ public:
         uint16_t mask = ~((0xffff >> n) << n);
         uint16_t bits = _regs[a] & mask;
         _regs[a] = (_regs[a] >> n) | (bits << (16-n));
-        _flags(_regs[a]);
+        _booleanFlags(_regs[a]);
         _c = (_regs[a] & 0x8000) != 0;
     }
 
@@ -575,7 +574,7 @@ public:
         uint16_t bits = _regs[a] & mask;
         _regs[a] = (_regs[a] << n) | (bits >> (16-n));
  
-        _flags(_regs[a]);
+        _booleanFlags(_regs[a]);
         _c = (_regs[a] & 0x01) != 0;
     }
 
@@ -595,11 +594,19 @@ public:
         }       
     }
 
-    void _flags(uint32_t v) {
+    void _booleanFlags(uint32_t v) {
         _c = (v & 0x10000) == 0x10000;
         _z = v == 0;
         _odd = v & 0x01;
-        _sign = v & 0x08000;
+        _sign = (v & 0x08000) != 0;
+    }
+
+    void _arithmeticFlags(uint32_t v) {
+        _c = (v & 0x10000) == 0x10000;
+        _z = v == 0;
+        // odd(P) functions as overflow
+        _odd = (v & 0xffff0000) != 0;
+        _sign = (v & 0x08000) != 0;
     }
 
     /*
