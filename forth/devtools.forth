@@ -132,7 +132,7 @@
                 DUP . ASPACE EMIT .XT ASPACE EMIT CRET
                 0
             ELSE
-                DROP
+                . ASPACE EMIT ." ;" CRET
                 1
             THEN
         UNTIL
