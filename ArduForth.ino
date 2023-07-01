@@ -5,7 +5,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <unistd.h>
-
+//#include <Arduino.h>
 #include "runtime/ForthConfiguration.h"
 #include "runtime/ForthVM.h"
 #include "runtime/UnsafeMemory.h"
@@ -62,6 +62,7 @@ void setup()
     pinMode(PC13, OUTPUT);
     digitalWrite(PC13, 1);
     attachSyscalls();
+    SerialUSB.begin();
     vm.reset();
 }
 

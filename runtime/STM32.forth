@@ -35,7 +35,8 @@ HEX : PORT-BASE ( port-number -- port-base-address-double ) 0x400 * 0x4002 ;
 
 : ODR ( port -- Daddress) REG-ODR SWAP PORT-ADDR ;
 : BSRR REG-BSRR SWAP PORT-ADDR ;
-: BIT! ( value bit port -- ) ROT IF SWAP 1 0 ROT D<< ROT BSRR H! ;
+: BIT! ( value bit port -- ) BSRR DSWAP SWAP IF 1 0 ROT D<< DSWAP H! ELSE 1 0 ROT 16 + D<< DSWAP H! THEN ;
+
 
 : PINMODE! ( mode pin-number port-number -- ) ( PINMODE-INPUT 12 PORTA MODE! )
     PINMODE ( get the address of the mode register) ( mode pin-number Dreg-addr )
