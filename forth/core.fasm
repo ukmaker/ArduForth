@@ -10,9 +10,9 @@
 #SYSTEM:   0x0000 ; System reset vector
 #INNER:    0x0100 ; Inner interpreter starts here
 #MEMSIZE:  0x2000 ; Reserve 8K-bytes for Forth
-#FENCE:    0x15F2 ; Last word in the ROM
-#RAMSTART: 0x1600 ; Variables grow up from here
-#VARSTART: 0x2000 ; Variables grow up from here
+#FENCE:    0x1FF2 ; Last word in the ROM
+#RAMSTART: 0x2000 ; Variables grow up from here
+#VARSTART: 0x3000 ; Variables grow up from here
 #SPTOP:    0x3800 ; Data stack pointer grows down from here
 #RSTOP:    0x3ffe ; And the return stack from here
                   ; This gives both stacks 2K bytes
