@@ -16,7 +16,7 @@
 
 uint8_t ram[16384];
 
-UnsafeMemory mem(ram, 16384, 0x1600, rom, 8192, 0);
+UnsafeMemory mem(ram, 16384, 0x2000, rom, 8192, 0);
 
 Syscall syscalls[40];
 
