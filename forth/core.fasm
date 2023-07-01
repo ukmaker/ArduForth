@@ -86,6 +86,7 @@ START:
   ST B,A
 
   MOVIL A,CORE_VOCABULARY ; Last word in the dictionary
+CORE_PATCH_LOCATION:
   MOVIL B,%CORE
   ST B,A
 
@@ -2656,6 +2657,16 @@ WRITE_CPP:
   .DATA READ_FILE
 WRITE_CPP_WA: .DATA WRITE_CPP_CA
 WRITE_CPP_CA:
+; Patch the code so that the vocabulary is set to point to all 
+; words currently defined
+;
+; What's the current location?
+  MOVIL R0,%CURRENT
+  MOVIL R1,%CONTEXT
+  MOVIL R2,CORE_PATCH_LOCATION
+  ADDI R2,2
+  ST R0,R2
+  ST R1,R2
   SYSCALL #SYSCALL_WRITE_CPP
   JP NEXT
 
