@@ -5,9 +5,9 @@
 #include "../runtime/ForthVM.h"
 #include <stdio.h>
 
-#define SYSCALL_FOPEN 21
-#define SYSCALL_FCLOSE 22
-#define SYSCALL_FREAD 23
+#define SYSCALL_FOPEN 32
+#define SYSCALL_FCLOSE 33
+#define SYSCALL_FREAD 34
 
 /**
  * Syscalls to be used during development
