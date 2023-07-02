@@ -6,5 +6,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdint.h>
+#else
+#include <Arduino.h>
 #endif
 #endif

@@ -1270,15 +1270,6 @@ CREATE_CA:
   .DATA OR_WA
   .DATA HERE_WA
   .DATA STORE_WA
-  
-  ; Print the defined word
-  .DATA HERE_WA
-  .DATA DOT_WA .DATA ASPACE_WA .DATA EMIT_WA      ; print the address
-  
-  .DATA HERE_WA
-  .DATA DOT_WORD_WA .DATA ASPACE_WA .DATA EMIT_WA ; print the word
-  
-  .DATA Q_SP_WA .DATA DOT_WA .DATA CRET_WA        ; print the SP
 
   ; Bump the DP by the length of the token plus two for the length itself
   .DATA HERE_WA
@@ -2041,6 +2032,7 @@ OUTER_CA:
     .DATA TYPE_WA
 
 OUTER_LOOP:
+    .DATA CRET_WA
     .DATA STAR_HASH_WA
     .DATA MSG_PROMPT
     .DATA TYPE_WA

@@ -6,12 +6,12 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <Arduino.h>
-#include "runtime/ForthConfiguration.h"
-#include "runtime/ForthVM.h"
-#include "runtime/UnsafeMemory.h"
-#include "runtime/syscalls.h"
+#include "ForthConfiguration.h"
+#include "ForthVM.h"
+#include "UnsafeMemory.h"
+#include "syscalls.h"
 
-#include "runtime/ForthImage.h"
+#include "ForthImage.h"
 
 
 uint8_t ram[16384];
@@ -62,13 +62,13 @@ void setup()
     pinMode(PC13, OUTPUT);
     digitalWrite(PC13, 1);
     attachSyscalls();
-    Serial.begin(9600);
+    Serial.begin(115200);
     vm.reset();
 }
 
 void loop() {
     //digitalWrite(LED_BUILTIN, 1);
-    vm.step();
+    for(int i=0; i<100; i++) vm.step();
    // digitalWrite(LED_BUILTIN, 0);
     
 }

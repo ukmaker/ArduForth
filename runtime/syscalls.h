@@ -41,16 +41,16 @@ void syscall_type(ForthVM *vm)
     for (uint16_t i = 0; i < len; i++)
     {
         b = vm->readByte(dp + i);
-        SerialUSB.printf("%c", b);
+        Serial.printf("%c", b);
     }
-    SerialUSB.flush();
+    Serial.flush();
 }
 
 void syscall_typeln(ForthVM *vm)
 {
     syscall_type(vm);
-    SerialUSB.print('\n');
-    SerialUSB.flush();
+    Serial.print('\n');
+    Serial.flush();
 }
 
 void syscall_dot(ForthVM *vm)
@@ -63,7 +63,7 @@ void syscall_dot(ForthVM *vm)
     switch (base)
     {
     case 16:
-        SerialUSB.printf("%04x", v);
+        Serial.printf("%04x", v);
         break;
     case 2:
     {
@@ -71,18 +71,18 @@ void syscall_dot(ForthVM *vm)
         while (mask != 0)
         {
             if (v & mask)
-                SerialUSB.print('1');
+                Serial.print('1');
             else
-                SerialUSB.print('0');
+                Serial.print('0');
 
             mask >>= 1;
         }
-        SerialUSB.print('\n');
+        Serial.print('\n');
     }
     break;
     case 10:
     default:
-        SerialUSB.printf("%d", v);
+        Serial.printf("%d", v);
         break;
     }
 }
@@ -97,7 +97,7 @@ void syscall_dot_c(ForthVM *vm)
     switch (base)
     {
     case 16:
-        SerialUSB.printf("0x%02x", v);
+        Serial.printf("0x%02x", v);
         break;
     case 2:
     {
@@ -106,31 +106,31 @@ void syscall_dot_c(ForthVM *vm)
         while (mask != 0)
         {
             if (v & mask)
-                SerialUSB.print('1');
+                Serial.print('1');
             else
-                SerialUSB.print('0');
+                Serial.print('0');
 
             mask >>= 1;
         }
-        SerialUSB.print('\n');
+        Serial.print('\n');
     }
     break;
     case 10:
     default:
-        SerialUSB.printf("%d", v);
+        Serial.printf("%d", v);
         break;
     }
 }
 
 void syscall_getc(ForthVM *vm)
 {
-    int c = SerialUSB.read();
+    int c = Serial.read();
     vm->push(c);
 }
 
 void syscall_putc(ForthVM *vm)
 {
-    SerialUSB.print((char)vm->pop());
+    Serial.print((char)vm->pop());
 }
 
 void syscall_inline(ForthVM *vm)
@@ -143,8 +143,8 @@ void syscall_inline(ForthVM *vm)
 
     uint8_t *cbuf = vm->ram()->addressOfChar(bufstart);
     size_t read;
-    while(!SerialUSB.available()) {}
-    if ((read = SerialUSB.readBytesUntil(0x0a, (char *)cbuf, 127)) != 0)
+    while(!Serial.available()) {}
+    if ((read = Serial.readBytesUntil(0x0a, (char *)cbuf, 127)) != 0)
     {
         // There will now be a null-terminated string in the buffer
         // calculate the end and store that in buf+2
@@ -161,7 +161,7 @@ void syscall_inline(ForthVM *vm)
 
 void syscall_flush(ForthVM *vm)
 {
-    SerialUSB.flush();
+    Serial.flush();
 }
 
 void _parse_binary(ForthVM *vm, char *cbuf, uint16_t len) {
