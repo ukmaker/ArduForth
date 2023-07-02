@@ -1,8 +1,8 @@
 #ifndef UKMAKER_HOST_SYSCALLS_H
 #define UKMAKER_HOST_SYSCALLS_H
 
-#include "../runtime/Arduino.h"
-#include "../runtime/ForthVM.h"
+#include "../runtime/ArduForth/FArduino.h"
+#include "../runtime/ArduForth/ForthVM.h"
 #include <stdio.h>
 
 #define SYSCALL_FOPEN 32

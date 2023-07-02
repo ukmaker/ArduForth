@@ -1,6 +1,6 @@
 #ifndef UKMAKER_ASSEMBLER_H
 #define UKMAKER_ASSEMBLER_H
-#include "../runtime/ForthIS.h"
+#include "../runtime/ArduForth/ForthIS.h"
 #include "AssemblyVocabulary.h"
 #include "Token.h"
 #include "Symbol.h"
@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <malloc.h>
-#include "../runtime/Memory.h"
+#include "../runtime/ArduForth/Memory.h"
 
 class Assembler
 {

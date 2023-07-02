@@ -1,7 +1,7 @@
 #ifndef UKMAKER_DEBUGGER_H
 #define UKMAKER_DEBUGGER_H
 
-#include "../runtime/ForthVM.h"
+#include "../runtime/ArduForth/ForthVM.h"
 #include "Assembler.h"
 
 class Debugger

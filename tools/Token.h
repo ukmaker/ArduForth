@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include <string.h>
-#include "../runtime/ForthIS.h"
+#include "../runtime/ArduForth/ForthIS.h"
 
 #define TOKEN_TYPE_OPCODE 0
 #define TOKEN_TYPE_LABEL 1

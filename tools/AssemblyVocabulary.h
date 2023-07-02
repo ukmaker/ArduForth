@@ -3,7 +3,7 @@
 
 #include <string.h>
 #include <stdint.h>
-#include "../runtime/ForthIS.h"
+#include "../runtime/ArduForth/ForthIS.h"
 #include "Token.h"
 
 class AssemblyVocabulary {
