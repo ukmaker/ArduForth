@@ -73,11 +73,11 @@ public:
     {
         if (_vm->get(REG_I) == _breakpoint2)
         {
-            printf("1*");
+            printf("I *");
         }
         else if (_vm->get(REG_PC) == _breakpoint1)
         {
-            printf("2*");
+            printf("PC*");
         }
         else if(_verbose)
         {

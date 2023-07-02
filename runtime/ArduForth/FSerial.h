@@ -1,10 +1,10 @@
-#ifndef UKMAKER_SERIAL_H
-#define UKMAKER_SERIAL_H
+#ifndef UKMAKER_FSERIAL_H
+#define UKMAKER_FSERIAL_H
 #include <stdio.h>
 #ifndef ARDUINO
 
 
-class Serial {
+class FSerial {
 
     public:
     
@@ -50,7 +50,7 @@ class Serial {
 
 };
 
-Serial SerialUSB;
+FSerial Serial;
 
 #endif
 #endif

@@ -112,7 +112,7 @@ bool getArgs(int argc, char **argv)
 
 bool loadInnerInterpreter()
 {
-  fasm.slurp("forth/core.fasm");
+  fasm.slurp("fasm/core.fasm");
   fasm.pass1();
   fasm.pass2();
   fasm.pass3();
@@ -148,6 +148,8 @@ void attachSyscalls()
   vm.addSyscall(SYSCALL_D_AND, syscall_and_double);
   vm.addSyscall(SYSCALL_D_OR, syscall_or_double);
 
+  vm.addSyscall(SYSCALL_DOTC, syscall_dot_c);
+  
   vm.addSyscall(SYSCALL_FOPEN, syscall_fopen);
   vm.addSyscall(SYSCALL_FCLOSE, syscall_fclose);
   vm.addSyscall(SYSCALL_FREAD, syscall_fread);
@@ -180,7 +182,7 @@ int main(int argc, char **argv)
     debugger.setAssembler(&fasm);
     debugger.setVM(&vm);
     debugger.reset();
-    // debugger.setBreakpoint1(0x238);
+    debugger.setBreakpoint1(0x1110);
     // debugger.setLabelBreakpoint1("STAR_UNTIL_CA");
     // debugger.setLabelBreakpoint2("TOKEN_END");
     // ram.setWatch(0x5d4);

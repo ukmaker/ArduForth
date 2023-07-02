@@ -2,7 +2,7 @@
 #define UKMAKER_FORTHVM_H
 
 #include "Memory.h"
-#include "Arduino.h"
+#include "FArduino.h"
 #include "ForthIS.h"
 
 class ForthVM; 

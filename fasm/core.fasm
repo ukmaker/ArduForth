@@ -2241,6 +2241,7 @@ COMPARE_CA:
 ; Search the dictionary for the current token
 ; Searches the vocabulary pointed to by CURRENT
 ; Return the WA on the stack if a match is found, or zero
+; ( -- addr-or-zero )
 SEARCH:
     .N "SEARCH"
     .DATA COMPARE
@@ -2248,35 +2249,44 @@ SEARCH_WA:
     .DATA SEARCH_CA
 SEARCH_CA:
 
+  .ALIAS R0,DP
+  .ALIAS R1,LENA
+  .ALIAS R2,*A   ; The word we're looking for (the token at DP)
+  .ALIAS R3,LENB
+  .ALIAS R4,*B   ; The word we're currently testing (the word at WA)
+  .ALIAS R5,SWA  ; Search word address
+  .ALIAS R6,*TOK ; DP+2
+  .ALIAS R7,IDX  ; Loop counter
+
   ; DP in I R0
   MOVIL A,%DICTIONARY_POINTER
-  LD R0,A
+  LD DP,A
 
   ; Token length in WA R1
-  LD R1,R0
+  LD LENA,DP
   ; Bump I to point to first char
-  ADDI R0,2
-  MOV R6,R0
+  ADDI DP,2
+  MOV *TOK,DP ; Keep a backup copy for each trip round the loop
 
   ; Use CA R2 to point to the current word
-  MOVIL R2,%CURRENT
-  LD R2,R2
-  LD R2,R2
+  MOVIL SWA,%CURRENT
+  LD SWA,SWA
+  LD SWA,SWA
 
 SEARCH_NEXT:
-  MOV R0,R6
-  LD A,R2  ; get the length of the word
-  CLRI A,15 ; Clear the immediate bit if it's set
-  CLRI A,14 ; Clear the immediate bit if it's set
-  CLRI A,13 ; Clear the run-time bit if it's set
-  CMP A,R1 ; Same as the token?
+  LD LENB,SWA  ; get the length of the word
+  CLRI LENB,15 ; Clear the immediate bit if it's set
+  CLRI LENB,14 ; Clear the immediate bit if it's set
+  CLRI LENB,13 ; Clear the run-time bit if it's set
+  CMP LENB,LENA ; Same as the token?
   JR[Z] SEARCH_COMPARE
   ; Not the same, move to the next word
-  ADD R2,A
-  ADDI R2,3 ; CA now points to the link address
-  CLRI R2,0  ; make sure it's a word address
-  LD R2,R2 ; Now point to the next word
-  AND R2,R2 ; Is it zero?
+SEARCH_COMPARE_FAIL:
+  ADD SWA,LENB
+  ADDI SWA,3 ; CA now points to the link address
+  CLRI SWA,0  ; make sure it's a word address
+  LD SWA,SWA ; Now point to the next word
+  AND SWA,SWA ; Is it zero?
   JR[NZ] SEARCH_NEXT
 
 SEARCH_EXIT:
@@ -2287,38 +2297,25 @@ SEARCH_EXIT:
 
 SEARCH_COMPARE:
   ; Test the strings for equality
-  MOV R3,R2 ; Save the current word location
-  ADDI R2,2 ; Point to the string
-  MOV R4,R1 ; Length to R4 for the counter
+  MOV *A,*TOK
+  MOV *B,SWA
+  ADDI *B,2 ; Point to the string
+  MOV IDX,LENA ; Length to R4 for the counter
 
 SEARCH_COMPARE_LOOP:
-  LD_B A,R0
-  LD_B B,R2
+  LD_B A,*A
+  LD_B B,*B
   CMP A,B
   JR[NZ] SEARCH_COMPARE_FAIL
-  ADDI R2,1
-  ADDI R0,1
-  ADDI R4,-1
+  ADDI *A,1
+  ADDI *B,1
+  ADDI IDX,-1
   JR[NZ] SEARCH_COMPARE_LOOP
 SEARCH_COMPARE_FOUND:
-  PUSHD R3 ; Name address to the stack
+  PUSHD SWA ; Name address to the stack
   MOVI A,1
   PUSHD A   ; And a true flag
   JP NEXT
-
-SEARCH_COMPARE_FAIL:
-  LD A,R3  ; get the length of the word
-  CLRI A,15 ; Clear the header bit
-  CLRI A,14 ; Clear the immediate bit if it's set
-  CLRI A,13 ; Clear the run-time bit if it's set
-  ; Move to the next word
-  ADD R3,A
-  ADDI R3,3 ; CA now points to the link address
-  CLRI R3,0  ; make sure it's a word address
-  LD R2,R3 ; Now point to the next word
-  AND R2,R2 ; Is it zero?
-  JR[NZ] SEARCH_NEXT
-  JR SEARCH_EXIT
 
 TWO_DOTS: ; This is the public COLON routine
   .N ":"
@@ -2454,7 +2451,7 @@ TICK_CA:
   .DATA NOT_WA 
   .DATA STAR_IF_WA
   .DATA TICK_DONE 
-  .DATA QUESTION 
+  .DATA QUESTION_WA
 TICK_DONE:
   .DATA WA_TO_CA_WA
   .DATA  SEMI

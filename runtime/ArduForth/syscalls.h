@@ -1,9 +1,9 @@
 #ifndef UKMAKER_SYSCALLS_H
 #define UKMAKER_SYSCALLS_H
 
-#include "Arduino.h"
+#include "FArduino.h"
 #include "ForthVM.h"
-#include "Serial.h"
+#include "FSerial.h"
 
 #define SYSCALL_DEBUG 0
 #define SYSCALL_TYPE 1

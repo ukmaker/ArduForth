@@ -106,8 +106,8 @@
         ['] *+LOOP    OF ." *+LOOP" 2 +            ENDOF
         ['] *LOOP     OF ." *LOOP" 2 +             ENDOF
         ['] *DO       OF ." *DO"                   ENDOF
-        ['] *ELSE     OF ." *ELSE " 2 +  DUP @ .           ENDOF
-        ['] *IF       OF ." *IF " 2 +   DUP @ .            ENDOF
+        ['] *ELSE     OF ." *ELSE " 2 +  DUP @ .   ENDOF
+        ['] *IF       OF ." *IF " 2 +   DUP @ .    ENDOF
         ['] *ESAC     OF ." *ESAC"                 ENDOF
         ['] *OF_ENDOF OF ." *OF_ENDOF" 2 +         ENDOF
         ['] *OF       OF ." *OF" 2 +               ENDOF
@@ -119,13 +119,13 @@
 ;
 : DECOMPILE ( ca -- )
     BASE @ SWAP HEX
-    CA>WA
-    DUP .WORD CRET
+    DUP
+    CA>WA .WORD CRET
     DUP IS-CODE
     IF
         ." <CODE>" CRET DROP
     ELSE 
-        WA>CB
+        2+
         BEGIN 
             DUP @ 0x0106 = ( is this semi ? ) 
             NOT IF
