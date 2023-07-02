@@ -62,6 +62,11 @@ void syscall_debug(ForthVM *vm)
   // debugger.printWALabel(wa);
 }
 
+
+void syscall_write_cpp(ForthVM *vm) {
+  dumper.writeCPP(&fasm, &mem, 0, 8192);
+}
+
 bool getArgs(int argc, char **argv)
 {
 
@@ -153,6 +158,7 @@ void attachSyscalls()
   vm.addSyscall(SYSCALL_FOPEN, syscall_fopen);
   vm.addSyscall(SYSCALL_FCLOSE, syscall_fclose);
   vm.addSyscall(SYSCALL_FREAD, syscall_fread);
+  vm.addSyscall(SYSCALL_WRITE_CPP, syscall_write_cpp);
 }
 
 int main(int argc, char **argv)
