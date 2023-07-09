@@ -66,7 +66,8 @@ void syscall_debug(ForthVM *vm)
 
 
 void syscall_write_cpp(ForthVM *vm) {
-  dumper.writeCPP("ForthImage.h", &fasm, &mem, 0, 8192);
+  uint16_t progmem = vm->pop();
+  dumper.writeCPP("ForthImage.h", &fasm, &mem, 0, 8192, progmem != 0);
 }
 
 bool getArgs(int argc, char **argv)
@@ -123,7 +124,7 @@ bool loadInnerInterpreter()
 #ifdef GENERATE_328P
   fasm.setOption("#RAMSTART", 0x2000); 
   fasm.setOption("#VARSTART", 0x2200); 
-  fasm.setOption("#SPTOP", 0x23e0);    
+  fasm.setOption("#SPTOP", 0x2300);    
   fasm.setOption("#RSTOP", 0x23fe);    
 #endif
 
@@ -194,9 +195,9 @@ int main(int argc, char **argv)
     dumper.dump(&fasm);
     fasm.writeMemory(&mem);
     #ifdef GENERATE_328P
-    dumper.writeCPP("ForthImage_ATMEGA328.h", &fasm, &mem, 0, 8192);
+    dumper.writeCPP("ForthImage_ATMEGA328.h", &fasm, &mem, 0, 8192, true);
     #else
-    dumper.writeCPP("ForthImage_STM32F4xx.h", &fasm, &mem, 0, 8192);
+    dumper.writeCPP("ForthImage_STM32F4xx.h", &fasm, &mem, 0, 8192, false);
     #endif
 
     debugger.setAssembler(&fasm);
