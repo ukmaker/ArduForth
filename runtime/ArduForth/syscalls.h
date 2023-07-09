@@ -165,9 +165,7 @@ void syscall_inline(ForthVM *vm)
     size_t read;
     if (Serial.available() && (read = Serial.readBytesUntil(0x0a, (char *)cbuf, 63)) != 0)
     {
-        // There will now be a null-terminated string in the buffer
-        // calculate the end and store that in buf+2
-        vm->ram()->put(bufend, bufstart + read - 1); //strlen((char *)cbuf));
+        vm->ram()->put(bufend, bufstart + read);
         // Current buffer pointer is just the start of the buffer
         vm->ram()->put(bufidx, bufstart);
         vm->push(0x01);

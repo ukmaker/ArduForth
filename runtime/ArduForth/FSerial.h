@@ -37,17 +37,15 @@ class FSerial {
     }
 
     int readBytesUntil(char separator, char *buf, size_t len) {
-        char c;
-        size_t read = 1;
-        while((c = getc()) != separator && read < len) {
-            *buf++ = c;
-            read++;
+        size_t num_read = 0;
+        while (num_read < len) {
+            int c = getc();
+            if (c < 0 || c == separator) break;
+            *buf++ = (char)c;
+            num_read++;
         }
-        
-        return read;
+        return num_read;
     }
-
-
 };
 
 FSerial Serial;
