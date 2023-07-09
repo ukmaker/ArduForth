@@ -20,7 +20,7 @@ class Dumper {
         Token *tok = fasm->tokens;
         while(tok != NULL) {
             if(tok->isConst()) {
-                fprintf(fp, "#define FORTH_%s %04x\n", tok->name+1, tok->value); 
+                fprintf(fp, "#define FORTH_%s 0x%04x\n", tok->name+1, tok->value); 
             }
             tok = tok->next;
         }
