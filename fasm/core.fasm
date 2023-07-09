@@ -6,11 +6,12 @@
 ; Memory Map
 ; You should redefine this for your device depending on how
 ; much memory you have available.
-; E.g. for an Atmega 328P (32KROM, 2K RAM) 
+; E.g. for an Atmega 328P (32KROM, 2K RAM) With no other code the Arduino environment
+; needs approx 900 bytes RAM - so we take only 1K for Forth
 ;   #RAMSTART: 0x2000  ; Need to allocate 8K for Forth ROM
-;   #VARSTART: 0x2400  ; Allow 1K for new Forth words in RAM. Allot 256 bytes for variables
-;   #SPTOP:    0x2520  ; Vars end at 0x2500 - 32 bytes for the data stack
-;   #RSTOP:    0x2540  ; 32 bytes for the return stack leaves 0x2C0 Bytes of RAM free for Arduino
+;   #VARSTART: 0x2200  ; Allow 256 bytes for new Forth words in RAM. Allot 64 bytes for variables. 128 for LBUF (see below)
+;   #SPTOP:    0x23e0  ; Vars end at 0x2500 - 16 bytes for the data stack
+;   #RSTOP:    0x23fe  ; 16 bytes for the return stack 
 ;
 ; values below are for STM32F401
 ;

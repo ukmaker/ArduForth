@@ -17,7 +17,7 @@
 #include "tests/RangeTests.h"
 #include "tests/LabelTests.h"
 
-//#define GENERATE_328P
+#define GENERATE_328P
 
 /*
 * core.asm defines
