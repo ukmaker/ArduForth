@@ -23,7 +23,7 @@
 #SPTOP:    0x3800 ; Data stack pointer grows down from here
 #RSTOP:    0x3ffe ; And the return stack from here
                   ; This gives both stacks 2K bytes
-#LBUF_LEN:  128   ; Maximum length of the line buffer in chars
+#LBUF_LEN:  64   ; Maximum length of the line buffer in chars
 #BASE_DEC: 10
 #BASE_HEX: 16
 #BASE_BIN: 2
@@ -1137,9 +1137,18 @@ DP_STORE_CA:
   ST A,B
   JP NEXT
 
+LBUF:
+  .N "LBUF"
+  .DATA DP_STORE
+LBUF_WA: .DATA LBUF_CA
+LBUF_CA:
+  MOVIL A,%LBUF_IDX
+  PUSHD A
+  JP NEXT
+
 TWO_PLUS:
   .N "2+"
-  .DATA DP_STORE
+  .DATA LBUF
 TWO_PLUS_WA: .DATA TWO_PLUS_CA
 TWO_PLUS_CA:
   POPD A

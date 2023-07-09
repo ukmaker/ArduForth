@@ -124,8 +124,8 @@ bool loadInnerInterpreter()
 #ifdef GENERATE_328P
   fasm.setOption("#RAMSTART", 0x2000); 
   fasm.setOption("#VARSTART", 0x2200); 
-  fasm.setOption("#SPTOP", 0x2480);    
-  fasm.setOption("#RSTOP", 0x24fe);    
+  fasm.setOption("#SPTOP", 0x2380);    
+  fasm.setOption("#RSTOP", 0x23fe);    
 #endif
 
   fasm.slurp("fasm/core.fasm");
