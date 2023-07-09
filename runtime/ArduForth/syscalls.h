@@ -41,7 +41,11 @@ void syscall_type(ForthVM *vm)
     for (uint16_t i = 0; i < len; i++)
     {
         b = vm->readByte(dp + i);
+        #ifdef ARDUINO
+        Serial.print((char)b);
+        #else
         Serial.printf("%c", b);
+        #endif
     }
     Serial.flush();
 }
@@ -63,7 +67,11 @@ void syscall_dot(ForthVM *vm)
     switch (base)
     {
     case 16:
+        #ifdef ARDUINO
+        Serial.print(v, HEX);
+        #else
         Serial.printf("%04x", v);
+        #endif     
         break;
     case 2:
     {
@@ -82,7 +90,11 @@ void syscall_dot(ForthVM *vm)
     break;
     case 10:
     default:
+        #ifdef ARDUINO
+        Serial.print(v);
+        #else
         Serial.printf("%d", v);
+        #endif
         break;
     }
 }
@@ -97,7 +109,11 @@ void syscall_dot_c(ForthVM *vm)
     switch (base)
     {
     case 16:
+        #ifdef ARDUINO 
+        Serial.print("0x"); Serial.print(v, HEX);
+        #else
         Serial.printf("0x%02x", v);
+        #endif
         break;
     case 2:
     {
