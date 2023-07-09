@@ -163,16 +163,24 @@ void syscall_inline(ForthVM *vm)
 
     uint8_t *cbuf = vm->ram()->addressOfChar(bufstart);
     size_t read;
-    if (Serial.available() && (read = Serial.readBytesUntil(0x0a, (char *)cbuf, 63)) != 0)
+    if(!Serial.available())
     {
-        vm->ram()->put(bufend, bufstart + read);
-        // Current buffer pointer is just the start of the buffer
-        vm->ram()->put(bufidx, bufstart);
-        vm->push(0x01);
+        vm->push(0x00); // No input
     }
-    else
+    else 
     {
-        vm->push(0x00);
+        read = Serial.readBytesUntil(0x0a, (char *)cbuf, 63);
+        if(read > 0)
+        {
+            vm->ram()->put(bufend, bufstart + read);
+            // Current buffer pointer is just the start of the buffer
+            vm->ram()->put(bufidx, bufstart);
+            vm->push(0x01);
+        }
+        else
+        {
+            vm->push(0x02); // Empty input
+        }
     }
 }
 
