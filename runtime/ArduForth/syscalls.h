@@ -133,7 +133,11 @@ void syscall_dot_c(ForthVM *vm)
     break;
     case 10:
     default:
+        #ifdef ARDUINO 
+        Serial.print(v);
+        #else
         Serial.printf("%d", v);
+        #endif
         break;
     }
 }
