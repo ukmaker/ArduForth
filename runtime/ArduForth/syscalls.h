@@ -143,8 +143,7 @@ void syscall_inline(ForthVM *vm)
 
     uint8_t *cbuf = vm->ram()->addressOfChar(bufstart);
     size_t read;
-    while(!Serial.available()) {}
-    if ((read = Serial.readBytesUntil(0x0a, (char *)cbuf, 127)) != 0)
+    if (Serial.available() && (read = Serial.readBytesUntil(0x0a, (char *)cbuf, 127)) != 0)
     {
         // There will now be a null-terminated string in the buffer
         // calculate the end and store that in buf+2
