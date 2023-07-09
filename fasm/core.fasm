@@ -5,11 +5,17 @@
 ;
 ; Memory Map
 ; You should redefine this for your device depending on how
-; much memory you have available
+; much memory you have available.
+; E.g. for an Atmega 328P (32KROM, 2K RAM) 
+;   #RAMSTART: 0x2000  ; Need to allocate 8K for Forth ROM
+;   #VARSTART: 0x2400  ; Allow 1K for new Forth words in RAM. Allot 256 bytes for variables
+;   #SPTOP:    0x2520  ; Vars end at 0x2500 - 32 bytes for the data stack
+;   #RSTOP:    0x2540  ; 32 bytes for the return stack leaves 0x2C0 Bytes of RAM free for Arduino
+;
+; values below are for STM32F401
 ;
 #SYSTEM:   0x0000 ; System reset vector
-#INNER:    0x0100 ; Inner interpreter starts here
-#MEMSIZE:  0x2000 ; Reserve 8K-bytes for Forth
+#INNER:    0x0080 ; Inner interpreter starts here
 #FENCE:    0x1FF2 ; Last word in the ROM
 #RAMSTART: 0x2000 ; Variables grow up from here
 #VARSTART: 0x3000 ; Variables grow up from here

@@ -9,8 +9,8 @@ class Dumper {
     Dumper() {}
     ~Dumper() {}
 
-    void writeCPP(Assembler *fasm, Memory *mem, size_t romStart, size_t romSize) {
-        FILE *fp = fopen("ForthImage.h", "w");
+    void writeCPP(const char *name, Assembler *fasm, Memory *mem, size_t romStart, size_t romSize) {
+        FILE *fp = fopen(name, "w");
         fprintf(fp, "#ifndef UKMAKER_FORTH_IMAGE_H\n");
         fprintf(fp, "#define UKMAKER_FORTH_IMAGE_H\n");
         fprintf(fp, "#include \"FArduino.h\"\n");
@@ -20,7 +20,7 @@ class Dumper {
         Token *tok = fasm->tokens;
         while(tok != NULL) {
             if(tok->isConst()) {
-                printf("#define %s %04x\n", tok->name, tok->value); 
+                fprintf(fp, "#define FORTH_%s %04x\n", tok->name+1, tok->value); 
             }
             tok = tok->next;
         }

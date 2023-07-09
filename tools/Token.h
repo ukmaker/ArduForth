@@ -28,7 +28,7 @@
 
 /*
 Syntax:
-#CNAME: 0x27 ; A constant definition
+#CNAME: 0x33 ; A constant definition. Can be overridden by supplying an option to the assembler
 %VNAME: N    ; A variable definition. Reserves N words
 $SNAME: "This is a string" ; Stored as a Forth-string <len><str>
 

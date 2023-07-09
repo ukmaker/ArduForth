@@ -4,6 +4,7 @@
 #include "AssemblyVocabulary.h"
 #include "Token.h"
 #include "Symbol.h"
+#include "Option.h"
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -63,6 +64,32 @@ public:
                 return found;
             }
         }
+        return NULL;
+    }
+
+    void setOption(const char *name, uint16_t value) {
+        if(getOption(name) != NULL) {
+            printf("Error: option %s already defined\n", name);
+        } else {
+            Option *opt = new Option(name,value);
+            if(options == NULL) {
+                options = opt;
+            } else {
+                Option *n = options;
+                while(n->next != NULL) n = n->next;
+                n->next = opt;
+            }
+        }
+    }
+
+    Option  *getOption(const char *name) {
+        if(options == NULL) return NULL;
+        Option *opt = options;
+        while(opt != NULL) {
+            if(strcmp(opt->name, name) == 0) return opt;
+            opt = opt->next;
+        }
+
         return NULL;
     }
 
@@ -1875,6 +1902,13 @@ public:
         {
             return Token::error(line, pos, NUMBER_EXPECTED);
         }
+        // Now see if in fact the constant was supplied as an option
+        // If so, use that value
+        Option *opt = getOption(tok->name);
+        if(opt != NULL) {
+            tok->value = opt->value;
+        }
+
         return tok;
     }
 
@@ -2417,6 +2451,7 @@ public:
     Token *tokens = NULL;
     Token *currentLabel = NULL;
     Symbol *symbols = NULL;
+    Option *options = NULL;
     AssemblyVocabulary vocab;
     bool phase1Error;
     bool phase2Error;

@@ -11,7 +11,7 @@
 #include "UnsafeMemory.h"
 #include "syscalls.h"
 
-#include "STM32Dev.h"
+#include "STM32DevImage.h"
 
 
 uint8_t ram[16384];
