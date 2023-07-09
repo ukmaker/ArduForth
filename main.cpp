@@ -121,10 +121,10 @@ bool loadInnerInterpreter()
 {
 
 #ifdef GENERATE_328P
-  fasm.setOption("#RAMSTART", 0x2000); //  #RAMSTART: 0x2000  ; Need to allocate 8K for Forth ROM
-  fasm.setOption("#VARSTART", 0x2400); //  #VARSTART: 0x2400  ; Allow 1K for new Forth words in RAM. Allot 256 bytes for variables
-  fasm.setOption("#SPTOP", 0x2520);    //  #SPTOP:    0x2520  ; Vars end at 0x2500 - 32 bytes for the data stack
-  fasm.setOption("#RSTOP", 0x2540);    //  #RSTOP:    0x2540  ; 32 bytes for the return stack leaves 0x2C0 Bytes of RAM free for Arduino#endif
+  fasm.setOption("#RAMSTART", 0x2000); 
+  fasm.setOption("#VARSTART", 0x2200); 
+  fasm.setOption("#SPTOP", 0x23e0);    
+  fasm.setOption("#RSTOP", 0x23fe);    
 #endif
 
   fasm.slurp("fasm/core.fasm");
