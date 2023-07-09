@@ -26,7 +26,11 @@ public:
         if(addr >= _ramStart && addr <= _ramEnd) {
             return *(uint16_t *)(_ram + addr - _ramStart);
         } else {
+            #ifdef ARDUINO
+            return pgm_read_word(_rom + addr - _romStart);
+            #else
             return *(uint16_t *)(_rom + addr - _romStart);
+            #endif
         }
     }
 
@@ -43,7 +47,11 @@ public:
         if(addr >= _ramStart && addr <= (_ramEnd+1)) {
             return *(_ram + addr - _ramStart);
         } else {
+            #ifdef ARDUINO
+            return pgm_read_byte(_rom + addr - _romStart);
+            #else
             return *(_rom + addr - _romStart);
+            #endif
         }
     }
 
