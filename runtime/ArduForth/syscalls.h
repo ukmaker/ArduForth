@@ -28,6 +28,32 @@
 #define SYSCALL_DOTC 20
 #define SYSCALL_WRITE_CPP 21
 #define SYSCALL_COMPARE 22
+#define SYSCALL_FREE_MEMORY 23
+
+#ifdef __arm__
+// should use uinstd.h to define sbrk but Due causes a conflict
+extern "C" char* sbrk(int incr);
+#else  // __ARM__
+extern char *__brkval;
+#endif  // __arm__
+
+int getFreeMemory() {
+  char top;
+#ifdef __arm__
+  return &top - reinterpret_cast<char*>(sbrk(0));
+#elif defined(CORE_TEENSY) || (ARDUINO > 103 && ARDUINO != 151)
+  return &top - __brkval;
+#else  // __arm__
+  return __brkval ? &top - __brkval : &top - __malloc_heap_start;
+#endif  // __arm__
+}
+
+void syscall_free_memory(ForthVM *vm) {
+    int f = getFreeMemory();
+    vm->push(f & 0x0000ffff);
+    vm->push(f >> 16);    
+}
+
 
 void syscall_type(ForthVM *vm)
 {
@@ -176,6 +202,8 @@ void syscall_inline(ForthVM *vm)
             // Current buffer pointer is just the start of the buffer
             vm->ram()->put(bufidx, bufstart);
             vm->push(0x01);
+            //Serial.print("BYTES READ = "); Serial.println(read);
+            //Serial.print("FIRST>"); Serial.println(vm->ram()->getC(bufstart));
         }
         else
         {

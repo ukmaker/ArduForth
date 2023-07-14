@@ -455,70 +455,70 @@ public:
     }
 
     void _add(uint8_t a, uint8_t b) {
-        uint32_t r = _regs[a] + _regs[b];
+        uint32_t r = (uint32_t)_regs[a] + (uint32_t)_regs[b];
         _regs[a] = r & 0xffff;
         _arithmeticFlags(r);
     }
 
     void _addi(uint8_t a, int8_t n) {
-        uint32_t r = _regs[a] + n;
+        uint32_t r = (uint32_t)_regs[a] + n;
         _regs[a] = r & 0xffff;
         _arithmeticFlags(r);
     }
 
     void _addl(uint8_t a, uint16_t n) {
-        uint32_t r = _regs[a] + n;
+        uint32_t r = (uint32_t)_regs[a] + n;
         _regs[a] = r & 0xffff;
         _arithmeticFlags(r);
     }
 
     void _cmp(uint8_t a, uint8_t b) {
-        uint32_t r = _regs[a] - _regs[b];
+        uint32_t r = (uint32_t)_regs[a] - (uint32_t)_regs[b];
         _arithmeticFlags(r);
     }
 
     void _cmpi(uint8_t a, uint8_t n) {
-        uint32_t r = _regs[a] - n;
+        uint32_t r = (uint32_t)_regs[a] - n;
         _arithmeticFlags(r);
     }
 
     void _cmpl(uint8_t a, uint16_t n) {
-        uint32_t r = _regs[a] - n;
+        uint32_t r = (uint32_t)_regs[a] - n;
         _arithmeticFlags(r);
     }
 
     void _sub(uint8_t a, uint8_t b) {
-        uint32_t r = _regs[a] - _regs[b];
+        uint32_t r = (uint32_t)_regs[a] - (uint32_t)_regs[b];
         _regs[a] = r & 0xffff;
         _arithmeticFlags(r);
     }
 
     void _subi(uint8_t a, int8_t n) {
-        uint32_t r = _regs[a] - n;
+        uint32_t r = (uint32_t)_regs[a] - n;
         _regs[a] = r & 0xffff;
         _arithmeticFlags(r);
     }
 
     void _subi4(uint8_t a, int8_t n) {
-        uint32_t r = _regs[a] - n;
+        uint32_t r = (uint32_t)_regs[a] - n;
         _regs[a] = r & 0xffff;
         _arithmeticFlags(r);
     }
 
     void _subl(uint8_t a, uint16_t n) {
-        uint32_t r = _regs[a] - n;
+        uint32_t r = (uint32_t)_regs[a] - n;
         _regs[a] = r & 0xffff;
         _arithmeticFlags(r);
     }
 
    void _mul(uint8_t a, uint8_t b) {
-        uint32_t r = _regs[a] * _regs[b];
+        uint32_t r = (uint32_t)_regs[a] * (uint32_t)_regs[b];
         _regs[a] = r & 0xffff;
         _arithmeticFlags(r);
     }
 
   void _div(uint8_t a, uint8_t b) {
-        uint16_t r = _regs[a] / _regs[b];
+        uint16_t r = (uint32_t)_regs[a] / (uint32_t)_regs[b];
         _regs[a] = r;
         _arithmeticFlags(r);
     }
@@ -595,18 +595,18 @@ public:
     }
 
     void _booleanFlags(uint32_t v) {
-        _c = (v & 0x10000) == 0x10000;
+        _c = (v & (uint32_t)0x10000) == (uint32_t)0x10000;
         _z = v == 0;
         _odd = v & 0x01;
-        _sign = (v & 0x08000) != 0;
+        _sign = (v & (uint32_t)0x08000) != 0;
     }
 
     void _arithmeticFlags(uint32_t v) {
-        _c = (v & 0x10000) == 0x10000;
+        _c = (v & (uint32_t)0x10000) == (uint32_t)0x10000;
         _z = v == 0;
         // odd(P) functions as overflow
-        _odd = (v & 0xffff0000) != 0;
-        _sign = (v & 0x08000) != 0;
+        _odd = (v & (uint32_t)0xffff0000) != 0;
+        _sign = (v & (uint32_t)0x08000) != 0;
     }
 
     /*
