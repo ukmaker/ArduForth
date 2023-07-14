@@ -8,7 +8,7 @@ class RangeTests : public Test
 
 public:
 
-    RangeTests(TestSuite *suite, ForthVM *fvm, Assembler *vmasm) : Test(suite, fvm, vmasm) {}
+    RangeTests(TestSuite *suite, ForthVM *fvm, Assembler *vmasm, Loader *loader) : Test(suite, fvm, vmasm, loader) {}
     
     void run()
     {

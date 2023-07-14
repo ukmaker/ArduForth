@@ -5,7 +5,7 @@
 
 class LabelTests : public Test {
     public:
-    LabelTests(TestSuite *suite, ForthVM *fvm, Assembler *vmasm) : Test(suite, fvm, vmasm) {}
+    LabelTests(TestSuite *suite, ForthVM *fvm, Assembler *vmasm, Loader *loader) : Test(suite, fvm, vmasm, loader) {}
     void run() {
         shouldOpenTestLabels();
         skipTokens(1);

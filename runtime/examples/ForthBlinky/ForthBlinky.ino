@@ -24,10 +24,7 @@ ForthVM vm(&mem, syscalls, 40);
 
 void syscall_debug(ForthVM *vm)
 {
-  // WA points to the word to be executed
-  // get the associated label and print it
-  uint16_t wa = vm->get(REG_WA);
-  // debugger.printWALabel(wa);
+
 }
 
 void attachSyscalls()
@@ -55,6 +52,7 @@ void attachSyscalls()
 
   vm.addSyscall(SYSCALL_DOTC, syscall_dot_c);
   vm.addSyscall(SYSCALL_FREE_MEMORY, syscall_free_memory);
+  vm.addSyscall(SYSCALL_SYSCALL, syscall_syscall);
   vm.addSyscall(SYSCALL_ARDUINO, syscall_arduino);
   }
 
@@ -69,9 +67,6 @@ void setup()
 }
 
 void loop() {
-    //digitalWrite(LED_BUILTIN, 1);
     for(int i=0; i<100; i++) vm.step();
-   // digitalWrite(LED_BUILTIN, 0);
-    
 }
 #endif

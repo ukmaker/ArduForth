@@ -4,6 +4,7 @@
 #include "TestSuite.h"
 #include "../runtime/ArduForth/ForthVM.h"
 #include "../tools/Assembler.h"
+#include "../tools/Loader.h"
 
 class Test {
 
@@ -12,11 +13,13 @@ class Test {
     TestSuite *testSuite;
     ForthVM *vm;
     Assembler *fasm;
+    Loader *loader;
 
-    Test(TestSuite *suite, ForthVM *fvm, Assembler *vmasm) {
+    Test(TestSuite *suite, ForthVM *fvm, Assembler *vmasm, Loader *vmloader) {
         testSuite = suite;
         vm = fvm;
         fasm = vmasm;
+        loader = vmloader;
     }
 
     ~Test() {}

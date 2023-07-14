@@ -29,8 +29,9 @@
 #define SYSCALL_WRITE_CPP 21
 #define SYSCALL_COMPARE 22
 #define SYSCALL_FREE_MEMORY 23
-#define SYSCALL_ARDUINO 24
-#define CORE_SYSCALLS 24
+#define SYSCALL_SYSCALL 24
+#define SYSCALL_ARDUINO 25
+#define CORE_SYSCALLS 26
 
 #ifdef ARDUINO
 #ifdef __arm__
@@ -69,6 +70,11 @@ void syscall_unimplemented(ForthVM *vm) {
     Serial.print("Unimplemented syscall #");
     Serial.print(s);
     Serial.print('\n');
+}
+
+void syscall_syscall(ForthVM *vm) {
+    uint16_t syscall = vm->pop();
+    vm->syscall(syscall);
 }
 
 

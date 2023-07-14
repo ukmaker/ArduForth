@@ -7,6 +7,7 @@
 #include "runtime/ArduForth/UnsafeMemory.h"
 #include "runtime/ArduForth/syscalls.h"
 #include "tools/Assembler.h"
+#include "tools/Loader.h"
 #include "tools/Dumper.h"
 #include "tools/Debugger.h"
 #include "tools/host_syscalls.h"
@@ -36,16 +37,17 @@ UnsafeMemory mem(ram, 16384, 0, rom, 64, 16384);
 Syscall syscalls[40];
 
 ForthVM vm(&mem, syscalls, 40);
+Loader loader(&mem);
 
 Assembler fasm;
 Dumper dumper;
 Debugger debugger;
 
 TestSuite *testSuite = new TestSuite();
-VMTests vmTests(testSuite, &vm, &fasm);
-RangeTests rangeTests(testSuite, &vm, &fasm);
-LabelTests labelTests(testSuite, &vm, &fasm);
-SlurpTests slurpTests(testSuite, &vm, &fasm);
+VMTests vmTests(testSuite, &vm, &fasm, &loader);
+RangeTests rangeTests(testSuite, &vm, &fasm, &loader);
+LabelTests labelTests(testSuite, &vm, &fasm, &loader);
+SlurpTests slurpTests(testSuite, &vm, &fasm, &loader);
 
 int tests = 0;
 int passed = 0;
@@ -135,9 +137,6 @@ bool loadInnerInterpreter()
 
   fasm.dump();
 
-  // if(verbose)
-  //
-  // fasm.writeCode();
   return !fasm.hasErrors();
 }
 
@@ -163,6 +162,7 @@ void attachSyscalls()
   vm.addSyscall(SYSCALL_ARDUINO, syscall_unimplemented);
   #endif
   vm.addSyscall(SYSCALL_FREE_MEMORY, syscall_free_memory);
+  vm.addSyscall(SYSCALL_SYSCALL, syscall_syscall);
 
   vm.addSyscall(SYSCALL_D_ADD, syscall_add_double);
   vm.addSyscall(SYSCALL_D_SUB, syscall_sub_double);
@@ -185,9 +185,9 @@ void attachSyscalls()
 int main(int argc, char **argv)
 {
 
-  // testAssembler();
-  // testRanges();
-  // labelTests.run();
+  testAssembler();
+  testRanges();
+  labelTests.run();
   // generateTestCode();
   // testVM();
 

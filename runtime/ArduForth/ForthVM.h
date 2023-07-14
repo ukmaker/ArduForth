@@ -39,59 +39,6 @@ public:
         while(!halted()) step();
     }
 
-    void load(uint16_t op_cc, uint16_t cc_apply, uint16_t op, uint16_t arga, uint16_t argb) {
-        uint16_t instruction = 
-            (op_cc << CC_BITS)
-            + (cc_apply << CC_APPLY_BIT)
-            + (op << OP_BITS)
-            + ((arga & 0x0f) << ARGA_BITS)
-            + ((argb & 0x0f) << ARGB_BITS);
-
-        _ram->put(_regs[REG_PC], instruction);
-        _regs[REG_PC]+=2;
-    }
-
-    void load(uint16_t op_cc, uint16_t cc_apply, uint16_t op, uint16_t imm) {
-        uint16_t instruction =
-         (op_cc << CC_BITS)
-         + (cc_apply << CC_APPLY_BIT)
-         + (op << OP_BITS)
-         + ((imm & 0xff) << ARGB_BITS);
-        _ram->put(_regs[REG_PC], instruction);
-        _regs[REG_PC]+=2;
-    }
-
-    void load(uint16_t imm) {
-         _ram->put(_regs[REG_PC], imm);
-        _regs[REG_PC]+=2;       
-    }
-
-    void load(char c, bool inc) {
-        uint16_t v = _ram->get(_regs[REG_PC]);
-        // if inc then this is the high byte and we increment to the next word
-        if(inc) {
-            v = v & 0xff;
-            v = v | ((uint16_t)c << 8);
-            load(v);
-        } else {
-            v = v & 0xff00;
-            v = v | c;
-            _ram->put(_regs[REG_PC], v);
-        }
-    }
-
-    uint16_t load(const char *str) {
-        char c;
-        bool h = false;
-        while((c = *str++) != 0) {
-            load(c, h);
-            h = !h;
-        }
-        // make sure we're aligned on a word boundary
-        if(h) load('\0', h);
-        return _regs[REG_PC];
-    }
-
     uint16_t get(uint8_t reg) {
         return _regs[reg];
     }
@@ -123,6 +70,12 @@ public:
      **/
     void addSyscall(uint16_t idx, Syscall syscall) {
         _syscalls[idx] = syscall;
+    }
+
+    void syscall(uint16_t syscall) {
+        if(syscall < _numSyscalls && _syscalls[syscall] != NULL) {
+            _syscalls[syscall](this);
+        }
     }
 
     void push(uint16_t c) {
@@ -439,10 +392,7 @@ public:
                 break;
 
             case OP_SYSCALL:
-                if(n8 < _numSyscalls && _syscalls[n8] != NULL) {
-                    _syscalls[n8](this);
-                }// call a high-level routine <call.6> 
-
+                syscall(n8);
                 break;
 
             case OP_HALT:

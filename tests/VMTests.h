@@ -15,7 +15,7 @@ void VMTests_printC(ForthVM *vm) {
 class VMTests : public Test {
 
     public:
-    VMTests(TestSuite *suite, ForthVM *fvm, Assembler *vmasm) : Test(suite, fvm, vmasm) {}
+    VMTests(TestSuite *suite, ForthVM *fvm, Assembler *vmasm, Loader *loader) : Test(suite, fvm, vmasm, loader) {}
 
     void run() {
 
@@ -47,11 +47,11 @@ void shouldHalt() {
 }
 
 void shouldAdd() {
-    vm->reset();
-    vm->load(0,0,OP_MOVAI, 3);
-    vm->load(0,0,OP_MOVBI, 7);
-    vm->load(0,0,OP_ADD, REG_A, REG_B);
-    vm->load(0,0,OP_HALT,0);
+    loader->reset();
+    loader->load(0,0,OP_MOVAI, 3);
+    loader->load(0,0,OP_MOVBI, 7);
+    loader->load(0,0,OP_ADD, REG_A, REG_B);
+    loader->load(0,0,OP_HALT,0);
     vm->reset();
     vm->step();
     vm->step();
@@ -61,13 +61,13 @@ void shouldAdd() {
 }
 
 void shouldGenerateCarry() {
-    vm->reset();
-    vm->load(0,0,OP_MOVIL, REG_0,0);
-    vm->load(0x8000);
-    vm->load(0,0,OP_MOVIL, REG_1,0);
-    vm->load(0x8000);
-    vm->load(0,0,OP_ADD, REG_0, REG_1);
-    vm->load(0,0,OP_HALT,0);
+    loader->reset();
+    loader->load(0,0,OP_MOVIL, REG_0,0);
+    loader->load(0x8000);
+    loader->load(0,0,OP_MOVIL, REG_1,0);
+    loader->load(0x8000);
+    loader->load(0,0,OP_ADD, REG_0, REG_1);
+    loader->load(0,0,OP_HALT,0);
     vm->reset();
     vm->step();
     vm->step();
@@ -78,11 +78,11 @@ void shouldGenerateCarry() {
 }
 
 void shouldSub() {
-    vm->reset();
-    vm->load(0,0,OP_MOVAI, 3);
-    vm->load(0,0,OP_MOVBI, 7);
-    vm->load(0,0,OP_SUB, REG_A, REG_B);
-    vm->load(0,0,OP_HALT,0);
+    loader->reset();
+    loader->load(0,0,OP_MOVAI, 3);
+    loader->load(0,0,OP_MOVBI, 7);
+    loader->load(0,0,OP_SUB, REG_A, REG_B);
+    loader->load(0,0,OP_HALT,0);
     vm->reset();
     vm->step();
     vm->step();
@@ -93,13 +93,13 @@ void shouldSub() {
 }
 
 void shouldSubL() {
-    vm->reset();
-    vm->load(0,0,OP_MOVIL, REG_A, 0);
-    vm->load(0xaaaa);
-    vm->load(0,0,OP_MOVIL, REG_B, 0);
-    vm->load(0x1111);
-    vm->load(0,0,OP_SUB, REG_A, REG_B);
-    vm->load(0,0,OP_HALT,0);
+    loader->reset();
+    loader->load(0,0,OP_MOVIL, REG_A, 0);
+    loader->load(0xaaaa);
+    loader->load(0,0,OP_MOVIL, REG_B, 0);
+    loader->load(0x1111);
+    loader->load(0,0,OP_SUB, REG_A, REG_B);
+    loader->load(0,0,OP_HALT,0);
     vm->reset();
     vm->step();
     vm->step();
@@ -110,13 +110,13 @@ void shouldSubL() {
 }
 
 void shouldMulL() {
-    vm->reset();
-    vm->load(0,0,OP_MOVIL, REG_A, 0);
-    vm->load(0x1111);
-    vm->load(0,0,OP_MOVIL, REG_B, 0);
-    vm->load(4);
-    vm->load(0,0,OP_MUL, REG_A, REG_B);
-    vm->load(0,0,OP_HALT,0);
+    loader->reset();
+    loader->load(0,0,OP_MOVIL, REG_A, 0);
+    loader->load(0x1111);
+    loader->load(0,0,OP_MOVIL, REG_B, 0);
+    loader->load(4);
+    loader->load(0,0,OP_MUL, REG_A, REG_B);
+    loader->load(0,0,OP_HALT,0);
     vm->reset();
     vm->step();
     vm->step();
@@ -127,13 +127,13 @@ void shouldMulL() {
 }
 
 void shouldAnd() {
-    vm->reset();
-    vm->load(0,0,OP_MOVIL, REG_A, 0);
-    vm->load(0x1111);
-    vm->load(0,0,OP_MOVIL, REG_B, 0);
-    vm->load(0x1010);
-    vm->load(0,0,OP_AND, REG_A, REG_B);
-    vm->load(0,0,OP_HALT,0);
+    loader->reset();
+    loader->load(0,0,OP_MOVIL, REG_A, 0);
+    loader->load(0x1111);
+    loader->load(0,0,OP_MOVIL, REG_B, 0);
+    loader->load(0x1010);
+    loader->load(0,0,OP_AND, REG_A, REG_B);
+    loader->load(0,0,OP_HALT,0);
     vm->reset();
     vm->step();
     vm->step();
@@ -145,27 +145,27 @@ void shouldAnd() {
 
 void shouldPrintC() {
     vm->addSyscall(0,VMTests_printC);
-    vm->reset();
-    vm->load(0,0,OP_MOVIL, REG_SP, 0);
-    vm->load((uint16_t)0);
-    vm->load(0,0,OP_MOVIL, REG_A, 0);
-    vm->load('F');
-    vm->load(0,0,OP_PUSHD, REG_A, 0);
-    vm->load(0,0,OP_SYSCALL, 0);
-    vm->load(0,0,OP_HALT,0);
+    loader->reset();
+    loader->load(0,0,OP_MOVIL, REG_SP, 0);
+    loader->load((uint16_t)0);
+    loader->load(0,0,OP_MOVIL, REG_A, 0);
+    loader->load('F');
+    loader->load(0,0,OP_PUSHD, REG_A, 0);
+    loader->load(0,0,OP_SYSCALL, 0);
+    loader->load(0,0,OP_HALT,0);
     vm->reset();
     vm->step();
     vm->step();
     vm->step();
     vm->step(); 
-   vm->step(); 
+    vm->step(); 
 
     assertEquals(vm->get(REG_SP), 0, "SP should be zero after printC");
 }
 
 void shouldLDBI() {
-    vm->reset();
-    vm->load(0,0,OP_MOVBI, 5);
+    loader->reset();
+    loader->load(0,0,OP_MOVBI, 5);
     vm->reset();
     vm->step();
 
@@ -173,9 +173,9 @@ void shouldLDBI() {
 }
 
 void shouldAddI() {
-    vm->reset();
-    vm->load(0,0,OP_MOVBI, 5);
-    vm->load(0,0,OP_ADDI, REG_B, -2);
+    loader->reset();
+    loader->load(0,0,OP_MOVBI, 5);
+    loader->load(0,0,OP_ADDI, REG_B, -2);
     vm->reset();
     vm->step();
     vm->step();

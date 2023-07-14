@@ -6,7 +6,7 @@
 class SlurpTests : public Test {
 
     public:
-    SlurpTests(TestSuite *suite, ForthVM *fvm, Assembler *vmasm) : Test(suite, fvm, vmasm) {}
+    SlurpTests(TestSuite *suite, ForthVM *fvm, Assembler *vmasm, Loader *loader) : Test(suite, fvm, vmasm, loader) {}
 
     void run() {
 
