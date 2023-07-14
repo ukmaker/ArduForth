@@ -30,6 +30,7 @@
 #define SYSCALL_COMPARE 22
 #define SYSCALL_FREE_MEMORY 23
 #define SYSCALL_ARDUINO 24
+#define CORE_SYSCALLS 24
 
 #ifdef ARDUINO
 #ifdef __arm__
@@ -448,12 +449,16 @@ void syscall_read_host(ForthVM *vm) {
 
 void syscall_arduino(ForthVM *vm) {
     uint16_t op = vm->pop();
+    uint16_t a;
+    uint16_t b;
     switch(op) {
         case PIN_MODE:
             pinMode(vm->pop(), vm->pop());
             break;
         case DIGITAL_WRITE:
-            digitalWrite(vm->pop(), vm->pop());
+            a = vm->pop();
+            b = vm->pop();
+            digitalWrite(a,b);
             break;
         case DIGITAL_READ:
             vm->push(digitalRead(vm->pop()));
@@ -557,8 +562,8 @@ void syscall_and_double(ForthVM *vm) {
 }
 
 void syscall_or_double(ForthVM *vm) {
-    uint16_t h = vm->pop();
-    uint16_t l = vm->pop();
+    uint32_t h = vm->pop();
+    uint32_t l = vm->pop();
     uint32_t arga = l + (h << 16);   
     h = vm->pop();
     l = vm->pop();
