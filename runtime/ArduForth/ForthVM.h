@@ -153,7 +153,7 @@ public:
 
     Memory *_ram;
     Syscall *_syscalls;
-    size_t _numSyscalls;
+    uint8_t _numSyscalls;
 
     // Registers
     uint16_t _regs[16];

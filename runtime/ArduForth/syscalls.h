@@ -40,7 +40,7 @@ extern "C" char* sbrk(int incr);
 extern char *__brkval;
 #endif  // __arm__
 
-int getFreeMemory() {
+uint32_t getFreeMemory() {
   char top;
 #ifdef __arm__
   return &top - reinterpret_cast<char*>(sbrk(0));
@@ -54,7 +54,7 @@ int getFreeMemory() {
 
 void syscall_free_memory(ForthVM *vm) {
 #ifdef ARDUINO
-    int f = getFreeMemory();
+    uint32_t f = getFreeMemory();
     vm->push(f & 0x0000ffff);
     vm->push(f >> 16);    
 #else
@@ -314,7 +314,6 @@ void _parse_decimal(ForthVM *vm, char *cbuf, uint16_t len, bool negative) {
 
 void _parse_char(ForthVM *vm, char *cbuf, uint16_t len) {
     uint16_t v = 0;
-    bool valid = true;
     if(len == 0 || len > 3) {
         vm->push(0);
         return;
@@ -373,7 +372,6 @@ void _parse_char(ForthVM *vm, char *cbuf, uint16_t len) {
 */
 void syscall_number(ForthVM *vm)
 {
-    uint16_t base = vm->pop();
     uint16_t dp = vm->pop();
     uint16_t len = vm->ram()->get(dp);
     char *cbuf = (char *)vm->ram()->addressOfChar(dp + 2);
@@ -422,8 +420,8 @@ void syscall_number(ForthVM *vm)
 // to interface with the underlying hardware
 // these syscalls are needed to do 32-bit reads and writes on an STM32
 void syscall_write_host(ForthVM *vm) {
-    uint16_t h = vm->pop();
-    uint16_t l = vm->pop();
+    uint32_t h = vm->pop();
+    uint32_t l = vm->pop();
     uint32_t addr = l + (h << 16);
     h = vm->pop();
     l = vm->pop();
@@ -432,8 +430,8 @@ void syscall_write_host(ForthVM *vm) {
 }
 
 void syscall_read_host(ForthVM *vm) {
-    uint16_t h = vm->pop();
-    uint16_t l = vm->pop();
+    uint32_t h = vm->pop();
+    uint32_t l = vm->pop();
     uint32_t addr = l + (h << 16);
     uint32_t data = *(uint32_t *)addr;
     vm->push(data & 0x0000ffff);
@@ -453,7 +451,9 @@ void syscall_arduino(ForthVM *vm) {
     uint16_t b;
     switch(op) {
         case PIN_MODE:
-            pinMode(vm->pop(), vm->pop());
+            a = vm->pop();
+            b = vm->pop();
+            pinMode(a,b);
             break;
         case DIGITAL_WRITE:
             a = vm->pop();
@@ -479,8 +479,8 @@ void syscall_arduino(ForthVM *vm) {
 #endif
 
 void syscall_add_double(ForthVM *vm) {
-    uint16_t h = vm->pop();
-    uint16_t l = vm->pop();
+    uint32_t h = vm->pop();
+    uint32_t l = vm->pop();
     uint32_t arga = l + (h << 16);   
     h = vm->pop();
     l = vm->pop();
@@ -491,8 +491,8 @@ void syscall_add_double(ForthVM *vm) {
 }
 
 void syscall_sub_double(ForthVM *vm) {
-    uint16_t h = vm->pop();
-    uint16_t l = vm->pop();
+    uint32_t h = vm->pop();
+    uint32_t l = vm->pop();
     uint32_t arga = l + (h << 16);   
     h = vm->pop();
     l = vm->pop();
@@ -503,8 +503,8 @@ void syscall_sub_double(ForthVM *vm) {
 }
 
 void syscall_mul_double(ForthVM *vm) {
-    uint16_t h = vm->pop();
-    uint16_t l = vm->pop();
+    uint32_t h = vm->pop();
+    uint32_t l = vm->pop();
     uint32_t arga = l + (h << 16);   
     h = vm->pop();
     l = vm->pop();
@@ -515,8 +515,8 @@ void syscall_mul_double(ForthVM *vm) {
 }
 
 void syscall_div_double(ForthVM *vm) {
-    uint16_t h = vm->pop();
-    uint16_t l = vm->pop();
+    uint32_t h = vm->pop();
+    uint32_t l = vm->pop();
     uint32_t arga = l + (h << 16);   
     h = vm->pop();
     l = vm->pop();
@@ -529,8 +529,8 @@ void syscall_div_double(ForthVM *vm) {
 // ( Dvalue Sshift -- Dvalue )
 void syscall_sr_double(ForthVM *vm) { 
     uint16_t shift = vm->pop();
-    uint16_t h = vm->pop();
-    uint16_t l = vm->pop();
+    uint32_t h = vm->pop();
+    uint32_t l = vm->pop();
     uint32_t val = l + (h << 16);   
 
     uint32_t result = val >> shift;
@@ -540,8 +540,8 @@ void syscall_sr_double(ForthVM *vm) {
 
 void syscall_sl_double(ForthVM *vm) {
     uint16_t shift = vm->pop();
-    uint16_t h = vm->pop();
-    uint16_t l = vm->pop();
+    uint32_t h = vm->pop();
+    uint32_t l = vm->pop();
     uint32_t val = l + (h << 16);   
 
     uint32_t result = val << shift;
@@ -550,8 +550,8 @@ void syscall_sl_double(ForthVM *vm) {
 }
 
 void syscall_and_double(ForthVM *vm) {
-    uint16_t h = vm->pop();
-    uint16_t l = vm->pop();
+    uint32_t h = vm->pop();
+    uint32_t l = vm->pop();
     uint32_t arga = l + (h << 16);   
     h = vm->pop();
     l = vm->pop();
@@ -574,8 +574,8 @@ void syscall_or_double(ForthVM *vm) {
 }
 
 void syscall_invert_double(ForthVM *vm) {
-    uint16_t h = vm->pop();
-    uint16_t l = vm->pop();
+    uint32_t h = vm->pop();
+    uint32_t l = vm->pop();
     uint32_t arga = l + (h << 16);   
     uint32_t result = ~arga;
     vm->push(result & 0x0000ffff);
