@@ -9,7 +9,7 @@ class Dumper {
     Dumper() {}
     ~Dumper() {}
 
-    void writeCPP(const char *name, Assembler *fasm, Memory *mem, size_t romStart, size_t romSize, bool progmem) {
+    void writeCPP(const char *name, Assembler *fasm, Memory *mem, uint16_t romStart, uint16_t romSize, bool progmem) {
         FILE *fp = fopen(name, "w");
         fprintf(fp, "#ifndef UKMAKER_FORTH_IMAGE_H\n");
         fprintf(fp, "#define UKMAKER_FORTH_IMAGE_H\n");
@@ -30,7 +30,7 @@ class Dumper {
         } else {
             fprintf(fp, "const uint8_t rom[%d] = {\n",romSize);
         }
-        for(size_t i=0; i<romSize-1; i++) {
+        for(uint16_t i=0; i<romSize-1; i++) {
             if((i % 16) == 0) {
                 fprintf(fp, "/* 0x%04x */ ", (uint16_t)romStart + i);
             }

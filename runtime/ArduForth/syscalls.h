@@ -29,7 +29,9 @@
 #define SYSCALL_WRITE_CPP 21
 #define SYSCALL_COMPARE 22
 #define SYSCALL_FREE_MEMORY 23
+#define SYSCALL_ARDUINO 24
 
+#ifdef ARDUINO
 #ifdef __arm__
 // should use uinstd.h to define sbrk but Due causes a conflict
 extern "C" char* sbrk(int incr);
@@ -44,14 +46,28 @@ int getFreeMemory() {
 #elif defined(CORE_TEENSY) || (ARDUINO > 103 && ARDUINO != 151)
   return &top - __brkval;
 #else  // __arm__
-  return __brkval ? &top - __brkval : &top - __malloc_heap_start;
+  return &top - __brkval;
 #endif  // __arm__
 }
+#endif
 
 void syscall_free_memory(ForthVM *vm) {
+#ifdef ARDUINO
     int f = getFreeMemory();
     vm->push(f & 0x0000ffff);
     vm->push(f >> 16);    
+#else
+    vm->push(0x10000);
+    vm->push(0x00);
+#endif
+}
+
+void syscall_unimplemented(ForthVM *vm) {
+    uint16_t i = vm->read(vm->get(REG_PC) - 2);
+    uint16_t s = i & 0xff;
+    Serial.print("Unimplemented syscall #");
+    Serial.print(s);
+    Serial.print('\n');
 }
 
 
@@ -400,6 +416,8 @@ void syscall_number(ForthVM *vm)
     _parse_decimal(vm, cbuf, len, false);
 }
 
+#ifdef ARDUINO
+
 // to interface with the underlying hardware
 // these syscalls are needed to do 32-bit reads and writes on an STM32
 void syscall_write_host(ForthVM *vm) {
@@ -420,6 +438,40 @@ void syscall_read_host(ForthVM *vm) {
     vm->push(data & 0x0000ffff);
     vm->push(data >> 16);
 }
+
+#define PIN_MODE 0
+#define DIGITAL_WRITE 1
+#define DIGITAL_READ 2
+#define ANALOG_READ 3
+#define DELAY 4
+#define MILLIS 5
+
+void syscall_arduino(ForthVM *vm) {
+    uint16_t op = vm->pop();
+    switch(op) {
+        case PIN_MODE:
+            pinMode(vm->pop(), vm->pop());
+            break;
+        case DIGITAL_WRITE:
+            digitalWrite(vm->pop(), vm->pop());
+            break;
+        case DIGITAL_READ:
+            vm->push(digitalRead(vm->pop()));
+            break;
+        case ANALOG_READ:
+            vm->push(analogRead(vm->pop()));
+            break;
+        case DELAY:
+            delay(vm->pop());
+            break;
+        case MILLIS:
+            vm->push(millis());
+            break;
+        default: break;
+    }
+}
+
+#endif
 
 void syscall_add_double(ForthVM *vm) {
     uint16_t h = vm->pop();

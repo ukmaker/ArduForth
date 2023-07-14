@@ -1,3 +1,4 @@
+#ifdef ARDUINO
 /**
 * Run a ForthVM image previously created using the Assembler
 **/
@@ -6,12 +7,11 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <Arduino.h>
-#include "ForthConfiguration.h"
 #include "ForthVM.h"
 #include "UnsafeMemory.h"
 #include "syscalls.h"
 
-#include "STM32DevImage.h"
+#include "ForthImage_Generic.h"
 
 
 uint8_t ram[16384];
@@ -54,6 +54,8 @@ void attachSyscalls()
   vm.addSyscall(SYSCALL_D_OR, syscall_or_double);
 
   vm.addSyscall(SYSCALL_DOTC, syscall_dot_c);
+  vm.addSyscall(SYSCALL_FREE_MEMORY, syscall_free_memory);
+  vm.addSyscall(SYSCALL_ARDUINO, syscall_arduino);
   }
 
 
@@ -72,3 +74,4 @@ void loop() {
    // digitalWrite(LED_BUILTIN, 0);
     
 }
+#endif

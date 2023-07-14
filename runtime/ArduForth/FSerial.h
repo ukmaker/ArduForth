@@ -28,6 +28,10 @@ class FSerial {
         putchar(c);
     }
 
+    void print(const char* s) {
+        ::printf(s, 0);
+    }
+
     int read() {
         return getchar();
     }

@@ -152,8 +152,18 @@ void attachSyscalls()
   vm.addSyscall(SYSCALL_INLINE, syscall_inline);
   vm.addSyscall(SYSCALL_FLUSH, syscall_flush);
   vm.addSyscall(SYSCALL_NUMBER, syscall_number);
+
+  #ifdef ARDUINO
   vm.addSyscall(SYSCALL_H_AT, syscall_read_host);
   vm.addSyscall(SYSCALL_H_STORE, syscall_write_host);
+  vm.addSyscall(SYSCALL_ARDUINO, syscall_arduino);
+  #else
+  vm.addSyscall(SYSCALL_H_AT, syscall_unimplemented);
+  vm.addSyscall(SYSCALL_H_STORE, syscall_unimplemented);
+  vm.addSyscall(SYSCALL_ARDUINO, syscall_unimplemented);
+  #endif
+  vm.addSyscall(SYSCALL_FREE_MEMORY, syscall_free_memory);
+
   vm.addSyscall(SYSCALL_D_ADD, syscall_add_double);
   vm.addSyscall(SYSCALL_D_SUB, syscall_sub_double);
   vm.addSyscall(SYSCALL_D_DIV, syscall_mul_double);

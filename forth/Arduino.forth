@@ -1,0 +1,25 @@
+\ Words to use the generic Arduino API from Forth
+\ Implemented via the syscall_arduino_* functions
+
+HEX
+
+0 CONSTANT PINMODE-INPUT
+1 CONSTANT PINMODE-OUTPUT
+2 CONSTANT PINMODE-INPUT-PULLUP
+3 CONSTANT PINMODE-INPUT-PULLDOWN
+4 CONSTANT PINMODE-ANALOG
+5 CONSTANT PINMODE-OUTPUT-OPEN-DRAIN
+
+0 CONSTANT #PIN-MODE
+1 CONSTANT #DIGITAL-WRITE
+2 CONSTANT #DIGITAL-READ
+3 CONSTANT #ANALOG-READ
+4 CONSTANT #DELAY
+5 CONSTANT #MILLIS
+
+: PIN-MODE!     ( pin-mode pin -- )  #PIN-MODE *ARDUINO ;
+: PIN!          ( value pin -- )     #DIGITAL-WRITE *ARDUINO ;
+: PIN@          ( pin -- value )     #DIGITAL-READ *ARDUINO ;
+: ANALOG@       ( pin -- value )     #ANALOG-READ *ARDUINO ;
+: DELAY         ( ms -- )            #DELAY *ARDUINO ;
+: MILLIS        ( -- ms )            #MILLIS *ARDUINO ;

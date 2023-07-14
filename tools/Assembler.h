@@ -16,24 +16,24 @@ class Assembler
 
 public:
 
-    static inline char *NAME_EXPECTED = "Name expected";
-    static inline char *ALIAS_EXPECTED = "Alias expected";
-    static inline char *REGISTER_NAME_EXPECTED = "Register name expected";  
-    static inline char *DIRECTIVE_EXPECTED = "Directive expected";
-    static inline char *NUMBER_EXPECTED = "Number expected";
-    static inline char *OPCODE_EXPECTED = "Opcode expected";
-    static inline char *INVALID_CONDITION = "Invalid condition";
-    static inline char *COMMA_EXPECTED = "Comma expected";
-    static inline char *TINY_RANGE_EXCEEDED = "Tiny immediate range (-8 to 7) exceeded"; 
-    static inline char *TINY_UNSIGNED_RANGE_EXCEEDED = "Tiny unsigned immediate range (0 to 15) exceeded";
-    static inline char *IMMEDIATE_RANGE_EXCEEDED = "Immediate range (-128 to 127) exceeded";
-    static inline char *UNSIGNED_IMMEDIATE_RANGE_EXCEEDED = "Unsigned immediate range (0 to 255) exceeded";
-    static inline char *NUMBER_OR_LABEL_EXPECTED = "Number or label expected";
-    static inline char *CONSTANT_EXPECTED = "Constant expected";
-    static inline char *STRING_EXPECTED = "String expected";
-    static inline char *HEX_NUMBER_EXPECTED = "Hex number expected";
-    static inline char *BINARY_NUMBER_EXPECTED = "Binary number expected";
-    static inline char *DECIMAL_NUMBER_EXPECTED = "Decimal number expected";
+    static inline const char *NAME_EXPECTED = "Name expected";
+    static inline const char *ALIAS_EXPECTED = "Alias expected";
+    static inline const char *REGISTER_NAME_EXPECTED = "Register name expected";  
+    static inline const char *DIRECTIVE_EXPECTED = "Directive expected";
+    static inline const char *NUMBER_EXPECTED = "Number expected";
+    static inline const char *OPCODE_EXPECTED = "Opcode expected";
+    static inline const char *INVALID_CONDITION = "Invalid condition";
+    static inline const char *COMMA_EXPECTED = "Comma expected";
+    static inline const char *TINY_RANGE_EXCEEDED = "Tiny immediate range (-8 to 7) exceeded"; 
+    static inline const char *TINY_UNSIGNED_RANGE_EXCEEDED = "Tiny unsigned immediate range (0 to 15) exceeded";
+    static inline const char *IMMEDIATE_RANGE_EXCEEDED = "Immediate range (-128 to 127) exceeded";
+    static inline const char *UNSIGNED_IMMEDIATE_RANGE_EXCEEDED = "Unsigned immediate range (0 to 255) exceeded";
+    static inline const char *NUMBER_OR_LABEL_EXPECTED = "Number or label expected";
+    static inline const char *CONSTANT_EXPECTED = "Constant expected";
+    static inline const char *STRING_EXPECTED = "String expected";
+    static inline const char *HEX_NUMBER_EXPECTED = "Hex number expected";
+    static inline const char *BINARY_NUMBER_EXPECTED = "Binary number expected";
+    static inline const char *DECIMAL_NUMBER_EXPECTED = "Decimal number expected";
 
     Assembler()
     {
