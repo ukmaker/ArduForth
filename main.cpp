@@ -55,7 +55,6 @@ int failed = 0;
 
 bool runInstructionTests;
 bool runAssemblerTests;
-bool runGenerateTestCode;
 bool verbose;
 
 void syscall_debug(ForthVM *vm)
@@ -81,10 +80,9 @@ bool getArgs(int argc, char **argv)
   opterr = 0;
   runInstructionTests = false;
   runAssemblerTests = false;
-  runGenerateTestCode = false;
   verbose = false;
 
-  while ((c = getopt(argc, argv, "iagv")) != -1)
+  while ((c = getopt(argc, argv, "iav")) != -1)
   {
     switch (c)
     {
@@ -94,8 +92,6 @@ bool getArgs(int argc, char **argv)
     case 'a':
       runAssemblerTests = 1;
       break;
-    case 'g':
-      runGenerateTestCode = 1;
       break;
     case 'v':
       verbose = true;
@@ -123,7 +119,7 @@ bool getArgs(int argc, char **argv)
 bool loadInnerInterpreter()
 {
 
-#ifdef GENERATE_328P
+#ifdef GENERATE_328PNOT
   fasm.setOption("#RAMSTART", 0x2000); 
   fasm.setOption("#VARSTART", 0x2200); 
   fasm.setOption("#SPTOP", 0x2380);    
@@ -163,6 +159,7 @@ void attachSyscalls()
   #endif
   vm.addSyscall(SYSCALL_FREE_MEMORY, syscall_free_memory);
   vm.addSyscall(SYSCALL_SYSCALL, syscall_syscall);
+  vm.addSyscall(SYSCALL_QEXIT, syscall_qexit);
 
   vm.addSyscall(SYSCALL_D_ADD, syscall_add_double);
   vm.addSyscall(SYSCALL_D_SUB, syscall_sub_double);
@@ -184,12 +181,6 @@ void attachSyscalls()
 
 int main(int argc, char **argv)
 {
-
-  testAssembler();
-  testRanges();
-  labelTests.run();
-  // generateTestCode();
-  // testVM();
 
   /*
   if(getArgs(argc, argv)) {

@@ -31,7 +31,8 @@
 #define SYSCALL_FREE_MEMORY 23
 #define SYSCALL_SYSCALL 24
 #define SYSCALL_ARDUINO 25
-#define CORE_SYSCALLS 26
+#define SYSCALL_QEXIT 26
+#define CORE_SYSCALLS 27
 
 #ifdef ARDUINO
 #ifdef __arm__
@@ -218,12 +219,18 @@ void syscall_inline(ForthVM *vm)
     }
     else 
     {
-        read = Serial.readBytesUntil(0x0a, (char *)cbuf, 63);
+        read = Serial.readBytesUntil(0x0a, (char *)cbuf, 79);
         if(read > 0)
         {
             vm->ram()->put(bufend, bufstart + read);
             // Current buffer pointer is just the start of the buffer
             vm->ram()->put(bufidx, bufstart);
+            for(uint16_t i = bufstart; i< bufend; i++) {
+                if(vm->readByte(i) == 0x03) {
+                    vm->push(0x03);
+                    return;
+                }
+            }
             vm->push(0x01);
             //Serial.print("BYTES READ = "); Serial.println(read);
             //Serial.print("FIRST>"); Serial.println(vm->ram()->getC(bufstart));
@@ -234,6 +241,21 @@ void syscall_inline(ForthVM *vm)
         }
     }
 }
+
+#ifdef ARDUINO
+void syscall_qexit(ForthVM *vm) {
+    Serial.println("No exit");
+}
+#else 
+void syscall_qexit(ForthVM *vm) {
+    uint16_t p = vm->pop();
+    vm->push(p);
+    if(p == 0x03) { // Got a Ctrl-C
+        vm->halt();
+    }
+}
+
+#endif
 
 void syscall_flush(ForthVM *vm)
 {

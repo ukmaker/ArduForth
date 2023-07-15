@@ -100,6 +100,10 @@ public:
         return _ram;
     }
 
+    void halt() {
+        _halted = true;
+    }
+
     protected:
 
     bool _halted;

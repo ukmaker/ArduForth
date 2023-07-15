@@ -54,6 +54,8 @@ void attachSyscalls()
   vm.addSyscall(SYSCALL_FREE_MEMORY, syscall_free_memory);
   vm.addSyscall(SYSCALL_SYSCALL, syscall_syscall);
   vm.addSyscall(SYSCALL_ARDUINO, syscall_arduino);
+  vm.addSyscall(SYSCALL_QEXIT, syscall_qexit);
+  
   }
 
 

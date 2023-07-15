@@ -92,6 +92,8 @@
 : .&dot &dot EMIT ;
 : .&sp &sp EMIT ;
 : .&dotquotsp &dot EMIT &quot EMIT ASPACE EMIT ;
+: .&dotSquot ." .S" .&quot ;
+: .&dotSquotsp .&dotSquot ASPACE EMIT ;
 
 ( attempt to print the word at the address )
 ( if the word is one of the literal handlers )
@@ -101,8 +103,16 @@
     DUP @ ( addr instr )
     CASE
         ['] *#        OF 2+ DUP @ .                ENDOF
-        ['] *"        OF 2+ DUP .&dotquotsp .SAFE-WORD .&quot DUP @ + ALIGN ENDOF
-        ['] *S"       OF 2+ DUP .&dot 0x53 EMIT .&quot .&sp .SAFE-WORD .&quot DUP @ + ALIGN ENDOF
+        ['] *"        
+        OF 
+            2+ DUP .&dotquotsp .SAFE-WORD .&quot 
+            DUP @ + ALIGN 
+        ENDOF
+        ['] *S"       
+        OF 
+            2+ DUP .&dotSquotsp .SAFE-WORD .&quot 
+            DUP @ + ALIGN 
+        ENDOF
         ['] *+LOOP    OF ." *+LOOP" 2 +            ENDOF
         ['] *LOOP     OF ." *LOOP" 2 +             ENDOF
         ['] *DO       OF ." *DO"                   ENDOF
@@ -117,6 +127,7 @@
     ESAC
     2+
 ;
+
 : DECOMPILE ( ca -- )
     BASE @ SWAP HEX
     DUP
@@ -127,7 +138,8 @@
     ELSE 
         2+
         BEGIN 
-            DUP @ 0x0106 = ( is this semi ? ) 
+            ?SP . CRET 
+            DUP @ ['] *; = ( is this semi ? ) 
             NOT IF
                 DUP . ASPACE EMIT .XT ASPACE EMIT CRET
                 0

@@ -18,12 +18,12 @@
 #SYSTEM:   0x0000 ; System reset vector
 #INNER:    0x0080 ; Inner interpreter starts here
 #FENCE:    0x1FF2 ; Last word in the ROM
-#RAMSTART: 0x2000 ; Variables grow up from here
+#RAMSTART: 0x2000 ; Dictionary grows from here
 #VARSTART: 0x3000 ; Variables grow up from here
 #SPTOP:    0x3800 ; Data stack pointer grows down from here
 #RSTOP:    0x3ffe ; And the return stack from here
                   ; This gives both stacks 2K bytes
-#LBUF_LEN:  64   ; Maximum length of the line buffer in chars
+#LBUF_LEN:  80   ; Maximum length of the line buffer in chars
 #BASE_DEC: 10
 #BASE_HEX: 16
 #BASE_BIN: 2
@@ -55,6 +55,7 @@
 #SYSCALL_FREE_MEMORY: 23
 #SYSCALL_SYSCALL: 24
 #SYSCALL_ARDUINO: 25
+#SYSCALL_QEXIT: 26
 
 #SYSCALL_FOPEN: 32
 #SYSCALL_FCLOSE: 33
@@ -140,9 +141,11 @@ COLON:
   PUSHR I
   MOV I,WA
   JR NEXT
-SEMI:
-  .DATA SEMICA ; I.e. the address of the next word
-SEMICA:
+STAR_SEMI:
+  .N "*;"
+  .DATA 0x00
+STAR_SEMI_WA: .DATA STAR_SEMI_CA ; I.e. the address of the next word
+STAR_SEMI_CA:
   POPR I
 NEXT:
   LD WA,I ; WA <- (I)
@@ -165,13 +168,13 @@ MSG_RS_UNDERFLOW:   .DATA 22 .SDATA "Return stack underflow"
 
 BUILDS:
   .N "<BUILDS"
-  .DATA 0
+  .DATA STAR_SEMI
 BUILDS_WA: .DATA COLON
 BUILDS_CA:
   .DATA STAR_HASH_WA
   .DATA 0
   .DATA CONSTANT_WA
-  .DATA SEMI
+  .DATA STAR_SEMI_WA
 
 DOES:
   .N "DOES>"
@@ -243,7 +246,7 @@ VOCABULARY_CA:
   .DATA DOES_WA
   .DATA CONTEXT_WA
   .DATA STORE_WA
-  .DATA SEMI
+  .DATA STAR_SEMI_WA
 
 CORE:   ; My definition. Should really be as defined using VOCABULARY
         ; But I don't understand how that works yet
@@ -1136,7 +1139,7 @@ SCODE_WA:
 SCODE_CA:
   .DATA RFROM_WA
   .DATA CASTORE_WA
-  .DATA SEMI
+  .DATA STAR_SEMI_WA
 
 RFROM:
   .N "R>"
@@ -1167,7 +1170,7 @@ ENTRY_CA:
   .DATA CURRENT_WA
   .DATA AT_WA
   .DATA AT_WA
-  .DATA SEMI
+  .DATA STAR_SEMI_WA
 
 DP:
   .N "DP"
@@ -1314,7 +1317,7 @@ CA_TO_WA_UNTIL:
   .DATA STAR_UNTIL_WA
   .DATA CA_TO_WA_LOOP
   .DATA SWAP_WA .DATA DROP_WA
-  .DATA SEMI
+  .DATA STAR_SEMI_WA
 
 
 CREATE:
@@ -1351,7 +1354,7 @@ CREATE_CA:
   .DATA HERE_WA
   .DATA TWO_PLUS_WA
   .DATA COMMA_WA      ; And point CA to here
-  .DATA SEMI
+  .DATA STAR_SEMI_WA
 
 SEMICOLON:
 ; This is an executive word
@@ -1359,14 +1362,13 @@ SEMICOLON:
   .DATA CREATE
 SEMICOLON_WA: .DATA COLON
 SEMICOLON_CA:
-  .DATA STAR_HASH_WA .DATA SEMI
+  .DATA STAR_HASH_WA .DATA STAR_SEMI_WA
   .DATA COMMA_WA
-
   .DATA STAR_HASH_WA
   .DATA 0
   .DATA MODE_WA
   .DATA STORE_WA
-  .DATA SEMI
+  .DATA STAR_SEMI_WA
 
 CURRENT:
   .N "CURRENT"
@@ -1397,7 +1399,7 @@ DEFINITIONS_CA:
   .DATA AT_WA
   .DATA CURRENT_WA
   .DATA STORE_WA
-  .DATA SEMI
+  .DATA STAR_SEMI_WA
 
 CASTORE:
   .N "CA!"
@@ -1408,7 +1410,7 @@ CASTORE_CA:
   .DATA ENTRY_WA
   .DATA WA_TO_CA_WA
   .DATA STORE_WA
-  .DATA SEMI
+  .DATA STAR_SEMI_WA
 
 HERE:
   .N "HERE"
@@ -1561,7 +1563,7 @@ Q_EXECUTE_DONE:
   .DATA STAR_HASH_WA
   .DATA 1
 Q_EXECUTE_EXIT:
-  .DATA SEMI
+  .DATA STAR_SEMI_WA
 
 ; ( -- num true ) | ( -- false )
 Q_NUMBER:
@@ -1698,6 +1700,7 @@ INLINE_CA:
     MOVIL A,%LBUF_IDX
     PUSHD A
     SYSCALL #SYSCALL_INLINE
+    SYSCALL #SYSCALL_QEXIT
     JP NEXT
 
 ; Push the literal following this word to the stack
@@ -1764,7 +1767,7 @@ CASE:
 CASE_WA: .DATA COLON
 CASE_CA: 
   .DATA STAR_HASH_WA .DATA 0
-  .DATA SEMI
+  .DATA STAR_SEMI_WA
 
 ; CASE someValue v1 OF ... ENDOF v2 OF ... ENDOF ESAC 
 ; code *OF a1 ... a1:*ENDOF ax *OF a3 ... a3:*ENDOF ax ax:*ESAC
@@ -1982,7 +1985,7 @@ DO_CA:
   .DATA COMMA_WA
   ; Push Here to the stack so LOOP cancompile it later
   .DATA HERE_WA
-  .DATA SEMI
+  .DATA STAR_SEMI_WA
 
 STAR_DO:
   .R "*DO"
@@ -2004,7 +2007,7 @@ LOOP_CA:
   .DATA STAR_LOOP_WA
   .DATA COMMA_WA
   .DATA COMMA_WA ; and compile the return address off the stack
-  .DATA SEMI
+  .DATA STAR_SEMI_WA
 
 PLUSLOOP:
   .I "+LOOP"
@@ -2015,7 +2018,7 @@ PLUSLOOP_CA:
   .DATA STAR_PLUSLOOP_WA
   .DATA COMMA_WA
   .DATA COMMA_WA ; and compile the return address off the stack
-  .DATA SEMI
+  .DATA STAR_SEMI_WA
 
 STAR_LOOP:
   .R "*LOOP"
@@ -2083,7 +2086,7 @@ PATCH_CA:
   .DATA CURRENT_WA .DATA AT_WA .DATA STORE_WA
 PATCH_DONE:
   .DATA RESTART_WA
-  .DATA SEMI
+  .DATA STAR_SEMI_WA
 
 OUTER:
     .N "OUTER"
@@ -2121,7 +2124,7 @@ OUTER_LOOP_PROCESS:
     .DATA PROCESS_TOKENS_WA
     .DATA STAR_ELSE_WA
     .DATA OUTER_LOOP
-    .DATA SEMI
+    .DATA STAR_SEMI_WA
 
 PROCESS_TOKENS:
     .N "PROCESS-TOKENS"
@@ -2178,7 +2181,7 @@ PROCESS_TOKENS_NOT_A_NUMBER:
     .DATA PROCESS_TOKENS_LOOP
 
 PROCESS_TOKENS_EXIT:
-    .DATA SEMI
+    .DATA STAR_SEMI_WA
 
 TRAP:               ; Used for debugging. Dumps the contents of the registers
                     ; But for now it just says Hello World!
@@ -2250,7 +2253,7 @@ DOT_SWORD_ASM:
   CLRI R0,0
   SUBI R0,2
   ADD SP,R0
-  JP SEMICA
+  JP STAR_SEMI_CA
 
 NEXT_WORD:
   .N "NEXT-WORD"
@@ -2268,7 +2271,7 @@ NEXT_WORD_CA:
   .DATA TWO_PLUS_WA
   .DATA ALIGN_WA
   .DATA AT_WA
-  .DATA SEMI
+  .DATA STAR_SEMI_WA
 
 
 CRET:
@@ -2302,7 +2305,7 @@ WORDS_LOOP:
   .DATA STAR_IF_WA
   .DATA WORDS_LOOP
   .DATA DROP_WA
-  .DATA SEMI
+  .DATA STAR_SEMI_WA
 
 COMPARE: ; ( c-addr1 c-addr2 -- result )
 ; Compare the strings
@@ -2413,7 +2416,7 @@ TWO_DOTS_CA:
   .DATA 1
   .DATA MODE_WA
   .DATA STORE_WA
-  .DATA SEMI
+  .DATA STAR_SEMI_WA
 
 
 LIT:
@@ -2429,7 +2432,7 @@ LIT_CA:
   .DATA ALIGN_WA
   .DATA DP_WA
   .DATA PLUS_STORE_WA
-  .DATA SEMI
+  .DATA STAR_SEMI_WA
 
 S_LIT: 
 ; String literal
@@ -2488,11 +2491,11 @@ S_LIT_LOOP:
   ADDI SP,-2
   PUSHD WRD   ; Push the return stack pointer to the data stack ready for .WORD
 S_LIT_CODE_DONE:
-  JP SEMICA
+  JP STAR_SEMI_CA
 
 ; Exit for the compile code
 S_LIT_DONE:
-  .DATA SEMI
+  .DATA STAR_SEMI_WA
 
 STAR_S_LIT:
   .R "*S\""
@@ -2516,7 +2519,7 @@ QUESTION_CA:
   .DATA 1
   .SDATA "?"
   .DATA RESTART_WA
-  .DATA SEMI
+  .DATA STAR_SEMI_WA
 
 TICK: ; ( -- ca )
   .N "'"
@@ -2533,7 +2536,7 @@ TICK_CA:
   .DATA QUESTION_WA
 TICK_DONE:
   .DATA WA_TO_CA_WA
-  .DATA  SEMI
+  .DATA STAR_SEMI_WA
 
 N_TICK: ; ( -- na )
   .N "N'"
@@ -2547,9 +2550,9 @@ N_TICK_CA:
   .DATA NOT_WA 
   .DATA STAR_IF_WA
   .DATA N_TICK_DONE 
-  .DATA QUESTION 
+  .DATA QUESTION_WA
 N_TICK_DONE:
-  .DATA  SEMI
+  .DATA STAR_SEMI_WA
 
 FORGET: 
   .N "FORGET"
@@ -2564,7 +2567,7 @@ FORGET_CA:
 .DATA STORE_WA     ; Reset the current vocab
 .DATA DP_WA
 .DATA STORE_WA     ; And the dictionary pointer
-.DATA SEMI
+.DATA STAR_SEMI_WA
 
 STATE:
   .N "STATE"
@@ -2587,7 +2590,7 @@ BACKSLASH_CA:
   .DATA 92 ; The backslash character
   .DATA TOKEN_WA
   .DATA DROP_WA
-  .DATA SEMI
+  .DATA STAR_SEMI_WA
 
 PAREN: ; Forth word delimiting a ( comment )
   .X "("
@@ -2598,7 +2601,7 @@ PAREN_CA:
   .DATA 41
   .DATA TOKEN_WA
   .DATA DROP_WA
-  .DATA SEMI
+  .DATA STAR_SEMI_WA
 
 CSPLIT:
   .N "CSPLIT"
@@ -2625,7 +2628,7 @@ DOT_TWO_BYTES_CA:
   .DATA SWAP_WA
   .DATA DOT_C_WA .DATA ASPACE_WA .DATA EMIT_WA 
   .DATA DOT_C_WA
-  .DATA SEMI 
+  .DATA STAR_SEMI_WA 
 
 DUMP:
   .N "DUMP"
@@ -2654,11 +2657,21 @@ DUMP_LOOP:
   .DATA CRET_WA
   .DATA STAR_HASH_WA .DATA 2
   .DATA STAR_PLUSLOOP_WA .DATA DUMP_LOOP
-  .DATA SEMI
+  .DATA STAR_SEMI_WA
+
+EXIT:
+  .N "EXIT"
+  .DATA DUMP
+EXIT_WA: .DATA EXIT_CA
+EXIT_CA:
+  MOVI A,3
+  PUSHD A
+  SYSCALL #SYSCALL_QEXIT
+  JP NEXT
 
 FREE_MEMORY:
   .N "FREE-MEMORY"
-  .DATA DUMP
+  .DATA EXIT
 FREE_MEMORY_WA: .DATA FREE_MEMORY_CA
 FREE_MEMORY_CA:
   SYSCALL #SYSCALL_FREE_MEMORY
@@ -2714,7 +2727,7 @@ FEOF:
 FEOF_WA: .DATA COLON
 FEOF_CA:
   .DATA STAR_HASH_WA .DATA -1
-  .DATA SEMI
+  .DATA STAR_SEMI_WA
 
 READ_FILE:
   .N "READ_FILE"
@@ -2742,7 +2755,7 @@ READ_FILE_DONE:
   .DATA STAR_HASH_WA .DATA 0
   .DATA FCLOSE_WA
 READ_FILE_EXIT:
-  .DATA SEMI
+  .DATA STAR_SEMI_WA
 
 WRITE_CPP:
   .N "WRITE-CPP"
@@ -2771,7 +2784,7 @@ FENCE:
   .DATA WRITE_CPP
 FENCE_WA: .DATA COLON
 FENCE_CA:
-  .DATA SEMI
+  .DATA STAR_SEMI_WA
 
 
 DICTIONARY_END:
