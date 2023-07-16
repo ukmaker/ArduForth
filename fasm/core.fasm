@@ -16,8 +16,6 @@
 ; values below are for STM32F401
 ;
 #SYSTEM:   0x0000 ; System reset vector
-#INNER:    0x0080 ; Inner interpreter starts here
-#FENCE:    0x1FF2 ; Last word in the ROM
 #RAMSTART: 0x2000 ; Dictionary grows from here
 #VARSTART: 0x3000 ; Variables grow up from here
 #SPTOP:    0x3800 ; Data stack pointer grows down from here
@@ -50,13 +48,12 @@
 #SYSCALL_D_OR: 18
 #SYSCALL_D_INVERT: 19
 #SYSCALL_DOT_C: 20
-#SYSCALL_WRITE_CPP: 21
-#SYSCALL_COMPARE: 22
-#SYSCALL_FREE_MEMORY: 23
-#SYSCALL_SYSCALL: 24
-#SYSCALL_ARDUINO: 25
-#SYSCALL_QEXIT: 26
-
+#SYSCALL_COMPARE: 21
+#SYSCALL_FREE_MEMORY: 22
+#SYSCALL_SYSCALL: 23
+#SYSCALL_ARDUINO: 24
+#SYSCALL_QEXIT: 25
+; There was a good reason for leaving a gap. If only I could remember what it was....
 #SYSCALL_FOPEN: 32
 #SYSCALL_FCLOSE: 33
 #SYSCALL_FREAD: 34
@@ -88,16 +85,32 @@
 %CORE: 2
 %MODE: 2
 %STATE: 2
+%FENCE: 2
 
 .ORG #SYSTEM ; Start vector is at address 0
-START: 
+START:
+  JP COLD
+WARM:
+  JP STAR_RESTART
 
-  MOVIL A,#RAMSTART         ; Address of the cold-boot end of the dictionary
+CORE_PATCH_VOCABULARY:
+  .DATA CORE_VOCABULARY ; Points to the end of the vocabulary on a cold start
+                        ; Updated by ENCLOSE to include all defined words
+CORE_PATCH_DP:
+  .DATA DICTIONARY_END  ; Initialise the DP from here. Updated by ENCLOSE
+CORE_PATCH_CURRENT:
+  .DATA %CURRENT        ; save this address here so the write_cpp syscall can find it
+CORE_PATCH_FENCE:
+  .DATA FENCE           ; 
+
+COLD:
+  MOVIL A,CORE_PATCH_DP
+  LD A,A                ; Address of the cold-boot end of the dictionary
   MOVIL B,%DICTIONARY_POINTER
   ST B,A
 
-CORE_PATCH_LOCATION:
-  MOVIL A,CORE_VOCABULARY ; Last word in the dictionary
+  MOVIL A,CORE_PATCH_VOCABULARY
+  LD A,A
   MOVIL B,%CORE
   ST B,A
 
@@ -105,6 +118,11 @@ CORE_PATCH_LOCATION:
   ST A,B
   MOVIL A,%CONTEXT
   ST A,B
+
+  MOVIL A,CORE_PATCH_FENCE ; At cold-start, FENCE is FENCE (!)
+  LD A,A
+  MOVIL B,%FENCE
+  ST B,A
 
 STAR_RESTART: ; Restart from here if a runtime error occurs
   MOVIL SP,#SPTOP
@@ -136,7 +154,7 @@ STAR_RESTART: ; Restart from here if a runtime error occurs
   MOVIL I,OUTER_CA
   JP NEXT
 
-.ORG #INNER ; Beginning of the inner interpreter
+; Beginning of the inner interpreter
 COLON: 
   PUSHR I
   MOV I,WA
@@ -156,13 +174,13 @@ RUN:
   MOV PC,CA
 
 MESSAGES: ; SYSTEM MESSAGES LIVE HERE
-MSG_HELLO:          .DATA 22 .SDATA "Hello! I'm a TIL :-) >"
+MSG_HELLO:          .DATA 23 .SDATA "Hello! I'm a TIL :-) >>"
 MSG_UNKNOWN_TOKEN:  .DATA 14 .SDATA "Unknown token "
 MSG_COMPILE_ONLY:   .DATA 39 .SDATA "Compile-time words forbidden at runtime"
 MSG_RUNTIME_ONLY:   .DATA 39 .SDATA "Runtime words forbidden at compile-time"
 MSG_SYSTEM_ERROR:   .DATA 12 .SDATA "System error"
 MSG_WORD_NOT_FOUND: .DATA 14 .SDATA "Word not found"
-MSG_PROMPT:         .DATA  6 .SDATA " OK >>"
+MSG_PROMPT:         .DATA  5 .SDATA "OK >>"
 MSG_SP_UNDERFLOW:   .DATA 15 .SDATA "Stack underflow"
 MSG_RS_UNDERFLOW:   .DATA 22 .SDATA "Return stack underflow"
 
@@ -2265,7 +2283,7 @@ NEXT_WORD_CA:
   .DATA DUP_WA
   .DATA AT_WA
   .DATA STAR_HASH_WA
-  .DATA 0x1fff
+  .DATA 0x0fff
   .DATA AND_WA
   .DATA PLUS_WA
   .DATA TWO_PLUS_WA
@@ -2284,27 +2302,48 @@ CRET_CA:
   SYSCALL #SYSCALL_PUTC
   JP NEXT
 
+DOT_WORD_NEXT:
+; ( wa -- wa wa ) or ( wa -- 0 )
+; Print the word at wa and walk up to the  next
+; word if it exists
+
+  .N ".WORD-NEXT?"
+  .DATA CRET
+DOT_WORD_NEXT_WA: .DATA COLON
+DOT_WORD_NEXT_CA:
+  .DATA DUP_WA
+  .DATA DOT_WORD_WA
+  .DATA ASPACE_WA .DATA EMIT_WA
+  .DATA NEXT_WORD_WA
+  .DATA DUP_WA 
+  .DATA STAR_IF_WA ; If there is a word
+  .DATA DOT_WORD_NEXT_DONE
+  .DATA DUP_WA     ; Then duplicate it as a flag
+DOT_WORD_NEXT_DONE:
+  .DATA STAR_SEMI_WA
+
 WORDS:
 ; List all the defined words
   .N "WORDS"
-  .DATA CRET
+  .DATA DOT_WORD_NEXT
 WORDS_WA: .DATA COLON
 WORDS_CA:
   .DATA CURRENT_WA
   .DATA AT_WA
   .DATA AT_WA
 WORDS_LOOP:
-  .DATA DUP_WA ; ( addr -- addr addr)
-  .DATA DOT_WORD_WA ; ( .. -- addr len )
-  .DATA ASPACE_WA
-  .DATA EMIT_WA
-  ; Now skip up to the next word
-  .DATA NEXT_WORD_WA
   .DATA DUP_WA
+  .DATA VAR_FENCE_WA .DATA AT_WA
+  .DATA EQUALS_WA .DATA STAR_IF_WA .DATA WORDS_LOOP_PRINT
+  .DATA CRET_WA
+  .DATA STAR_LIT_WA
+  .DATA 17
+  .SDATA "----- FENCE -----"
+  .DATA CRET_WA
+WORDS_LOOP_PRINT:
+  .DATA DOT_WORD_NEXT_WA
   .DATA NOT_WA
-  .DATA STAR_IF_WA
-  .DATA WORDS_LOOP
-  .DATA DROP_WA
+  .DATA STAR_UNTIL_WA .DATA WORDS_LOOP
   .DATA STAR_SEMI_WA
 
 COMPARE: ; ( c-addr1 c-addr2 -- result )
@@ -2554,20 +2593,45 @@ N_TICK_CA:
 N_TICK_DONE:
   .DATA STAR_SEMI_WA
 
+Q_FENCED:
+; Is the WA below the current FENCE?
+; ( wa -- flag )
+  .N "?FENCED"
+  .DATA N_TICK
+Q_FENCED_WA: .DATA COLON
+Q_FENCED_CA:
+  .DATA CA_TO_WA_WA
+  .DATA VAR_FENCE_WA .DATA AT_WA
+  .DATA LTE_WA
+  .DATA STAR_SEMI_WA
+
 FORGET: 
   .N "FORGET"
-  .DATA N_TICK
+  .DATA Q_FENCED
 FORGET_WA: .DATA COLON
 FORGET_CA:
-.DATA CURRENT_WA .DATA AT_WA .DATA CONTEXT_WA .DATA STORE_WA
-.DATA N_TICK_WA      ; Get the address of the word to forget
-.DATA DUP_WA       ; copy it
-.DATA NEXT_WORD_WA ; address of previous word
-.DATA CURRENT_WA .DATA AT_WA
-.DATA STORE_WA     ; Reset the current vocab
-.DATA DP_WA
-.DATA STORE_WA     ; And the dictionary pointer
-.DATA STAR_SEMI_WA
+  .DATA CURRENT_WA .DATA AT_WA .DATA CONTEXT_WA .DATA STORE_WA
+  .DATA N_TICK_WA      ; Get the address of the word to forget
+  .DATA DUP_WA
+  .DATA VAR_FENCE_WA
+  .DATA AT_WA
+  .DATA GT_WA       ; Is it below the fence?
+  .DATA STAR_IF_WA
+  .DATA FORGET_FAIL
+FORGET_OK:
+  .DATA DUP_WA       ; copy it
+  .DATA NEXT_WORD_WA ; address of previous word
+  .DATA CURRENT_WA .DATA AT_WA
+  .DATA STORE_WA     ; Reset the current vocab
+  .DATA DP_WA
+  .DATA STORE_WA     ; And the dictionary pointer
+  .DATA STAR_ELSE_WA .DATA FORGET_DONE
+FORGET_FAIL:
+  .DATA STAR_LIT_WA .DATA 25
+  .SDATA "Cannot forget below FENCE"
+  .DATA DROP_WA
+FORGET_DONE:
+  .DATA STAR_SEMI_WA
 
 STATE:
   .N "STATE"
@@ -2757,35 +2821,49 @@ READ_FILE_DONE:
 READ_FILE_EXIT:
   .DATA STAR_SEMI_WA
 
-WRITE_CPP:
-  .N "WRITE-CPP"
+ENCLOSE:
+  .N "ENCLOSE"
   .DATA READ_FILE
-WRITE_CPP_WA: .DATA WRITE_CPP_CA
-WRITE_CPP_CA:
-; Patch the code so that the vocabulary is set to point to all 
+ENCLOSE_WA: .DATA ENCLOSE_CA
+ENCLOSE_CA:
+; Patch the code so that the core vocabulary is set to point to all 
 ; words currently defined
-;
+; 
 ; What's the current location?
   MOVIL R0,%CURRENT
   LD R1,R0
   LD R1,R1
-  MOVIL R2,CORE_PATCH_LOCATION
-  ADDI R2,2
+  MOVIL R2,CORE_PATCH_VOCABULARY
   ST R2,R1
-  SYSCALL #SYSCALL_WRITE_CPP
+  MOVIL R2,CORE_PATCH_DP
+  MOVIL R0,%DICTIONARY_POINTER
+  LD R1,R0
+  ST R2,R1
   JP NEXT
 
-; The last word in the dictionary placed at the end of ROM before RAM starts
-.ORG #FENCE
+VAR_FENCE:
+  .N "%FENCE"
+  .DATA ENCLOSE
+VAR_FENCE_WA: .DATA VAR_FENCE_CA
+VAR_FENCE_CA:
+  MOVIL A,%FENCE
+  PUSHD A
+  JP NEXT
+
+; Toggle the FENCE bit on the last word in the dictionary.
+; by default it's not possible to FORGET beyond this barrier
 CORE_VOCABULARY:
 FENCE:
-  
   .X "FENCE"
-  .DATA WRITE_CPP
-FENCE_WA: .DATA COLON
+  .DATA VAR_FENCE
+FENCE_WA: .DATA FENCE_CA
 FENCE_CA:
-  .DATA STAR_SEMI_WA
-
+  MOVIL R0,%CURRENT
+  LD R0,R0 ; CURRENT @ @
+  LD R0,R0
+  MOVIL R1,%FENCE
+  ST R1,R0
+  JP NEXT
 
 DICTIONARY_END:
     .DATA 00

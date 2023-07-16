@@ -20,6 +20,10 @@ class FSerial {
         ::printf(format, value);
     }
 
+    void println(const char *str) {
+        ::printf("%s\n", str);
+    }
+
     void flush() {
         // no op
     }

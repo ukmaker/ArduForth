@@ -10,16 +10,16 @@ HEX
 4 CONSTANT #PINMODE-ANALOG
 5 CONSTANT #PINMODE-OUTPUT-OPEN-DRAIN
 
-0 CONSTANT #PINMODE
-1 CONSTANT #DIGITAL-WRITE
-2 CONSTANT #DIGITAL-READ
-3 CONSTANT #ANALOG-READ
-4 CONSTANT #DELAY
-5 CONSTANT #MILLIS
+0 CONSTANT #OP-PINMODE
+1 CONSTANT #OP-DIGITAL-WRITE
+2 CONSTANT #OP-DIGITAL-READ
+3 CONSTANT #OP-ANALOG-READ
+4 CONSTANT #OP-DELAY
+5 CONSTANT #OP-MILLIS
 
-: PINMODE!      ( pin-mode pin -- )  #PINMODE *ARDUINO ;
-: PIN!          ( value pin -- )     #DIGITAL-WRITE *ARDUINO ;
-: PIN@          ( pin -- value )     #DIGITAL-READ *ARDUINO ;
-: ANALOG@       ( pin -- value )     #ANALOG-READ *ARDUINO ;
-: DELAY         ( ms -- )            #DELAY *ARDUINO ;
-: MILLIS        ( -- ms )            #MILLIS *ARDUINO ;
+: PINMODE!      ( pin-mode pin -- )  #OP-PINMODE *ARDUINO ;
+: PIN!          ( value pin -- )     #OP-DIGITAL-WRITE *ARDUINO ;
+: PIN@          ( pin -- value )     #OP-DIGITAL-READ *ARDUINO ;
+: ANALOG@       ( pin -- value )     #OP-ANALOG-READ *ARDUINO ;
+: DELAY         ( ms -- )            #OP-DELAY *ARDUINO ;
+: MILLIS        ( -- ms )            #OP-MILLIS *ARDUINO ;

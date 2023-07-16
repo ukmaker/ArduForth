@@ -67,6 +67,16 @@ public:
         return NULL;
     }
 
+    void clearOptions() {
+        Option *opt = options;
+        options = NULL;
+        while(opt != NULL) {
+            Option *next = opt->next;
+            delete opt;
+            opt = next;
+        }
+    }
+
     void setOption(const char *name, uint16_t value) {
         if(getOption(name) != NULL) {
             printf("Error: option %s already defined\n", name);

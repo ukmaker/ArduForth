@@ -31,6 +31,11 @@ public:
         _halted = false;
     }
 
+    void warm() {
+        _regs[REG_PC] = 4;
+        _halted = false;
+    }
+
     void step() {
         _clock();
     }

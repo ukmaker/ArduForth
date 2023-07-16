@@ -17,6 +17,7 @@ class Dumper {
         fprintf(fp,"/******************************\n");
         fprintf(fp, "* Constants\n");
         fprintf(fp, "*****************************/\n");
+        fprintf(fp,"#define FORTH_ROMSIZE 0x%x\n", romSize);
         Token *tok = fasm->tokens;
         while(tok != NULL) {
             if(tok->isConst()) {

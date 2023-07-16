@@ -137,8 +137,7 @@
         ." <CODE>" CRET DROP
     ELSE 
         2+
-        BEGIN 
-            ?SP . CRET 
+        BEGIN  
             DUP @ ['] *; = ( is this semi ? ) 
             NOT IF
                 DUP . ASPACE EMIT .XT ASPACE EMIT CRET

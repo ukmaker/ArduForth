@@ -57,149 +57,178 @@ bool runInstructionTests;
 bool runAssemblerTests;
 bool verbose;
 
+#define MODE_ATMEGA 0
+#define MODE_STM32 1
+int mode = MODE_ATMEGA;
+bool loaded = false;
+
 void syscall_debug(ForthVM *vm)
 {
-  // WA points to the word to be executed
-  // get the associated label and print it
-  uint16_t wa = vm->get(REG_WA);
-  // debugger.printWALabel(wa);
+  // Provided as a convenience
+  // Add your code as needed
 }
 
-
-void syscall_write_cpp(ForthVM *vm) {
-  uint16_t progmem = vm->pop();
-  dumper.writeCPP("ForthImage.h", &fasm, &mem, 0, 8192, progmem != 0);
-}
-
-bool getArgs(int argc, char **argv)
+void attachSyscalls(ForthVM *vm)
 {
+  vm->addSyscall(SYSCALL_DEBUG, syscall_debug);
+  vm->addSyscall(SYSCALL_TYPE, syscall_type);
+  vm->addSyscall(SYSCALL_TYPELN, syscall_typeln);
+  vm->addSyscall(SYSCALL_DOT, syscall_dot);
+  vm->addSyscall(SYSCALL_GETC, syscall_getc);
+  vm->addSyscall(SYSCALL_PUTC, syscall_putc);
+  vm->addSyscall(SYSCALL_INLINE, syscall_inline);
+  vm->addSyscall(SYSCALL_FLUSH, syscall_flush);
+  vm->addSyscall(SYSCALL_NUMBER, syscall_number);
 
-  int index;
-  int c;
+  /**
+   * I can't see any reason to want to access the host desktop
+   * Also, these routines would then need to be 64-bit
+  */
+  vm->addSyscall(SYSCALL_H_AT, syscall_unimplemented);
+  vm->addSyscall(SYSCALL_H_STORE, syscall_unimplemented);
+  vm->addSyscall(SYSCALL_ARDUINO, syscall_unimplemented);
 
-  opterr = 0;
-  runInstructionTests = false;
-  runAssemblerTests = false;
-  verbose = false;
+  vm->addSyscall(SYSCALL_FREE_MEMORY, syscall_free_memory);
+  vm->addSyscall(SYSCALL_SYSCALL, syscall_syscall);
+  vm->addSyscall(SYSCALL_QEXIT, syscall_qexit);
 
-  while ((c = getopt(argc, argv, "iav")) != -1)
-  {
-    switch (c)
-    {
-    case 'i':
-      runInstructionTests = 1;
-      break;
-    case 'a':
-      runAssemblerTests = 1;
-      break;
-      break;
-    case 'v':
-      verbose = true;
-      break;
-    case '?':
-      if (isprint(optopt))
-      {
-        fprintf(stderr, "Unknown option `-%c'.\n", optopt);
-      }
-      else
-      {
-        fprintf(stderr,
-                "Unknown option character `\\x%x'.\n",
-                optopt);
-      }
-      return false;
-    default:
-      abort();
-    }
+  vm->addSyscall(SYSCALL_D_ADD, syscall_add_double);
+  vm->addSyscall(SYSCALL_D_SUB, syscall_sub_double);
+  vm->addSyscall(SYSCALL_D_DIV, syscall_mul_double);
+  vm->addSyscall(SYSCALL_D_MUL, syscall_div_double);
+
+  vm->addSyscall(SYSCALL_D_SR, syscall_sr_double);
+  vm->addSyscall(SYSCALL_D_SL, syscall_sl_double);
+  vm->addSyscall(SYSCALL_D_AND, syscall_and_double);
+  vm->addSyscall(SYSCALL_D_OR, syscall_or_double);
+
+  vm->addSyscall(SYSCALL_DOTC, syscall_dot_c);
+  
+  vm->addSyscall(SYSCALL_FOPEN, syscall_fopen);
+  vm->addSyscall(SYSCALL_FCLOSE, syscall_fclose);
+  vm->addSyscall(SYSCALL_FREAD, syscall_fread);
+}
+
+char getCommand() {
+  int c = getchar();
+  return (char)c;
+}
+
+void modeAtmega328() {
+  fasm.clearOptions();
+  fasm.setOption("#RAMSTART", 0x2000); 
+  fasm.setOption("#VARSTART", 0x2200); 
+  fasm.setOption("#SPTOP", 0x2380);    
+  fasm.setOption("#RSTOP", 0x23fe);   
+  mode = MODE_ATMEGA; 
+  loaded = false;
+}
+
+void modeSTM32() {
+  fasm.clearOptions();
+  fasm.setOption("#RAMSTART", 0x2000); 
+  fasm.setOption("#VARSTART", 0x3000); 
+  fasm.setOption("#SPTOP", 0x3800);    
+  fasm.setOption("#RSTOP", 0x3ffe);  
+  mode = MODE_STM32; 
+  loaded = false;
+}
+
+void setMode() {
+  if(mode == MODE_ATMEGA) 
+  { 
+    modeAtmega328();
+  } else {
+    modeSTM32();
   }
-
-  return true;
 }
 
 bool loadInnerInterpreter()
 {
 
-#ifdef GENERATE_328PNOT
-  fasm.setOption("#RAMSTART", 0x2000); 
-  fasm.setOption("#VARSTART", 0x2200); 
-  fasm.setOption("#SPTOP", 0x2380);    
-  fasm.setOption("#RSTOP", 0x23fe);    
-#endif
-
+  setMode();
   fasm.slurp("fasm/core.fasm");
   fasm.pass1();
   fasm.pass2();
   fasm.pass3();
 
-  fasm.dump();
+  if(!fasm.hasErrors()) 
+  {
+    fasm.writeMemory(&mem);
+    loaded = true;
+  }
 
   return !fasm.hasErrors();
 }
 
-void attachSyscalls()
-{
-  vm.addSyscall(SYSCALL_DEBUG, syscall_debug);
-  vm.addSyscall(SYSCALL_TYPE, syscall_type);
-  vm.addSyscall(SYSCALL_TYPELN, syscall_typeln);
-  vm.addSyscall(SYSCALL_DOT, syscall_dot);
-  vm.addSyscall(SYSCALL_GETC, syscall_getc);
-  vm.addSyscall(SYSCALL_PUTC, syscall_putc);
-  vm.addSyscall(SYSCALL_INLINE, syscall_inline);
-  vm.addSyscall(SYSCALL_FLUSH, syscall_flush);
-  vm.addSyscall(SYSCALL_NUMBER, syscall_number);
+void generateCPP() {
+  if(loaded) 
+    {
+    uint16_t romsize = vm.read(10);
+    switch(mode) {
+      case MODE_ATMEGA:
+        dumper.writeCPP("ForthImage_ATMEGA328.h", &fasm, &mem, 0, romsize, true);
+        break;
 
-  #ifdef ARDUINO
-  vm.addSyscall(SYSCALL_H_AT, syscall_read_host);
-  vm.addSyscall(SYSCALL_H_STORE, syscall_write_host);
-  vm.addSyscall(SYSCALL_ARDUINO, syscall_arduino);
-  #else
-  vm.addSyscall(SYSCALL_H_AT, syscall_unimplemented);
-  vm.addSyscall(SYSCALL_H_STORE, syscall_unimplemented);
-  vm.addSyscall(SYSCALL_ARDUINO, syscall_unimplemented);
-  #endif
-  vm.addSyscall(SYSCALL_FREE_MEMORY, syscall_free_memory);
-  vm.addSyscall(SYSCALL_SYSCALL, syscall_syscall);
-  vm.addSyscall(SYSCALL_QEXIT, syscall_qexit);
+      case MODE_STM32:
+        dumper.writeCPP("ForthImage_STM32.h", &fasm, &mem, 0, romsize, true); 
+        break;
 
-  vm.addSyscall(SYSCALL_D_ADD, syscall_add_double);
-  vm.addSyscall(SYSCALL_D_SUB, syscall_sub_double);
-  vm.addSyscall(SYSCALL_D_DIV, syscall_mul_double);
-  vm.addSyscall(SYSCALL_D_MUL, syscall_div_double);
+      default: break;
+    }
+    }
+    else
+    {
+      Serial.println("Image not loaded. Did you change the target?");
+    }
+}
 
-  vm.addSyscall(SYSCALL_D_SR, syscall_sr_double);
-  vm.addSyscall(SYSCALL_D_SL, syscall_sl_double);
-  vm.addSyscall(SYSCALL_D_AND, syscall_and_double);
-  vm.addSyscall(SYSCALL_D_OR, syscall_or_double);
+void prompt() {
+  if(mode == MODE_ATMEGA) 
+  { 
+    Serial.print("ATMEGA >>"); 
+  } 
+  else 
+  { 
+    Serial.print("STM32 >>"); 
+  }
+}
 
-  vm.addSyscall(SYSCALL_DOTC, syscall_dot_c);
-  
-  vm.addSyscall(SYSCALL_FOPEN, syscall_fopen);
-  vm.addSyscall(SYSCALL_FCLOSE, syscall_fclose);
-  vm.addSyscall(SYSCALL_FREAD, syscall_fread);
-  vm.addSyscall(SYSCALL_WRITE_CPP, syscall_write_cpp);
+bool commandLine() {
+  char c;
+  while((char)(c = getCommand()) == '\n') {
+    prompt();
+  }
+  switch(c) {
+    case 'A': modeAtmega328(); break;
+    case 'G': generateCPP(); break;
+    case 'S': modeSTM32(); break; 
+    case 'c': vm.reset(); vm.run(); prompt(); break;
+    case 'w': vm.warm();  vm.run(); prompt(); break;
+    case 'l': loadInnerInterpreter(); break;
+    case 'e': return false;
+    case '?': 
+      Serial.println("Commands:");
+      Serial.println("A - Set mode ATMEGA328");
+      Serial.println("S - Set mode STM32");
+      Serial.println("G - Generate ForthImage_xxx.h");
+      Serial.println("l - (Re)Load the minimal image");
+      Serial.println("c - Cold start the Forth VM");
+      Serial.println("w - Warm start the Forth VM");
+      Serial.println("e - Exit");
+      break;
+    default: break;
+  }
+  return true;
 }
 
 int main(int argc, char **argv)
 {
 
-  /*
-  if(getArgs(argc, argv)) {
-      if(runAssemblerTests) testAssembler();
-      if(runInstructionTests) testVM();
-      if(runGenerateTestCode) generateTestCode();
-  }
-*/
-  attachSyscalls();
+  attachSyscalls(&vm);
 
   if (loadInnerInterpreter())
   {
-    dumper.dump(&fasm);
-    fasm.writeMemory(&mem);
-    #ifdef GENERATE_328P
-    dumper.writeCPP("ForthImage_ATMEGA328.h", &fasm, &mem, 0, 8192, true);
-    #else
-    dumper.writeCPP("ForthImage_STM32F4xx.h", &fasm, &mem, 0, 8192, false);
-    #endif
 
     debugger.setAssembler(&fasm);
     debugger.setVM(&vm);
@@ -213,8 +242,8 @@ int main(int argc, char **argv)
     // debugger.setBump(10);
     // debugger.writeProtect("DICTIONARY_END");
     //debugger.run();
-
-    vm.run();
+    prompt();
+    while(commandLine()) ;
   }
   else
   {
