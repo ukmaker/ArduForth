@@ -23,3 +23,10 @@ HEX
 : ANALOG@       ( pin -- value )     #OP-ANALOG-READ *ARDUINO ;
 : DELAY         ( ms -- )            #OP-DELAY *ARDUINO ;
 : MILLIS        ( -- ms )            #OP-MILLIS *ARDUINO ;
+
+: LED-BUILTIN 13 ;
+: LED-ON 1 LED-BUILTIN PIN! ;
+: LED-OFF 0 LED-BUILTIN PIN! ;
+: LED-FLASH LED-ON 100 DELAY LED-OFF 100 DELAY ;
+: LED-BLINK ( number of blinks -- ) 0 DO LED-FLASH LOOP ;
+

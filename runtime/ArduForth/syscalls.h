@@ -205,6 +205,7 @@ void syscall_putc(ForthVM *vm)
 void syscall_inline(ForthVM *vm)
 {
     // address of the buffer struct
+    uint16_t buflen = vm->pop();
     uint16_t buf = vm->pop();
     uint16_t bufidx = buf;
     uint16_t bufend = buf + 2;
@@ -218,7 +219,7 @@ void syscall_inline(ForthVM *vm)
     }
     else 
     {
-        read = Serial.readBytesUntil(0x0a, (char *)cbuf, 79);
+        read = Serial.readBytesUntil(0x0a, (char *)cbuf, buflen - 1);
         if(read > 0)
         {
             vm->ram()->put(bufend, bufstart + read);

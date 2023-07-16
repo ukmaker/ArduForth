@@ -86,6 +86,10 @@
 %MODE: 2
 %STATE: 2
 %FENCE: 2
+%USER_TOP: 2
+USER_VARS:
+.DATA 0
+
 
 .ORG #SYSTEM ; Start vector is at address 0
 START:
@@ -123,6 +127,10 @@ COLD:
   LD A,A
   MOVIL B,%FENCE
   ST B,A
+
+  MOVIL A,%USER_TOP
+  MOVIL B,USER_VARS
+  ST A,B
 
 STAR_RESTART: ; Restart from here if a runtime error occurs
   MOVIL SP,#SPTOP
@@ -191,7 +199,7 @@ BUILDS_WA: .DATA COLON
 BUILDS_CA:
   .DATA STAR_HASH_WA
   .DATA 0
-  .DATA CONSTANT_WA
+  .DATA VARIABLE_WA
   .DATA STAR_SEMI_WA
 
 DOES:
@@ -210,9 +218,38 @@ DOES_CA:
   PUSHD WA
   JP NEXT
 
+VARIABLE:
+; Like BUILDS> but creates a variable
+  .N "VARIABLE"
+  .DATA DOES
+VARIABLE_WA: .DATA COLON
+VARIABLE_CA:
+  .DATA VAR_USER_TOP_WA
+  .DATA AT_WA
+  .DATA CONSTANT_WA ; Address of the variable compiled into the word
+  .DATA VAR_USER_TOP_WA
+  .DATA AT_WA
+  .DATA STORE_WA    ; Store the initial value
+  .DATA VAR_USER_TOP_WA
+  .DATA DUP_WA
+  .DATA AT_WA
+  .DATA TWO_PLUS_WA
+  .DATA SWAP_WA
+  .DATA STORE_WA
+  .DATA STAR_SEMI_WA
+
+VAR_USER_TOP:
+  .N "%USER-TOP"
+  .DATA VARIABLE
+VAR_USER_TOP_WA: .DATA VAR_USER_TOP_CA
+VAR_USER_TOP_CA:
+  MOVIL A,%USER_TOP
+  PUSHD A
+  JP NEXT
+
 IMMEDIATE:
   .N "IMMEDIATE"
-  .DATA DOES
+  .DATA VAR_USER_TOP
 IMMEDIATE_WA: .DATA IMMEDIATE_CA
 IMMEDIATE_CA:
   MOVIL A,%CURRENT
@@ -260,8 +297,16 @@ VOCABULARY_WA: .DATA COLON
 VOCABULARY_CA:
   .DATA BUILDS_WA
   .DATA ENTRY_WA
+  .DATA WA_TO_CB_WA
+  .DATA AT_WA ; Now we have the address of the variable
+  .DATA DUP_WA
   .DATA COMMA_WA
+  .DATA ENTRY_WA
+  .DATA SWAP_WA
+  .DATA STORE_WA
+
   .DATA DOES_WA
+  .DATA AT_WA
   .DATA CONTEXT_WA
   .DATA STORE_WA
   .DATA STAR_SEMI_WA
@@ -269,13 +314,13 @@ VOCABULARY_CA:
 CORE:   ; My definition. Should really be as defined using VOCABULARY
         ; But I don't understand how that works yet
         ; And it needs to store values in ram, not the code-body of the word
-  .N "CODE"
+  .N "CORE"
   .DATA VOCABULARY
 CORE_WA: .DATA CORE_CA
 CORE_CA:
   MOVIL A,%CORE
   MOVIL B,%CONTEXT
-  LD B,A
+  ST B,A
   JP NEXT
 
 STAR_LIT:
@@ -1097,8 +1142,6 @@ FLUSH_CA:
     SYSCALL #SYSCALL_FLUSH
     JP NEXT
 
-
-
 ASPACE:           ; Forth word to push a space char to the stack
   .N "ASPACE"
   .DATA FLUSH
@@ -1109,9 +1152,65 @@ ASPACE_CA:
   PUSHD A
   JP NEXT
 
+ZERO: .N "1" .DATA ASPACE 
+ZERO_WA: .DATA ZERO_CA
+ZERO_CA: 
+  MOVI A,0
+  PUSHD A
+  JP NEXT
+
+ONE: .N "1" .DATA ZERO 
+ONE_WA: .DATA ONE_CA
+ONE_CA: 
+  MOVI A,1
+  PUSHD A
+  JP NEXT
+
+TWO: .N "2" .DATA ONE 
+TWO_WA: .DATA TWO_CA
+TWO_CA: 
+  MOVI A,2
+  PUSHD A
+  JP NEXT
+
+THREE: .N "3" .DATA TWO 
+THREE_WA: .DATA THREE_CA
+THREE_CA: 
+  MOVI A,3
+  PUSHD A
+  JP NEXT
+
+FOUR: .N "4" .DATA THREE 
+FOUR_WA: .DATA FOUR_CA
+FOUR_CA: 
+  MOVI A,4
+  PUSHD A
+  JP NEXT
+
+FIVE: .N "5" .DATA FOUR 
+FIVE_WA: .DATA FIVE_CA
+FIVE_CA: 
+  MOVI A,5
+  PUSHD A
+  JP NEXT
+
+SIX: .N "6" .DATA FIVE 
+SIX_WA: .DATA SIX_CA
+SIX_CA: 
+  MOVI A,6
+  PUSHD A
+  JP NEXT
+
+SEVEN: .N "7" .DATA SIX 
+SEVEN_WA: .DATA SEVEN_CA
+SEVEN_CA: 
+  MOVI A,7
+  PUSHD A
+  JP NEXT
+
 ONEPLUS:
   .N "1+"
-  .DATA ASPACE
+  .DATA SEVEN
 ONEPLUS_WA: .DATA ONEPLUS_CA
 ONEPLUS_CA:
   POPD A
@@ -1209,12 +1308,14 @@ DP_STORE_CA:
   ST A,B
   JP NEXT
 
-LBUF:
+LBUF: ; ( -- lbuf-start lbuf-len )
   .N "LBUF"
   .DATA DP_STORE
 LBUF_WA: .DATA LBUF_CA
 LBUF_CA:
-  MOVIL A,%LBUF_IDX
+  MOVIL A,%LBUF_DATA
+  PUSHD A
+  MOVIL A,#LBUF_LEN
   PUSHD A
   JP NEXT
 
@@ -1450,7 +1551,8 @@ CONSTANT_CA:
   .DATA COMMA_WA
   .DATA SCODE_WA
   LD A,WA
-  PUSHD A JP NEXT
+  PUSHD A 
+  JP NEXT
 
 HEADER_TO_MODE:
 ; ( headerWord -- modeBits )
@@ -1714,8 +1816,10 @@ INLINE:
 INLINE_WA:
     .DATA INLINE_CA
 INLINE_CA:
-    ; Put the address of the line buffer on the stack
+    ; Put the address and length of the line buffer on the stack
     MOVIL A,%LBUF_IDX
+    PUSHD A
+    MOVIL A,#LBUF_LEN
     PUSHD A
     SYSCALL #SYSCALL_INLINE
     SYSCALL #SYSCALL_QEXIT
@@ -2328,7 +2432,7 @@ WORDS:
   .DATA DOT_WORD_NEXT
 WORDS_WA: .DATA COLON
 WORDS_CA:
-  .DATA CURRENT_WA
+  .DATA CONTEXT_WA
   .DATA AT_WA
   .DATA AT_WA
 WORDS_LOOP:
@@ -2828,12 +2932,14 @@ ENCLOSE_WA: .DATA ENCLOSE_CA
 ENCLOSE_CA:
 ; Patch the code so that the core vocabulary is set to point to all 
 ; words currently defined
-; 
+; Patch the FENCE inital value also
 ; What's the current location?
   MOVIL R0,%CURRENT
   LD R1,R0
   LD R1,R1
   MOVIL R2,CORE_PATCH_VOCABULARY
+  ST R2,R1
+  MOVIL R2,CORE_PATCH_FENCE
   ST R2,R1
   MOVIL R0,CORE_PATCH_DP
   MOVIL R1,%DICTIONARY_POINTER

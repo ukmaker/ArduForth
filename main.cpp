@@ -120,6 +120,7 @@ void modeAtmega328() {
   fasm.setOption("#VARSTART", 0x2600); 
   fasm.setOption("#SPTOP", 0x2780);    
   fasm.setOption("#RSTOP", 0x27fe);   
+  fasm.setOption("#LBUF_LEN", 80); 
   mode = MODE_ATMEGA; 
   loaded = false;
 }
@@ -129,7 +130,8 @@ void modeSTM32() {
   fasm.setOption("#RAMSTART", 0x2000); 
   fasm.setOption("#VARSTART", 0x3000); 
   fasm.setOption("#SPTOP", 0x3f80);    
-  fasm.setOption("#RSTOP", 0x3ffe);  
+  fasm.setOption("#RSTOP", 0x3ffe); 
+  fasm.setOption("#LBUF_LEN", 128); 
   mode = MODE_STM32; 
   loaded = false;
 }
