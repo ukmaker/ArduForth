@@ -128,7 +128,7 @@ void modeSTM32() {
   fasm.clearOptions();
   fasm.setOption("#RAMSTART", 0x2000); 
   fasm.setOption("#VARSTART", 0x3000); 
-  fasm.setOption("#SPTOP", 0x3800);    
+  fasm.setOption("#SPTOP", 0x3f80);    
   fasm.setOption("#RSTOP", 0x3ffe);  
   mode = MODE_STM32; 
   loaded = false;
@@ -154,7 +154,12 @@ bool loadInnerInterpreter()
 
   if(!fasm.hasErrors()) 
   {
+    // For development purposes we set the DP to just after the last
+    // defined word sine everything is in RAM
+    // When deployed to a board DP will point to the start of RAM
     fasm.writeMemory(&mem);
+    Symbol *sym = fasm.getSymbol("DICTIONARY_END");
+    vm.ram()->put(10, sym->token->address);
     loaded = true;
   }
 
@@ -163,8 +168,12 @@ bool loadInnerInterpreter()
 
 void generateCPP() {
   if(loaded) 
-    {
+  {
     uint16_t romsize = vm.read(10);
+
+    Symbol *sym = fasm.getSymbol("#RAMSTART");
+    vm.ram()->put(10, sym->token->value);
+
     switch(mode) {
       case MODE_ATMEGA:
         dumper.writeCPP("ForthImage_ATMEGA328.h", &fasm, &mem, 0, romsize, true);
@@ -176,11 +185,15 @@ void generateCPP() {
 
       default: break;
     }
-    }
-    else
-    {
-      Serial.println("Image not loaded. Did you change the target?");
-    }
+
+    sym = fasm.getSymbol("DICTIONARY_END");
+    vm.ram()->put(10, sym->token->address);
+
+  }
+  else
+  {
+    Serial.println("Image not loaded. Did you change the target?");
+  }
 }
 
 void prompt() {

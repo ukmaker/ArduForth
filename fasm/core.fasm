@@ -97,7 +97,7 @@ CORE_PATCH_VOCABULARY:
   .DATA CORE_VOCABULARY ; Points to the end of the vocabulary on a cold start
                         ; Updated by ENCLOSE to include all defined words
 CORE_PATCH_DP:
-  .DATA DICTIONARY_END  ; Initialise the DP from here. Updated by ENCLOSE
+  .DATA #RAMSTART       ; Initialise the DP from here. Updated by ENCLOSE
 CORE_PATCH_CURRENT:
   .DATA %CURRENT        ; save this address here so the write_cpp syscall can find it
 CORE_PATCH_FENCE:
@@ -2834,10 +2834,6 @@ ENCLOSE_CA:
   LD R1,R0
   LD R1,R1
   MOVIL R2,CORE_PATCH_VOCABULARY
-  ST R2,R1
-  MOVIL R2,CORE_PATCH_DP
-  MOVIL R0,%DICTIONARY_POINTER
-  LD R1,R0
   ST R2,R1
   JP NEXT
 

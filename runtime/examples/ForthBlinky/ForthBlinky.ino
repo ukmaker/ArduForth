@@ -11,7 +11,7 @@
 #include "UnsafeMemory.h"
 #include "syscalls.h"
 
-#include "ForthImage_Generic.h"
+#include "ForthImage_ATMEGA328.h"
 
 
 uint8_t ram[16384];
