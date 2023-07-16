@@ -116,10 +116,10 @@ char getCommand() {
 
 void modeAtmega328() {
   fasm.clearOptions();
-  fasm.setOption("#RAMSTART", 0x2000); 
-  fasm.setOption("#VARSTART", 0x2200); 
-  fasm.setOption("#SPTOP", 0x2380);    
-  fasm.setOption("#RSTOP", 0x23fe);   
+  fasm.setOption("#RAMSTART", 0x2400); 
+  fasm.setOption("#VARSTART", 0x2600); 
+  fasm.setOption("#SPTOP", 0x2780);    
+  fasm.setOption("#RSTOP", 0x27fe);   
   mode = MODE_ATMEGA; 
   loaded = false;
 }

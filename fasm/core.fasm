@@ -21,7 +21,7 @@
 #SPTOP:    0x3800 ; Data stack pointer grows down from here
 #RSTOP:    0x3ffe ; And the return stack from here
                   ; This gives both stacks 2K bytes
-#LBUF_LEN:  80   ; Maximum length of the line buffer in chars
+#LBUF_LEN: 80     ; Maximum length of the line buffer in chars
 #BASE_DEC: 10
 #BASE_HEX: 16
 #BASE_BIN: 2
@@ -2835,6 +2835,10 @@ ENCLOSE_CA:
   LD R1,R1
   MOVIL R2,CORE_PATCH_VOCABULARY
   ST R2,R1
+  MOVIL R0,CORE_PATCH_DP
+  MOVIL R1,%DICTIONARY_POINTER
+  LD R1,R1
+  ST R0,R1
   JP NEXT
 
 VAR_FENCE:
