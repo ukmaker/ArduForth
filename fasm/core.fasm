@@ -957,8 +957,8 @@ ONE_EQUALS_TRUE:
   JP NEXT
 
 TWO_EQUALS:
-  .N "0="
-  .DATA UGT
+  .N "2="
+  .DATA ONE_EQUALS
 TWO_EQUALS_WA: .DATA TWO_EQUALS_CA
 TWO_EQUALS_CA:
   POPD A
@@ -1556,7 +1556,7 @@ CONSTANT_CA:
 
 HEADER_TO_MODE:
 ; ( headerWord -- modeBits )
-  .N "HEADER-TO-MODE"
+  .N "HEADER>MODE"
   .DATA CONSTANT
 HEADER_TO_MODE_WA: .DATA HEADER_TO_MODE_CA
 HEADER_TO_MODE_CA:
@@ -1569,6 +1569,7 @@ HEADER_TO_MODE_CA:
   JP NEXT
 
 Q_EXECUTE:
+; ( wa -- flag )
   .N "?EXECUTE"
   .DATA HEADER_TO_MODE
 Q_EXECUTE_WA:
@@ -1592,7 +1593,7 @@ Q_EXECUTE_CA:
   .DATA AT_WA            ; (addr addr -- addr len )
   .DATA HEADER_TO_MODE_WA
   .DATA STAR_HASH_WA
-  .DATA 2
+  .DATA 1
   .DATA SL_WA            ; Get the bits in 2,1 (addr len -- addr (len>>13))
   .DATA MODE_WA
   .DATA AT_WA            ; Get the mode bit
@@ -1667,11 +1668,6 @@ Q_EXECUTE_EXECUTIVE:
   .DATA STAR_ELSE_WA 
   .DATA Q_EXECUTE_DONE
 
-Q_EXECUTE_ERROR:
-  .DATA STAR_HASH_WA 
-  .DATA MSG_SYSTEM_ERROR 
-  .DATA TYPE_WA
-
 Q_EXECUTE_FAILED:
   .DATA STAR_HASH_WA
   .DATA 0
@@ -1703,7 +1699,7 @@ EXECUTE:
 EXECUTE_WA:
   .DATA EXECUTE_CA
 EXECUTE_CA:
-  POPD WA ; points to the NA
+  POPD WA ; points to the WA
   MOV A,WA
   LD A,A ; Get the length
   MOVIL B,#HEADER_MASK ; flags
@@ -2190,10 +2186,49 @@ Q_RS_CA:
   PUSHD RS
   JP NEXT
 
+SPTOP:
+  .N "SPTOP"
+  .DATA Q_RS
+SPTOP_WA: .DATA SPTOP_CA
+SPTOP_CA:
+  MOVIL A,#SPTOP
+  PUSHD A
+  JP NEXT
+
+RSTOP:
+  .N "RSTOP"
+  .DATA SPTOP
+RSTOP_WA: .DATA RSTOP_CA
+RSTOP_CA:
+  MOVIL A,#RSTOP
+  PUSHD A
+  JP NEXT
+
+; Print the data stack
+DOT_SP:
+  .N ".SP"
+  .DATA RSTOP
+DOT_SP_WA: .DATA COLON
+  .DATA Q_SP_WA
+  .DATA SPTOP_WA
+  .DATA TWO_PLUS_WA
+  .DATA SWAP_WA
+  .DATA TWO_PLUS_WA
+  .DATA STAR_DO_WA
+DOT_SP_LOOP:
+  .DATA INDEX_I_WA
+  .DATA DOT_WA
+  .DATA ASPACE_WA .DATA EMIT_WA
+  .DATA INDEX_I_WA .DATA AT_WA .DATA DOT_WA
+  .DATA CRET_WA
+  .DATA TWO_WA
+  .DATA STAR_PLUSLOOP_WA .DATA DOT_SP_LOOP
+  .DATA STAR_SEMI_WA
+
 ; Patch - fixup the dictionary to remove any half-compiled words
 PATCH:
   .N "PATCH"
-  .DATA Q_RS
+  .DATA DOT_SP
 PATCH_WA: .DATA COLON
 PATCH_CA:
   .DATA MODE_WA
@@ -2577,67 +2612,31 @@ LIT_CA:
   .DATA PLUS_STORE_WA
   .DATA STAR_SEMI_WA
 
+QUOTE:
+  .N "\""
+  .DATA LIT
+  QUOTE_WA: .DATA COLON
+QUOTE_CA:
+  .DATA STAR_HASH_WA .DATA 0x22
+  .DATA STAR_SEMI_WA
+
 S_LIT: 
 ; String literal
 ; At compile-time, builds the string into the dictionary
 ; At run-time (i.. at the command-line ) moves the string
 ; to the return stack
-  .X "S\""
-  .DATA LIT
+  .I "S\""
+  .DATA QUOTE
 S_LIT_WA: .DATA COLON
 S_LIT_CA:
-  .DATA MODE_WA
-  .DATA AT_WA
-  .DATA STAR_IF_WA .DATA S_LIT_RUNTIME
-  ; compile-time
   .DATA STAR_HASH_WA .DATA STAR_S_LIT_WA
   .DATA COMMA_WA
-  .DATA STAR_HASH_WA .SDATA "\""
+  .DATA STAR_HASH_WA .DATA 0x22
   .DATA TOKEN_WA ; Move the string to the dictionary
   .DATA TWO_PLUS_WA
   .DATA ALIGN_WA
   .DATA DP_WA
   .DATA PLUS_STORE_WA
-  .DATA STAR_ELSE_WA .DATA S_LIT_DONE
-S_LIT_RUNTIME:
-  ; runtime - move the string to the return stack
-  .DATA STAR_HASH_WA .SDATA "\""
-  .DATA TOKEN_WA ; Move the string to the dictionary
-  .DATA DROP_WA
-  .DATA S_LIT_CODE
-S_LIT_CODE: .DATA S_LIT_ASM
-S_LIT_ASM:
-  .ALIAS R0,DP
-  .ALIAS R1,SDP
-  .ALIAS R2,IDX
-  .ALIAS R3,LEN
-  .ALIAS R4,TMP
-  .ALIAS R5,WRD
-
-  MOVIL DP,%DICTIONARY_POINTER
-  LD SDP,DP
-  LD LEN,SDP
-  ADDI LEN,3
-  CLRI LEN,0 ; Word align
-  MOV IDX,LEN
-  SUB SP,LEN ; Take space on the  stack
-  ADDI SP,2  ; Back up to align the stack pointer
-S_LIT_LOOP:
-  LD TMP,SDP
-  ST SP,TMP
-  ADDI SDP,2
-  ADDI SP,2
-  ADDI IDX,-2
-  JR[NZ] S_LIT_LOOP
-  SUB SP,LEN ;
-  MOV WRD,SP
-  ADDI SP,-2
-  PUSHD WRD   ; Push the return stack pointer to the data stack ready for .WORD
-S_LIT_CODE_DONE:
-  JP STAR_SEMI_CA
-
-; Exit for the compile code
-S_LIT_DONE:
   .DATA STAR_SEMI_WA
 
 STAR_S_LIT:

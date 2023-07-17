@@ -50,6 +50,7 @@ void attachSyscalls()
   vm.addSyscall(SYSCALL_D_AND, syscall_and_double);
   vm.addSyscall(SYSCALL_D_OR, syscall_or_double);
 
+  vm.addSyscall(SYSCALL_COMPARE, syscall_compare);
   vm.addSyscall(SYSCALL_DOTC, syscall_dot_c);
   vm.addSyscall(SYSCALL_FREE_MEMORY, syscall_free_memory);
   vm.addSyscall(SYSCALL_SYSCALL, syscall_syscall);

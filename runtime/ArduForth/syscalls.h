@@ -633,8 +633,8 @@ int do_compare(char *c1, char *c2, uint16_t l1, uint16_t l2) {
 void syscall_compare(ForthVM *vm) {
     uint16_t s2 = vm->pop();
     uint16_t s1 = vm->pop();
-    uint16_t l1 = vm->get(s1);
-    uint16_t l2 = vm->get(s2);
+    uint16_t l1 = vm->read(s1);
+    uint16_t l2 = vm->read(s2);
     char *c1 = (char*)vm->ram()->addressOfChar(s1+2);
     char *c2 = (char*)vm->ram()->addressOfChar(s2+2);
 

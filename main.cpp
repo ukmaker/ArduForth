@@ -79,6 +79,7 @@ void attachSyscalls(ForthVM *vm)
   vm->addSyscall(SYSCALL_INLINE, syscall_inline);
   vm->addSyscall(SYSCALL_FLUSH, syscall_flush);
   vm->addSyscall(SYSCALL_NUMBER, syscall_number);
+  vm->addSyscall(SYSCALL_COMPARE, syscall_compare);
 
   /**
    * I can't see any reason to want to access the host desktop

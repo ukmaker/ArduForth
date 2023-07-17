@@ -11,6 +11,10 @@
     DUP 0x20 0x7e WITHIN
 ;
 
+: .SP ( print the data stack )
+    ?SP SPTOP 2+ SWAP 2+ DO I . ASPACE EMIT I @ . CRET 2 +LOOP 
+;
+
 ( An enhanced version of DUMP )
 ( Dump a block of memory in hex, and ptin the characters  )
 ( address length -- )
@@ -36,9 +40,6 @@
     ( recover the base ) BASE !
 ;
 
-: [ 0 MODE ! ; IMMEDIATE
-: ] 1 MODE ! ;
-
 : IS-CODE ( ca -- flag ) 
     DUP @ 2 - = 
 ;
@@ -63,8 +64,6 @@
         UNTIL
     THEN
 ;
-
-: ['] [ ' *# , ' *# , ] , ' , ; IMMEDIATE
 
 : WORDLEN ( word-header -- word-len )
     0x1fff AND
