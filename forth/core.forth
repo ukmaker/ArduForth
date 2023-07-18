@@ -19,11 +19,6 @@
 ;
 
 
-: [ 0 MODE ! ; IMMEDIATE
-: ] 1 MODE ! ;
-: ['] [ ' *# , ' *# , ] , ' , ; IMMEDIATE
-
-
 : CA ENTRY WA>CA ;
 
 : AT-FIRST
@@ -66,7 +61,18 @@
     THEN
 ;
 
+: .ARRAY 
+    DUP 0 
+    ?DO 
+        OVER OVER I ARRAY@ I . ASPACE EMIT . CRET 
+    LOOP 
+    DROP DROP 
+;
+
 : STACK 1+ ARRAY 0 CA 4 + @ ! ;
+
+: STACK! 1+ ARRAY! ;
+: STACK@ 1+ ARRAY@ ;
 
 : PUSH ( val array-addr array-size  -- )
     ( use the given array as a stack, growing upwards)
@@ -101,8 +107,13 @@
     S" }" COMPARE
 ;
 
+: LOCALS-JP ENTRY WA>CB 2+ ;
 
+: LOCALS-NVARS ENTRY WA>CB 4 + ;
 
+: LOCALS-FIRST ENTRY WA>CB 6 + ;
+
+: LOCALS-NEXT DUP @ 2+ + ALIGN ;
 
 
 : LOOPED ( LEave a DO LOOP )
@@ -110,21 +121,21 @@
 ;
 
 : *$ ( get the offset for the local name ) ( -- offset )
-    ASPACE TOKEN ( get the variable name to DP )
+    ASPACE TOKEN DROP ( get the variable name to DP )
     DP @
 
-    ENTRY WA>CB 4+ ( start of variable table )
-    DUP 2+ SWAP @ ( number of entries )
+    LOCALS-FIRST
     0 ( found-flag) 
-    SWAP
+    
+    LOCALS-NVARS
     0 DO
-        ( tok-addr var-addr found-flag -- tok-addr var-addr tok-addr var-addr )
+        ( tok-addr var-addr found-flag -- tok-addr var-addr tok-addr var-addr)
         DROP
         OVER OVER COMPARE 0=
         IF ( found it )
             DROP DROP I 1 LOOPED
         ELSE
-            DUP @ + 2+ ALIGN 0
+            LOCALS-NEXT 0
         THEN
     LOOP
 
@@ -133,7 +144,9 @@
     THEN
 ;
 
-: >$ *$ ; IMMEDIATE
+: >$ ['] __LOCALS__ , ['] *# , *$ , ['] STACK! , ; IMMEDIATE
+
+: $> ['] __LOCALS__ , ['] *# , *$ , ['] STACK@ , ; IMMEDIATE
 
 
 
@@ -150,28 +163,43 @@
     2 ALLOT ( reserve space for jump and num-vars )
 ;
 
-: *} ( finish the local definition by reserving space on  __LOCALS__ )
-    ENTRY WA>CB 4 + @ 1 DO 0 __LOCALS__ PUSH LOOP
+: *} DP @ LOCALS-JP !
 ;
+
+: *INIT-LOCALS
+    0 ?DO 0 __LOCALS__ PUSH LOOP
+;
+
 
 : { ( Start local variable definitions )
     AT-FIRST NOT IF ." { Must be the first word " RESTART THEN
     *{ ( compile the starting block )
-    BEGIN
-        ASPACE TOKEN S" }" DP @ COMPARE 0=
-        IF ( got the closing brace )
-            1 ( to exit the loop )
-        ELSE ( compile the variable name )
-            ENCLOSE
-            ( update the count of variables )
-            ENTRY WA>CB 4 + DUP @ 1+ SWAP !
-            0 ( don't exit the loop )
-        THEN
-    UNTIL
-    ( compile the jump address )
-    DP @ ENTRY WA>CB 2+ !
-    ['] *} ,
+        BEGIN
+            ASPACE TOKEN DROP S" }" DP @ COMPARE 0=
+            IF ( got the closing brace )
+                1 ( to exit the loop )
+            ELSE ( compile the variable name )
+                ENCLOSE
+                ( update the count of variables )
+                LOCALS-NVARS @ 1+ LOCALS-NVARS !
+                0 ( don't exit the loop )
+            THEN
+        UNTIL
+    *} ( compile the jump address )
+    
+    LOCALS-NVARS @ ['] *# , , ( number of locals )
+    ['] *INIT-LOCALS ,
 
+; IMMEDIATE
+
+: *FREE-LOCALS
+    0 ?DO __LOCALS__ POP DROP LOOP
+;
+
+: ;{} ( end a word which has local variables - pop the __LOCALS__ )
+    LOCALS-NVARS @ ['] *# , ,
+    ['] *FREE-LOCALS ,
+    ['] *; , 0 MODE !
 ; IMMEDIATE
 
 : TEST { a b }
@@ -180,3 +208,4 @@
     $> a $> b + >$ a
     $> a 2 +
 ;
+

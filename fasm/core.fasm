@@ -99,9 +99,9 @@ WARM:
 
 CORE_PATCH_VOCABULARY:
   .DATA CORE_VOCABULARY ; Points to the end of the vocabulary on a cold start
-                        ; Updated by ENCLOSE to include all defined words
+                        ; Updated by EXPAND to include all defined words
 CORE_PATCH_DP:
-  .DATA #RAMSTART       ; Initialise the DP from here. Updated by ENCLOSE
+  .DATA #RAMSTART       ; Initialise the DP from here. Updated by EXPAND
 CORE_PATCH_CURRENT:
   .DATA %CURRENT        ; save this address here so the write_cpp syscall can find it
 CORE_PATCH_FENCE:
@@ -1133,9 +1133,41 @@ COMMA_CA:
   ST A,B
   JP NEXT
 
+LEFT_SQUARE_BRACKET:
+  .I "["
+  .DATA COMMA
+LSQB_WA: .DATA COLON
+LSQB_CA:
+  .DATA ZERO_WA
+  .DATA MODE_WA
+  .DATA STORE_WA
+  .DATA STAR_SEMI_WA
+
+RIGHT_SQUARE_BRACKET:
+  .N "]"
+  .DATA LEFT_SQUARE_BRACKET
+RSQB_WA: .DATA COLON
+RSQB_CA:
+  .DATA ONE_WA
+  .DATA MODE_WA
+  .DATA STORE_WA
+  .DATA STAR_SEMI_WA
+
+BRACKET_TICK:
+  .I "[']"
+  .DATA RIGHT_SQUARE_BRACKET
+BRACKET_TICK_WA: .DATA COLON
+BRACKET_TICK_CA:
+  .DATA STAR_HASH_WA
+  .DATA STAR_HASH_WA
+  .DATA COMMA_WA
+  .DATA TICK_WA
+  .DATA COMMA_WA
+  .DATA STAR_SEMI_WA
+
 FLUSH:  ; Flush stdout
   .N "FLUSH"
-  .DATA COMMA
+  .DATA BRACKET_TICK
 FLUSH_WA:
     .DATA FLUSH_CA
 FLUSH_CA:
@@ -1850,19 +1882,13 @@ UNTIL:
 ; Compile time only
   .I "UNTIL"
   .DATA BEGIN
-UNTIL_WA: .DATA UNTIL_CA
+UNTIL_WA: .DATA COLON
 UNTIL_CA:
-  POPD R0 ; loop address
-  MOVIL R1,STAR_UNTIL_WA
-  MOVIL R2,%DICTIONARY_POINTER
-  LD R3,R2
-  ; Compile *UNTIL
-  ST R3,R1
-  ADDI R3,2
-  ST R3,R0
-  ADDI R3,2
-  ST R2,R3
-  JP NEXT
+  .DATA STAR_HASH_WA .DATA STAR_UNTIL_WA
+  .DATA COMMA_WA
+  .DATA COMMA_WA
+  .DATA STAR_SEMI_WA
+
 
 STAR_UNTIL:
 ; Runime only
@@ -2101,13 +2127,29 @@ DO_CA:
   ; Compile *DO
   .DATA STAR_HASH_WA .DATA STAR_DO_WA
   .DATA COMMA_WA
-  ; Push Here to the stack so LOOP cancompile it later
+  ; Push Here to the stack so LOOP can compile it later
   .DATA HERE_WA
+  .DATA ZERO_WA ; Flag to say it's a normal loop
+  .DATA STAR_SEMI_WA
+
+QDO:
+  .I "?DO"
+  .DATA DO
+QDO_WA: .DATA COLON
+QDO_CA:
+  ; Compile *QDO
+  .DATA STAR_HASH_WA .DATA STAR_QDO_WA
+  .DATA COMMA_WA
+  ; Push Here to the stack so LOOP can compile it later
+  .DATA HERE_WA
+  .DATA ONE_WA ; Flag to say it's a ?DO loop
+  ; Reserve space for the jump address
+  .DATA ZERO_WA .DATA COMMA_WA
   .DATA STAR_SEMI_WA
 
 STAR_DO:
   .R "*DO"
-  .DATA DO
+  .DATA QDO
 STAR_DO_WA: .DATA STAR_DO_CA
 STAR_DO_CA:
   POPD A
@@ -2116,14 +2158,41 @@ STAR_DO_CA:
   PUSHR A
   JP NEXT
 
+STAR_QDO:
+  .R "*QDO"
+  .DATA STAR_DO
+STAR_QDO_WA: .DATA STAR_QDO_CA
+STAR_QDO_CA:
+  POPD A
+  POPD B
+  CMP B,A
+  JR[Z] STAR_QDO_DONT
+  JR[C] STAR_QDO_DONT
+  PUSHD B
+  PUSHD A
+  ADDI I,2
+  JR STAR_DO_CA
+STAR_QDO_DONT:
+  LD I,I
+  JP NEXT
+
 LOOP:
   .I "LOOP"
-  .DATA STAR_DO
+  .DATA STAR_QDO
 LOOP_WA: .DATA COLON
 LOOP_CA:
   .DATA STAR_HASH_WA
   .DATA STAR_LOOP_WA
   .DATA COMMA_WA
+  .DATA STAR_IF_WA ; Normal or ?DO
+  .DATA LOOP_NORMAL
+  .DATA DUP_WA
+  .DATA HERE_WA
+  .DATA TWO_PLUS_WA
+  .DATA SWAP_WA
+  .DATA STORE_WA
+  .DATA TWO_PLUS_WA
+LOOP_NORMAL:
   .DATA COMMA_WA ; and compile the return address off the stack
   .DATA STAR_SEMI_WA
 
@@ -2135,6 +2204,15 @@ PLUSLOOP_CA:
   .DATA STAR_HASH_WA
   .DATA STAR_PLUSLOOP_WA
   .DATA COMMA_WA
+  .DATA STAR_IF_WA ; Normal or ?DO
+  .DATA PLUSLOOP_NORMAL
+  .DATA DUP_WA
+  .DATA HERE_WA
+  .DATA TWO_PLUS_WA
+  .DATA SWAP_WA
+  .DATA STORE_WA
+  .DATA TWO_PLUS_WA
+PLUSLOOP_NORMAL:
   .DATA COMMA_WA ; and compile the return address off the stack
   .DATA STAR_SEMI_WA
 
@@ -2924,11 +3002,11 @@ READ_FILE_DONE:
 READ_FILE_EXIT:
   .DATA STAR_SEMI_WA
 
-ENCLOSE:
-  .N "ENCLOSE"
+EXPAND:
+  .N "EXPAND"
   .DATA READ_FILE
-ENCLOSE_WA: .DATA ENCLOSE_CA
-ENCLOSE_CA:
+EXPAND_WA: .DATA EXPAND_CA
+EXPAND_CA:
 ; Patch the code so that the core vocabulary is set to point to all 
 ; words currently defined
 ; Patch the FENCE inital value also
@@ -2948,7 +3026,7 @@ ENCLOSE_CA:
 
 VAR_FENCE:
   .N "%FENCE"
-  .DATA ENCLOSE
+  .DATA EXPAND
 VAR_FENCE_WA: .DATA VAR_FENCE_CA
 VAR_FENCE_CA:
   MOVIL A,%FENCE
