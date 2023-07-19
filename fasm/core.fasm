@@ -63,16 +63,14 @@
 #STATE_NOT_FOUND: 0
 #STATE_FOUND: 1
 
-#HEADER_MASK: 0x1fff
+#HEADER_MASK: 0x00ff
 #HEADER_HEADER_BIT: 15
 #HEADER_SCOPE_BITS: 13
-#HEADER_SCOPE_NORMAL: 0
-#HEADER_SCOPE_RUNTIME: 1
-#HEADER_SCOPE_IMMEDIATE: 2
-#HEADER_SCOPE_EXECUTIVE: 3
 #HEADER_IMMEDIATE: 0xc000
 #HEADER_RUNTIME: 0xa000
 #HEADER_EXECUTIVE: 0xe000
+#HEADER_FENCED: 0x2000
+#HEADER_HAS_LOCALS: 0x1000
 
 .ORG #VARSTART
 %BASE: 2               ; Current system numeric base
@@ -931,29 +929,25 @@ ZERO_EQUALS_WA: .DATA ZERO_EQUALS_CA
 ZERO_EQUALS_CA:
   POPD A
   CMPI A,0
+  MOVI B,1
   JR[Z] ZERO_EQUALS_TRUE
-  MOVI A,0
-  PUSHD A
-  JP NEXT
+  MOVI B,0
 ZERO_EQUALS_TRUE:
-  MOVI A,1
-  PUSHD A
+  PUSHD B
   JP NEXT
 
 ONE_EQUALS:
   .N "1="
   .DATA ZERO_EQUALS
-ONE_EQUAL_WA: .DATA ONE_EQUALS_CA
+ONE_EQUALS_WA: .DATA ONE_EQUALS_CA
 ONE_EQUALS_CA:
   POPD A
   CMPI A,1
+  MOVI B,1
   JR[Z] ONE_EQUALS_TRUE
-  MOVI A,0
-  PUSHD A
-  JP NEXT
+  MOVI B,0
 ONE_EQUALS_TRUE:
-  MOVI A,1
-  PUSHD A
+  PUSHD B
   JP NEXT
 
 TWO_EQUALS:
@@ -963,13 +957,11 @@ TWO_EQUALS_WA: .DATA TWO_EQUALS_CA
 TWO_EQUALS_CA:
   POPD A
   CMPI A,2
+  MOVI B,1
   JR[Z] TWO_EQUALS_TRUE
-  MOVI A,0
-  PUSHD A
-  JP NEXT
+  MOVI B,0
 TWO_EQUALS_TRUE:
-  MOVI A,1
-  PUSHD A
+  PUSHD B
   JP NEXT
 
 SL:
@@ -994,9 +986,29 @@ SR_CA:
   PUSHD A
   JP NEXT
 
+SL_ONE:
+  .N "1<<"
+  .DATA SR
+SL_ONE_WA: .DATA SL_ONE_CA
+SL_ONE_CA:
+  POPD A
+  SLI A,1
+  PUSHD A
+  JP NEXT
+
+SR_ONE:
+  .N "1>>"
+  .DATA SL_ONE
+SR_ONE_WA: .DATA SR_ONE_CA
+SR_ONE_CA:
+  POPD A
+  SRI A,1
+  PUSHD A
+  JP NEXT
+
 ALIGN:
   .N "ALIGN"
-  .DATA SR
+  .DATA SR_ONE
 ALIGN_WA:
   .DATA ALIGN_CA
 ALIGN_CA:
@@ -1091,9 +1103,71 @@ OVER_CA:
   PUSHD B
   JP NEXT
 
+COPY:
+; Copy words
+; ( source-addr1 source-len dest-addr2 -- )
+  .N "COPY"
+  .DATA OVER
+COPY_WA: .DATA COPY_CA
+COPY_CA:
+  .ALIAS R0,SRCA
+  .ALIAS R1,SRCL
+  .ALIAS R2,DEST
+  .ALIAS R3,DATA
+  POPD DEST
+  POPD SRCL
+  POPD SRCA
+COPY_LOOP:
+  CMPI SRCL,0
+  JR[Z] COPY_DONE
+  LD DATA,SRCA
+  ST DEST,DATA
+  ADDI SRCA,2
+  ADDI DEST,2
+  SUBI SRCL,1
+  JR COPY_LOOP
+COPY_DONE:
+  JP NEXT
+
+CCOPY:
+; Copy bytes 
+  .N "CCOPY"
+  .DATA COPY
+CCOPY_WA: .DATA CCOPY_CA
+CCOPY_CA:
+  .ALIAS R0,SRCA
+  .ALIAS R1,SRCL
+  .ALIAS R2,DEST
+  .ALIAS R3,DATA
+  POPD DEST
+  POPD SRCL
+  POPD SRCA
+CCOPY_LOOP:
+  CMPI SRCL,0
+  JR[Z] COPY_DONE
+  LD_B DATA,SRCA
+  ST_B DEST,DATA
+  ADDI SRCA,1
+  ADDI DEST,1
+  SUBI SRCL,1
+  JR COPY_LOOP
+CCOPY_DONE:
+  JP NEXT
+
+STRNCPY:
+; ( source-addr dest-addr -- )
+  .N "\"COPY"
+  .DATA CCOPY
+STRNCPY_WA: .DATA STRNCPY_CA
+STRNCPY_CA:
+  POPD R0
+  POPD R2
+  LD  R1,R0
+  JR CCOPY_LOOP
+
 INDEX_I:
   .N "I"
-  .DATA OVER
+  .DATA STRNCPY
 INDEX_I_WA: .DATA INDEX_I_CA
 INDEX_I_CA:
   POPR A
@@ -1240,49 +1314,70 @@ SEVEN_CA:
   PUSHD A
   JP NEXT
 
-ONEPLUS:
+ONE_PLUS:
   .N "1+"
   .DATA SEVEN
-ONEPLUS_WA: .DATA ONEPLUS_CA
-ONEPLUS_CA:
+ONE_PLUS_WA: .DATA ONE_PLUS_CA
+ONE_PLUS_CA:
   POPD A
   ADDI A,1
   PUSHD A
   JP NEXT
 
-TWOPLUS:
+TWO_PLUS:
   .N "2+"
-  .DATA ONEPLUS
-TWOPLUS_WA: .DATA TWOPLUS_CA
-TWOPLUS_CA:
+  .DATA ONE_PLUS
+TWO_PLUS_WA: .DATA TWO_PLUS_CA
+TWO_PLUS_CA:
   POPD A
   ADDI A,2
   PUSHD A
   JP NEXT
 
-ONEMINUS:
+ONE_MINUS:
   .N "1-"
-  .DATA TWOPLUS
-ONEMINUS_WA: .DATA ONEMINUS_CA
-ONEMINUS_CA:
+  .DATA TWO_PLUS
+ONE_MINUS_WA: .DATA ONE_MINUS_CA
+ONE_MINUS_CA:
   POPD A
   ADDI A,-1
   PUSHD A
   JP NEXT
 
-TWOMINUS:
+TWO_MINUS:
   .N "2-"
-  .DATA ONEMINUS
-TWOMINUS_WA: .DATA TWOMINUS_CA
-TWOMINUS_CA:
+  .DATA ONE_MINUS
+TWO_MINUS_WA: .DATA TWO_MINUS_CA
+TWO_MINUS_CA:
   POPD A
   ADDI A,-2
   PUSHD A
   JP NEXT
 
+TWO_TIMES:
+  .N "2*"
+  .DATA TWO_MINUS
+TWO_TIMES_WA: .DATA TWO_TIMES_CA
+TWO_TIMES_CA:
+  POPD A
+  SLI A,1
+  PUSHD A
+  JP NEXT
+
+TWO_DIV:
+  .N "2/"
+  .DATA TWO_TIMES
+TWO_DIV_WA: .DATA TWO_DIV_CA
+TWO_DIV_CA:
+  POPD A
+  MOVI B,2
+  DIV A,B
+  PUSHD A
+  JP NEXT
+
 SCODE:
   .N "SCODE"
-  .DATA TWOMINUS
+  .DATA TWO_DIV
 SCODE_WA:
   .DATA COLON
 SCODE_CA:
@@ -1340,9 +1435,19 @@ DP_STORE_CA:
   ST A,B
   JP NEXT
 
+DP_AT:
+  .N "DP@"
+  .DATA DP_STORE
+DP_AT_WA: .DATA DP_AT_CA
+DP_AT_CA:
+  MOVIL A,%DICTIONARY_POINTER
+  LD A,A
+  PUSHD A
+  JP NEXT
+
 LBUF: ; ( -- lbuf-start lbuf-len )
   .N "LBUF"
-  .DATA DP_STORE
+  .DATA DP_AT
 LBUF_WA: .DATA LBUF_CA
 LBUF_CA:
   MOVIL A,%LBUF_DATA
@@ -1351,19 +1456,9 @@ LBUF_CA:
   PUSHD A
   JP NEXT
 
-TWO_PLUS:
-  .N "2+"
-  .DATA LBUF
-TWO_PLUS_WA: .DATA TWO_PLUS_CA
-TWO_PLUS_CA:
-  POPD A
-  ADDI A,2
-  PUSHD A
-  JP NEXT
-
 WA_TO_LA:
   .N "WA>LA"
-  .DATA TWO_PLUS
+  .DATA LBUF
 WA_TO_LA_WA: .DATA WA_TO_LA_CA
 WA_TO_LA_CA:
   ; ( wa -- ca )
@@ -1478,7 +1573,8 @@ CREATE_WA: .DATA COLON
 CREATE_CA:
   .DATA ENTRY_WA      ;( -- WA of last entry )
   .DATA ASPACE_WA
-  .DATA TOKEN_WA      ;( .. -- WA LEN )
+  .DATA TOKEN_WA
+  .DATA TOKEN_LEN_WA      ;( .. -- WA LEN )
   
   .DATA HERE_WA       ;( .. -- WA LEN HERE )
   .DATA CURRENT_WA    
@@ -1508,8 +1604,8 @@ CREATE_CA:
   .DATA STAR_SEMI_WA
 
 SEMICOLON:
-; This is an executive word
-  .X ";"
+; This is an immediate word
+  .I ";"
   .DATA CREATE
 SEMICOLON_WA: .DATA COLON
 SEMICOLON_CA:
@@ -1612,7 +1708,7 @@ Q_EXECUTE_WA:
   ; 00 - Normal word. Mode = 0 => Execute   Mode = 1 => Compile
   ; 01 - Runtime only Mode = 0 => Execute   Mode = 1 => Error
   ; 10 - Immediate    Mode = 0 => Error     Mode = 1 => Execute
-  ; 11 - Executive    Mode = 0 => Execute   Mode = 1 => Execute
+  ; 11 - Executive    Mode = 0 => Error     Mode = 1 => Compile
   ;
   ; DUP
   ; @ 13 >>
@@ -1624,17 +1720,13 @@ Q_EXECUTE_CA:
   .DATA DUP_WA           ; ( addr - addr addr )
   .DATA AT_WA            ; (addr addr -- addr len )
   .DATA HEADER_TO_MODE_WA
-  .DATA STAR_HASH_WA
-  .DATA 1
-  .DATA SL_WA            ; Get the bits in 2,1 (addr len -- addr (len>>13))
+  .DATA SL_ONE_WA        ; Get the bits in 2,1 (addr len -- addr (len>>13))
   .DATA MODE_WA
   .DATA AT_WA            ; Get the mode bit
   .DATA OR_WA            ; AS bit 0
 
   .DATA DUP_WA           ; ( addr bits -- addr bits bits )
-  .DATA STAR_HASH_WA 
-  .DATA 0                ; ( . -- addr bits bits 0 )
-  .DATA EQUALS_WA        ; ( . -- addr bits EQ )
+  .DATA ZERO_EQUALS_WA               ; ( . -- addr bits EQ )
   .DATA STAR_IF_WA       ; ( . -- addr bits )
   .DATA Q_EXECUTE_1
 Q_EXECUTE_NORMAL:
@@ -1645,8 +1737,7 @@ Q_EXECUTE_NORMAL:
 
 Q_EXECUTE_1:  
   .DATA DUP_WA
-  .DATA STAR_HASH_WA .DATA 1
-  .DATA EQUALS_WA
+  .DATA ONE_EQUALS_WA
   .DATA STAR_IF_WA 
   .DATA Q_EXECUTE_2
 Q_EXECUTE_COMPILE:
@@ -1658,8 +1749,7 @@ Q_EXECUTE_COMPILE:
 
 Q_EXECUTE_2:
   .DATA DUP_WA
-  .DATA STAR_HASH_WA .DATA 2
-  .DATA EQUALS_WA
+  .DATA TWO_EQUALS_WA
   .DATA STAR_IF_WA 
   .DATA Q_EXECUTE_3
 Q_EXECUTE_RUNTIME:
@@ -1677,7 +1767,7 @@ Q_EXECUTE_3:
 Q_EXECUTE_RUNTIME_NOT_ALLOWED:
     .DATA STAR_HASH_WA
     .DATA MSG_RUNTIME_ONLY
-    .DATA TYPE_WA
+    .DATA TYPELN_WA
   .DATA STAR_ELSE_WA 
   .DATA Q_EXECUTE_FAILED
 
@@ -1686,13 +1776,41 @@ Q_EXECUTE_4:
   .DATA STAR_HASH_WA .DATA 4
   .DATA EQUALS_WA
   .DATA STAR_IF_WA 
-  .DATA Q_EXECUTE_EXECUTIVE
+  .DATA Q_EXECUTE_5
 Q_EXECUTE_COMPILETIME_NOT_ALLOWED:
    .DATA STAR_HASH_WA
     .DATA MSG_COMPILE_ONLY
-    .DATA TYPE_WA
+    .DATA TYPELN_WA
   .DATA STAR_ELSE_WA 
   .DATA Q_EXECUTE_FAILED
+
+Q_EXECUTE_5:
+  .DATA DUP_WA
+  .DATA STAR_HASH_WA .DATA 5
+  .DATA EQUALS_WA
+  .DATA STAR_IF_WA 
+  .DATA Q_EXECUTE_6
+  .DATA STAR_ELSE_WA
+  .DATA Q_EXECUTE_EXECUTIVE
+
+Q_EXECUTE_6:
+  .DATA DUP_WA
+  .DATA STAR_HASH_WA .DATA 6
+  .DATA EQUALS_WA
+  .DATA STAR_IF_WA 
+  .DATA Q_EXECUTE_7
+  .DATA STAR_HASH_WA
+  .DATA MSG_COMPILE_ONLY
+  .DATA TYPELN_WA
+  .DATA STAR_ELSE_WA 
+  .DATA Q_EXECUTE_FAILED
+
+Q_EXECUTE_7:
+  .DATA DROP_WA
+  .DATA WA_TO_CA_WA
+  .DATA COMMA_WA
+  .DATA STAR_ELSE_WA 
+  .DATA Q_EXECUTE_DONE
 
 Q_EXECUTE_EXECUTIVE:
   .DATA DROP_WA
@@ -1741,7 +1859,7 @@ EXECUTE_CA:
   CLRI WA,0 ; WOrd-align
   JP RUN
 
-; ( sep - tokenLength )
+; ( sep -- )
 TOKEN:
   .N "TOKEN"
   .DATA EXECUTE
@@ -1803,14 +1921,13 @@ TOKEN_TOK:          ; Start searching for the end token here
   JR TOKEN_TOK
 
 TOKEN_DONE:
+  MOV R3,R1 ; Save for later
   CMPI R1,0
   JR[Z] TOKEN_END
   ; Move the token to the end of the dictionary
   ; So ?SEARCH can access it
   MOVIL A,%DICTIONARY_POINTER
   LD B,A    ; B Points to the dictionary
-  ST B,R1   ; Save the length
-  MOV R3,R1 ; Save for later
   ADDI B,2  ; Bump the dictionary pointer
   SUB R0,R1 ; Reset the buffer pointer
 
@@ -1829,8 +1946,20 @@ TOKEN_MOVE:
   ST A,R0
 
 TOKEN_END:
-  ; Leave the token length on the stack
-  PUSHD R3
+  MOVIL A,%DICTIONARY_POINTER
+  LD B,A    ; B Points to the dictionary
+  ST B,R3   ; Save the length
+  JP NEXT
+
+TOKEN_LEN:
+  .N "TOKEN-LEN"
+  .DATA TOKEN
+TOKEN_LEN_WA: .DATA TOKEN_LEN_CA
+TOKEN_LEN_CA:
+  MOVIL A,%DICTIONARY_POINTER
+  LD A,A
+  LD A,A
+  PUSHD A
   JP NEXT
 
 ; INLINE - Read a line from the terminal
@@ -1840,7 +1969,7 @@ TOKEN_END:
 ; ( bufferAddress -- flag )
 INLINE:
     .N "INLINE"
-    .DATA TOKEN
+    .DATA TOKEN_LEN
 INLINE_WA:
     .DATA INLINE_CA
 INLINE_CA:
@@ -1891,8 +2020,8 @@ UNTIL_CA:
 
 
 STAR_UNTIL:
-; Runime only
-  .R "*UNTIL"
+; Compile only
+  .X "*UNTIL"
   .DATA UNTIL
 STAR_UNTIL_WA: .DATA STAR_UNTIL_CA
 STAR_UNTIL_CA:
@@ -2008,7 +2137,7 @@ ESAC_LOOP_DONE:
 
 
 STAR_OF:
-  .R "*OF"
+  .X "*OF"
   .DATA ESAC
 STAR_OF_WA:
   .DATA STAR_OF_CA
@@ -2026,7 +2155,7 @@ STAR_OF_RUN:
   JP NEXT
 
 STAR_OF_ENDOF:
-  .R "*OF_ENDOF"
+  .X "*OF_ENDOF"
   .DATA STAR_OF
 STAR_OF_ENDOF_WA:
   .DATA STAR_OF_ENDOF_CA
@@ -2099,7 +2228,7 @@ THEN_CA:
   JP NEXT  
 
 STAR_IF:
-  .R "*IF"
+  .X "*IF"
   .DATA THEN
 STAR_IF_WA:
   .DATA STAR_IF_CA
@@ -2111,7 +2240,7 @@ STAR_IF_CA:
   JP NEXT
 
 STAR_ELSE:
-  .R "*ELSE"
+  .X "*ELSE"
   .DATA STAR_IF
 STAR_ELSE_WA:
   .DATA STAR_ELSE_CA
@@ -2148,7 +2277,7 @@ QDO_CA:
   .DATA STAR_SEMI_WA
 
 STAR_DO:
-  .R "*DO"
+  .X "*DO"
   .DATA QDO
 STAR_DO_WA: .DATA STAR_DO_CA
 STAR_DO_CA:
@@ -2159,7 +2288,7 @@ STAR_DO_CA:
   JP NEXT
 
 STAR_QDO:
-  .R "*QDO"
+  .X "*QDO"
   .DATA STAR_DO
 STAR_QDO_WA: .DATA STAR_QDO_CA
 STAR_QDO_CA:
@@ -2217,7 +2346,7 @@ PLUSLOOP_NORMAL:
   .DATA STAR_SEMI_WA
 
 STAR_LOOP:
-  .R "*LOOP"
+  .X "*LOOP"
   .DATA PLUSLOOP
 STAR_LOOP_WA: .DATA STAR_LOOP_CA
 STAR_LOOP_CA:
@@ -2237,7 +2366,7 @@ STAR_LOOP_MORE:
   JP NEXT
 
 STAR_PLUSLOOP:
-  .R "*+LOOP"
+  .X "*+LOOP"
   .DATA STAR_LOOP
 STAR_PLUSLOOP_WA: .DATA STAR_PLUSLOOP_CA
 STAR_PLUSLOOP_CA:
@@ -2248,9 +2377,23 @@ STAR_PLUSLOOP_CA:
   JR STAR_CHECK_LOOP
   ; No return address
 
+DONE:
+  .N "DONE"
+  .DATA STAR_PLUSLOOP
+DONE_WA: .DATA DONE_CA
+DONE_CA:
+  ; Make the loop index equal to the end value
+  ; on the return stack
+  MOV R0,RS
+  ADDI R0,4
+  LD R1,R0
+  SUBI R0,2
+  ST R0,R1
+  JP NEXT
+
 Q_SP:
   .N "?SP"
-  .DATA STAR_PLUSLOOP
+  .DATA DONE
 Q_SP_WA: .DATA Q_SP_CA
 Q_SP_CA:
   PUSHD SP
@@ -2369,6 +2512,7 @@ PROCESS_TOKENS_CA:
 PROCESS_TOKENS_LOOP:
     .DATA ASPACE_WA
     .DATA TOKEN_WA
+    .DATA TOKEN_LEN_WA
     .DATA STAR_IF_WA
     .DATA PROCESS_TOKENS_EXIT ; Just jump back to get another line if no more tokens
     .DATA SEARCH_WA
@@ -2418,28 +2562,10 @@ PROCESS_TOKENS_NOT_A_NUMBER:
 PROCESS_TOKENS_EXIT:
     .DATA STAR_SEMI_WA
 
-TRAP:               ; Used for debugging. Dumps the contents of the registers
-                    ; But for now it just says Hello World!
-  .N "TRAP"
-  .DATA PROCESS_TOKENS
-TRAP_WA:
-  .DATA TRAP_CA
-TRAP_CA:
-  MOV A,PC
-  ADDAI 4
-  JR TRAP1
-  .DATA 14
-  .SDATA "Hello World!"
-TRAP1:
-  PUSHD A            ; Push the address of the string
-  SYSCALL #SYSCALL_TYPE
-  HALT
-  JP NEXT
-
 ; ( addr -- len )
 WORD_LEN:
   .N "WORD-LEN"
-  .DATA TRAP
+  .DATA PROCESS_TOKENS
 WORD_LEN_WA: .DATA WORD_LEN_CA
 WORD_LEN_CA:
   POPD A
@@ -2684,6 +2810,7 @@ LIT_CA:
   .DATA COMMA_WA
   .DATA STAR_HASH_WA .DATA 0x22
   .DATA TOKEN_WA
+  .DATA TOKEN_LEN_WA
   .DATA TWO_PLUS_WA
   .DATA ALIGN_WA
   .DATA DP_WA
@@ -2700,9 +2827,8 @@ QUOTE_CA:
 
 S_LIT: 
 ; String literal
-; At compile-time, builds the string into the dictionary
-; At run-time (i.. at the command-line ) moves the string
-; to the return stack
+; Builds the string into the dictionary
+
   .I "S\""
   .DATA QUOTE
 S_LIT_WA: .DATA COLON
@@ -2711,6 +2837,7 @@ S_LIT_CA:
   .DATA COMMA_WA
   .DATA STAR_HASH_WA .DATA 0x22
   .DATA TOKEN_WA ; Move the string to the dictionary
+  .DATA TOKEN_LEN_WA
   .DATA TWO_PLUS_WA
   .DATA ALIGN_WA
   .DATA DP_WA
@@ -2718,7 +2845,7 @@ S_LIT_CA:
   .DATA STAR_SEMI_WA
 
 STAR_S_LIT:
-  .R "*S\""
+  .X "*S\""
   .DATA S_LIT
 STAR_S_LIT_WA: .DATA STAR_S_LIT_CA
 STAR_S_LIT_CA:
@@ -2748,7 +2875,6 @@ TICK_WA: .DATA COLON
 TICK_CA:
   .DATA ASPACE_WA
   .DATA TOKEN_WA
-  .DATA DROP_WA
   .DATA SEARCH_WA
   .DATA NOT_WA 
   .DATA STAR_IF_WA
@@ -2765,7 +2891,6 @@ N_TICK_WA: .DATA COLON
 N_TICK_CA:
   .DATA ASPACE_WA
   .DATA TOKEN_WA
-  .DATA DROP_WA
   .DATA SEARCH_WA
   .DATA NOT_WA 
   .DATA STAR_IF_WA
@@ -2834,7 +2959,6 @@ BACKSLASH_CA:
   .DATA STAR_HASH_WA
   .DATA 92 ; The backslash character
   .DATA TOKEN_WA
-  .DATA DROP_WA
   .DATA STAR_SEMI_WA
 
 PAREN: ; Forth word delimiting a ( comment )
@@ -2845,7 +2969,6 @@ PAREN_CA:
   .DATA STAR_HASH_WA
   .DATA 41
   .DATA TOKEN_WA
-  .DATA DROP_WA
   .DATA STAR_SEMI_WA
 
 CSPLIT:

@@ -3,13 +3,14 @@
 : ?EXECUTE
     ( WA -- flag )
     DUP @ HEADER>MODE
-    1 <<
+    1<<
     MODE @ OR
 
     CASE
-    1 OF ( Normal Word/Compile ) WA>CA , 1 ENDOF
-    3 OF ( Runtime / Compile ) DROP ." Runtime only" 0 ENDOF
-    4 OF ( Immediate / Execute ) DROP ." Compile only" 0 ENDOF
+    1 OF ( Normal Word / Compile ) WA>CA ,               1 ENDOF
+    3 OF ( Runtime / Compile )     DROP ." Runtime only" 0 ENDOF
+    4 OF ( Immediate / Execute )   DROP ." Compile only" 0 ENDOF
+    6 OF ( Executive / Execute )   DROP ." Compile only" 0 ENDOF
     
     DROP EXECUTE 1 
     
@@ -26,7 +27,8 @@
 ;
 
 
-: VALLOT ( size-in-words -- start-addr )
+: VALLOT 
+( size-in-words -- start-addr )
     2 *
     %USER-TOP @ SWAP ( size -- current-address size )
     %USER-TOP @ + %USER-TOP  !
@@ -100,7 +102,8 @@
     THEN
 ;
 
-40 STACK __LOCALS__
+16 STACK __LOCALS__
+0 VARIABLE __LOCALDEFS__
 
 : ?} ( addr -- flag) 
     ( Is the string pointed to a closing brace? )
@@ -116,13 +119,13 @@
 : LOCALS-NEXT DUP @ 2+ + ALIGN ;
 
 
-: LOOPED ( LEave a DO LOOP )
+: DONE ( Leave a DO LOOP )
     R> R> R> SWAP DROP DUP >R >R >R
 ;
 
 : *$ ( get the offset for the local name ) ( -- offset )
-    ASPACE TOKEN DROP ( get the variable name to DP )
-    DP @
+    ASPACE TOKEN ( get the variable name to DP )
+    DP@
 
     LOCALS-FIRST
     0 ( found-flag) 
@@ -133,7 +136,7 @@
         DROP
         OVER OVER COMPARE 0=
         IF ( found it )
-            DROP DROP I 1 LOOPED
+            DROP DROP I 1 DONE
         ELSE
             LOCALS-NEXT 0
         THEN
@@ -175,7 +178,7 @@
     AT-FIRST NOT IF ." { Must be the first word " RESTART THEN
     *{ ( compile the starting block )
         BEGIN
-            ASPACE TOKEN DROP S" }" DP @ COMPARE 0=
+            ASPACE TOKEN S" }" DP@ COMPARE 0=
             IF ( got the closing brace )
                 1 ( to exit the loop )
             ELSE ( compile the variable name )
@@ -207,5 +210,7 @@
 
     $> a $> b + >$ a
     $> a 2 +
-;
+;{}
+
+
 
