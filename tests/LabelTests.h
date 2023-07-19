@@ -19,7 +19,7 @@ class LabelTests : public Test {
     }
 
     void shouldOpenTestLabels() {
-        shouldOpenAsmFile("tests/test-labels.asm", 70);
+        shouldOpenAsmFile("tests/test-labels.fasm", 70);
     }
 
 

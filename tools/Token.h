@@ -25,6 +25,7 @@
 #define DIRECTIVE_TYPE_RWORD_STRING 5 // Runtime only Forth word, Aligned flags.len string
 #define DIRECTIVE_TYPE_IWORD_STRING 6 // Immediate (compile-time only) Forth word, Aligned flags.len string
 #define DIRECTIVE_TYPE_XWORD_STRING 7 // Executive Forth word - has both compile-time and runtime behaviours, Aligned flags.len string
+#define DIRECTIVE_TYPE_CWORD_STRING 8 // Compile only word - e.g. *IF
 
 /*
 Syntax:
@@ -164,6 +165,7 @@ class Token {
             || (opcode == DIRECTIVE_TYPE_RWORD_STRING)
             || (opcode == DIRECTIVE_TYPE_IWORD_STRING)
             || (opcode == DIRECTIVE_TYPE_XWORD_STRING)
+            || (opcode == DIRECTIVE_TYPE_CWORD_STRING)
         );
     }
 
@@ -171,7 +173,8 @@ class Token {
             return (opcode == DIRECTIVE_TYPE_NWORD_STRING)
             || (opcode == DIRECTIVE_TYPE_RWORD_STRING)
             || (opcode == DIRECTIVE_TYPE_IWORD_STRING)
-            || (opcode == DIRECTIVE_TYPE_XWORD_STRING);      
+            || (opcode == DIRECTIVE_TYPE_XWORD_STRING)      
+            || (opcode == DIRECTIVE_TYPE_CWORD_STRING);      
     }
 
     bool isPStringData() {
@@ -179,19 +182,23 @@ class Token {
     }
 
     bool isNStringData() {
-        return isDirective() && (opcode == DIRECTIVE_TYPE_PLAIN_STRING);
+        return isDirective() && (opcode == DIRECTIVE_TYPE_NWORD_STRING);
     }
 
     bool isRStringData() {
-        return isDirective() && (opcode == DIRECTIVE_TYPE_PLAIN_STRING);
+        return isDirective() && (opcode == DIRECTIVE_TYPE_RWORD_STRING);
     }
 
     bool isIStringData() {
-        return isDirective() && (opcode == DIRECTIVE_TYPE_PLAIN_STRING);
+        return isDirective() && (opcode == DIRECTIVE_TYPE_IWORD_STRING);
     }
 
     bool isXStringData() {
-        return isDirective() && (opcode == DIRECTIVE_TYPE_PLAIN_STRING);
+        return isDirective() && (opcode == DIRECTIVE_TYPE_XWORD_STRING);
+    }
+
+    bool isCStringData() {
+        return isDirective() && (opcode == DIRECTIVE_TYPE_CWORD_STRING);
     }
 
     bool isAlias() {

@@ -20,7 +20,7 @@ public:
 
     void shouldOpenTestRange()
     {
-        shouldOpenAsmFile("tests/test-range.asm", 70);
+        shouldOpenAsmFile("tests/test-range.fasm", 70);
     }
     void shouldGetOpeningComment()
     {

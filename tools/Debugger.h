@@ -145,11 +145,11 @@ public:
 
         if (label != NULL) {
             if(_verbose && _showWords) {
-                uint16_t indent = 0x2000 - _vm->get(REG_RS);
-                while(indent > 0) {
+                //uint16_t indent = 0x2000 - _vm->get(REG_RS);
+                //while(indent > 0) {
                     printf(" ");
-                    indent--;
-                }
+                //    indent--;
+               // }
             }
             if(_verbose) printf("%s\n", label);
         }

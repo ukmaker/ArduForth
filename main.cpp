@@ -223,6 +223,7 @@ bool commandLine() {
     case 'w': vm.warm();  vm.run(); prompt(); break;
     case 'l': loadInnerInterpreter(); break;
     case 'e': return false;
+    case 'd': debugger.run(); prompt(); break;
     case '?': 
       Serial.println("Commands:");
       Serial.println("A - Set mode ATMEGA328");
@@ -231,6 +232,7 @@ bool commandLine() {
       Serial.println("l - (Re)Load the minimal image");
       Serial.println("c - Cold start the Forth VM");
       Serial.println("w - Warm start the Forth VM");
+      Serial.println("d - Run the debugger");
       Serial.println("e - Exit");
       break;
     default: break;
@@ -243,6 +245,11 @@ int main(int argc, char **argv)
 
   attachSyscalls(&vm);
 
+  vmTests.run();
+  rangeTests.run();
+  labelTests.run();
+  slurpTests.run();
+
   if (loadInnerInterpreter())
   {
 
@@ -250,11 +257,11 @@ int main(int argc, char **argv)
     debugger.setVM(&vm);
     debugger.reset();
     debugger.setBreakpoint1(0x1110);
-    // debugger.setLabelBreakpoint1("STAR_UNTIL_CA");
-    // debugger.setLabelBreakpoint2("TOKEN_END");
+    debugger.setLabelBreakpoint1("SEARCH_CA");
+    debugger.setLabelBreakpoint2("SEARCH_CA");
     // ram.setWatch(0x5d4);
-    // debugger.setShowForthWordsOnly();
-    // debugger.setVerbose(true);
+    debugger.setShowForthWordsOnly();
+    debugger.setVerbose(true);
     // debugger.setBump(10);
     // debugger.writeProtect("DICTIONARY_END");
     //debugger.run();

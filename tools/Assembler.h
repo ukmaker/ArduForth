@@ -516,6 +516,10 @@ public:
                     r |= tok->strlen() | (HEADER_SCOPE_EXECUTIVE << HEADER_SCOPE_BITS);
                     break;
                     
+                case DIRECTIVE_TYPE_CWORD_STRING:
+                    r |= tok->strlen() | (HEADER_SCOPE_COMPILE << HEADER_SCOPE_BITS);
+                    break;
+                    
 
                 default: break;
             }
@@ -563,6 +567,7 @@ public:
                 case DIRECTIVE_TYPE_RWORD_STRING:
                 case DIRECTIVE_TYPE_IWORD_STRING:
                 case DIRECTIVE_TYPE_XWORD_STRING:
+                case DIRECTIVE_TYPE_CWORD_STRING:
                 {
                     headerLen = headerWord(tok);
                     c = tok->str;
@@ -675,6 +680,7 @@ public:
                 case DIRECTIVE_TYPE_RWORD_STRING:
                 case DIRECTIVE_TYPE_IWORD_STRING:
                 case DIRECTIVE_TYPE_XWORD_STRING:
+                case DIRECTIVE_TYPE_CWORD_STRING:
                 {
                     headerLen = headerWord(tok);
                     c = tok->str;
@@ -1263,6 +1269,7 @@ public:
         case DIRECTIVE_TYPE_RWORD_STRING:
         case DIRECTIVE_TYPE_IWORD_STRING:
         case DIRECTIVE_TYPE_XWORD_STRING:
+        case DIRECTIVE_TYPE_CWORD_STRING:
             if (parseString(tok) == -1)
             {
                 return Token::error(line, pos, NUMBER_EXPECTED);

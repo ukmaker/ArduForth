@@ -147,6 +147,7 @@ class AssemblyVocabulary {
         directives[DIRECTIVE_TYPE_RWORD_STRING] = "R";
         directives[DIRECTIVE_TYPE_IWORD_STRING] = "I";
         directives[DIRECTIVE_TYPE_XWORD_STRING] = "X";
+        directives[DIRECTIVE_TYPE_CWORD_STRING] = "C";
 
     }
 
@@ -170,7 +171,7 @@ class AssemblyVocabulary {
     }
 
     const char *directive(uint8_t dir) {
-        if(dir > 7) return NULL;
+        if(dir > 8) return NULL;
         return directives[dir];
     }
 
@@ -220,7 +221,7 @@ class AssemblyVocabulary {
     }
 
     int findDirective(char *source, int pos, int len) {
-        for(int i=0; i<8; i++) {
+        for(int i=0; i<9; i++) {
             if((int)strlen(directives[i]) == len) {
                 int equal = true;
                 for(int j=0; j<len; j++) {
@@ -239,7 +240,7 @@ class AssemblyVocabulary {
         const char *opnames[256];
         const char *argnames[16];
         const char *ccnames[4];
-        const char *directives[8];
+        const char *directives[9];
         char aliases[16][65];
 };
 #endif

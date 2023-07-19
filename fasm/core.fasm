@@ -65,12 +65,13 @@
 
 #HEADER_MASK: 0x00ff
 #HEADER_HEADER_BIT: 15
-#HEADER_SCOPE_BITS: 13
-#HEADER_IMMEDIATE: 0xc000
-#HEADER_RUNTIME: 0xa000
-#HEADER_EXECUTIVE: 0xe000
-#HEADER_FENCED: 0x2000
-#HEADER_HAS_LOCALS: 0x1000
+#HEADER_SCOPE_BITS: 12
+#HEADER_PASSIVE:     0x8000 ; 0b1000 0000 0000 0000 - Normal word    execute/compile
+#HEADER_IMMEDIATE:   0x9000 ; 0b1001 0000 0000 0000 - Immediate word error/execute
+#HEADER_RUNTIME:     0xa000 ; 0b1010 0000 0000 0000 - Runtime word   execute/error (e.g. ':')
+#HEADER_EXECUTIVE:   0xb000 ; 0b1011 0000 0000 0000 - Executive word execute/execute (e.g '(' ))
+#HEADER_COMPILETIME: 0xc000 ; 0b1100 0000 0000 0000 - Compiled word  error/compile
+#HEADER_HAS_LOCALS:  0x0800 ; 0b1000 1000 0000 0000 - This word allocates local variables
 
 .ORG #VARSTART
 %BASE: 2               ; Current system numeric base
@@ -182,6 +183,7 @@ RUN:
 MESSAGES: ; SYSTEM MESSAGES LIVE HERE
 MSG_HELLO:          .DATA 23 .SDATA "Hello! I'm a TIL :-) >>"
 MSG_UNKNOWN_TOKEN:  .DATA 14 .SDATA "Unknown token "
+MSG_IMMEDIATE_ONLY: .DATA 36 .SDATA "Immediate words forbidden at runtime"
 MSG_COMPILE_ONLY:   .DATA 39 .SDATA "Compile-time words forbidden at runtime"
 MSG_RUNTIME_ONLY:   .DATA 39 .SDATA "Runtime words forbidden at compile-time"
 MSG_SYSTEM_ERROR:   .DATA 12 .SDATA "System error"
@@ -1465,7 +1467,7 @@ WA_TO_LA_CA:
   POPD A
   MOV B,A
   LD A,B ; Length to A
-  MOVIL R0, 0x1fff
+  MOVIL R0, #HEADER_MASK
   AND A,R0
   ADD A,B
   ADDI A,3
@@ -1482,7 +1484,7 @@ WA_TO_CA_CA:
   POPD A
   MOV B,A
   LD A,B ; Length to A
-  MOVIL R0, 0x1fff
+  MOVIL R0, #HEADER_MASK
   AND A,R0
   ADD A,B
   ADDI A,5
@@ -1499,7 +1501,7 @@ WA_TO_CB_CA:
   POPD A
   MOV B,A
   LD A,B ; Length to A
-  MOVIL R0, 0x1fff
+  MOVIL R0, #HEADER_MASK
   AND A,R0
   ADD A,B
   ADDI A,7
@@ -1705,17 +1707,28 @@ Q_EXECUTE_WA:
 
   ; This routine expects a NA on the stack from a successful SEARCH
   ; Words can be flagged with the immediate [15] and run-time [14] bits
-  ; 00 - Normal word. Mode = 0 => Execute   Mode = 1 => Compile
-  ; 01 - Runtime only Mode = 0 => Execute   Mode = 1 => Error
-  ; 10 - Immediate    Mode = 0 => Error     Mode = 1 => Execute
-  ; 11 - Executive    Mode = 0 => Error     Mode = 1 => Compile
+  ; 000 - Normal word. Mode = 0 => Execute   Mode = 1 => Compile
+  ; 001 - Immediate    Mode = 0 => Error     Mode = 1 => Execute
+  ; 010 - Runtime only Mode = 0 => Execute   Mode = 1 => Error
+  ; 011 - Executive    Mode = 0 => Execute   Mode = 1 => Execute
+  ; 100 - Compile      Mode = 0 => Error     Mode = 1 => Compile
   ;
-  ; DUP
-  ; @ 13 >>
-  ; MODE @
-  ; OR
-  ; ( addr flags -- )
-  ; 
+  ; Errors
+  ; 2 0010 - MSG_IMMEDIATE_ONLY
+  ; 5 0101 - MSG_RUNTIME_ONLY
+  ; 8 1000 - MSG_COMPILE_ONLY
+  ;
+  ; Execute
+  ; 0 0000
+  ; 3 0011
+  ; 4 0100
+  ; 6 0110
+  ; 7 0111
+  ;
+  ; Compile
+  ; 1 0001
+  ; 9 1001
+
 Q_EXECUTE_CA:
   .DATA DUP_WA           ; ( addr - addr addr )
   .DATA AT_WA            ; (addr addr -- addr len )
@@ -1726,103 +1739,53 @@ Q_EXECUTE_CA:
   .DATA OR_WA            ; AS bit 0
 
   .DATA DUP_WA           ; ( addr bits -- addr bits bits )
-  .DATA ZERO_EQUALS_WA               ; ( . -- addr bits EQ )
-  .DATA STAR_IF_WA       ; ( . -- addr bits )
-  .DATA Q_EXECUTE_1
-Q_EXECUTE_NORMAL:
-    .DATA DROP_WA        ; ( . -- addr )
-    .DATA EXECUTE_WA
-  .DATA STAR_ELSE_WA 
-  .DATA Q_EXECUTE_DONE
 
-Q_EXECUTE_1:  
-  .DATA DUP_WA
-  .DATA ONE_EQUALS_WA
-  .DATA STAR_IF_WA 
-  .DATA Q_EXECUTE_2
-Q_EXECUTE_COMPILE:
-    .DATA DROP_WA
-    .DATA WA_TO_CA_WA
-    .DATA COMMA_WA
-  .DATA STAR_ELSE_WA 
-  .DATA Q_EXECUTE_DONE
-
-Q_EXECUTE_2:
-  .DATA DUP_WA
-  .DATA TWO_EQUALS_WA
-  .DATA STAR_IF_WA 
-  .DATA Q_EXECUTE_3
-Q_EXECUTE_RUNTIME:
-    .DATA DROP_WA
-    .DATA EXECUTE_WA
-  .DATA STAR_ELSE_WA 
-  .DATA Q_EXECUTE_DONE
-
-Q_EXECUTE_3:
-  .DATA DUP_WA
-  .DATA STAR_HASH_WA .DATA 3
-  .DATA EQUALS_WA
-  .DATA STAR_IF_WA 
-  .DATA Q_EXECUTE_4
-Q_EXECUTE_RUNTIME_NOT_ALLOWED:
-    .DATA STAR_HASH_WA
-    .DATA MSG_RUNTIME_ONLY
-    .DATA TYPELN_WA
-  .DATA STAR_ELSE_WA 
-  .DATA Q_EXECUTE_FAILED
-
-Q_EXECUTE_4:
-  .DATA DUP_WA
-  .DATA STAR_HASH_WA .DATA 4
-  .DATA EQUALS_WA
-  .DATA STAR_IF_WA 
-  .DATA Q_EXECUTE_5
-Q_EXECUTE_COMPILETIME_NOT_ALLOWED:
-   .DATA STAR_HASH_WA
-    .DATA MSG_COMPILE_ONLY
-    .DATA TYPELN_WA
-  .DATA STAR_ELSE_WA 
-  .DATA Q_EXECUTE_FAILED
+; check for errors first
+  .DATA STAR_HASH_WA .DATA 2 .DATA EQUALS_WA
+  .DATA STAR_IF_WA .DATA Q_EXECUTE_5
+  .DATA STAR_HASH_WA .DATA MSG_IMMEDIATE_ONLY
+  .DATA STAR_ELSE_WA .DATA Q_EXECUTE_ERROR
 
 Q_EXECUTE_5:
   .DATA DUP_WA
-  .DATA STAR_HASH_WA .DATA 5
-  .DATA EQUALS_WA
-  .DATA STAR_IF_WA 
-  .DATA Q_EXECUTE_6
-  .DATA STAR_ELSE_WA
-  .DATA Q_EXECUTE_EXECUTIVE
+  .DATA STAR_HASH_WA .DATA 5 .DATA EQUALS_WA
+  .DATA STAR_IF_WA .DATA Q_EXECUTE_8
+  .DATA STAR_HASH_WA .DATA MSG_RUNTIME_ONLY
+  .DATA STAR_ELSE_WA .DATA Q_EXECUTE_ERROR
 
-Q_EXECUTE_6:
+Q_EXECUTE_8:
   .DATA DUP_WA
-  .DATA STAR_HASH_WA .DATA 6
-  .DATA EQUALS_WA
-  .DATA STAR_IF_WA 
-  .DATA Q_EXECUTE_7
-  .DATA STAR_HASH_WA
-  .DATA MSG_COMPILE_ONLY
-  .DATA TYPELN_WA
-  .DATA STAR_ELSE_WA 
-  .DATA Q_EXECUTE_FAILED
+  .DATA STAR_HASH_WA .DATA 8 .DATA EQUALS_WA
+  .DATA STAR_IF_WA .DATA Q_EXECUTE_1
+  .DATA STAR_HASH_WA .DATA MSG_COMPILE_ONLY
 
-Q_EXECUTE_7:
-  .DATA DROP_WA
+Q_EXECUTE_ERROR:
+  .DATA SWAP_WA .DATA DROP_WA
+  .DATA SWAP_WA .DATA DOT_WORD_WA
+  .DATA ASPACE_WA .DATA EMIT_WA
+  .DATA TYPELN_WA
+  .DATA ZERO_WA
+  .DATA STAR_ELSE_WA
+  .DATA Q_EXECUTE_EXIT
+
+Q_EXECUTE_1:
+  .DATA DUP_WA
+  .DATA ONE_WA
+  .DATA EQUALS_WA
+  .DATA SWAP_WA
+  .DATA STAR_HASH_WA .DATA 9
+  .DATA EQUALS_WA
+  .DATA OR_WA
+  .DATA STAR_IF_WA .DATA Q_EXECUTE_EXECUTE
+
+Q_EXECUTE_COMPILE:
   .DATA WA_TO_CA_WA
   .DATA COMMA_WA
   .DATA STAR_ELSE_WA 
-  .DATA Q_EXECUTE_DONE
+  .DATA Q_EXECUTE_DONE  
 
-Q_EXECUTE_EXECUTIVE:
-  .DATA DROP_WA
+Q_EXECUTE_EXECUTE:
   .DATA EXECUTE_WA
-  .DATA STAR_ELSE_WA 
-  .DATA Q_EXECUTE_DONE
-
-Q_EXECUTE_FAILED:
-  .DATA STAR_HASH_WA
-  .DATA 0
-  .DATA STAR_ELSE_WA
-  .DATA Q_EXECUTE_EXIT
 
 Q_EXECUTE_DONE:
   .DATA STAR_STACK_WA
@@ -2570,9 +2533,8 @@ WORD_LEN_WA: .DATA WORD_LEN_CA
 WORD_LEN_CA:
   POPD A
   LD A,A
-  CLRI A,15
-  CLRI A,14
-  CLRI A,13
+  MOVIL B,#HEADER_MASK
+  AND A,B
   PUSHD A
   JP NEXT  
 
@@ -2586,9 +2548,8 @@ DOT_WORD_CA:
   ; R1 - len
   POPD R0
   LD R1,R0 ; Len to R1
-  CLRI R1,15
-  CLRI R1,14
-  CLRI R1,13
+  MOVIL B,#HEADER_MASK
+  AND R1,B
   ADDI R0,2 ; point to word
 DOT_WORD_LOOP:
   LD_B R2,R0
@@ -2599,26 +2560,9 @@ DOT_WORD_LOOP:
   JR[NZ] DOT_WORD_LOOP
   JP NEXT
 
-DOT_SWORD:
-; Print a word placed on the D stack by S"
-  .N ".SWORD"
-  .DATA DOT_WORD
-DOT_SWORD_WA: .DATA COLON
-DOT_SWORD_CA:
-  .DATA DOT_WORD_WA
-  .DATA DOT_SWORD_CODE
-DOT_SWORD_CODE: .DATA DOT_SWORD_ASM
-DOT_SWORD_ASM:
-  POPD R0 ; len
-  ADDI R0,1
-  CLRI R0,0
-  SUBI R0,2
-  ADD SP,R0
-  JP STAR_SEMI_CA
-
 NEXT_WORD:
   .N "NEXT-WORD"
-  .DATA DOT_SWORD
+  .DATA DOT_WORD
 NEXT_WORD_WA: .DATA COLON
 NEXT_WORD_CA:
   ; ( addr -- addr )
@@ -2713,24 +2657,23 @@ SEARCH_WA:
     .DATA SEARCH_CA
 SEARCH_CA:
 
-  .ALIAS R0,DP
+  .ALIAS R0,*DP
   .ALIAS R1,LENA
-  .ALIAS R2,*A   ; The word we're looking for (the token at DP)
+  .ALIAS R2,*WORD   ; The word we're looking for (the token at DP)
   .ALIAS R3,LENB
-  .ALIAS R4,*B   ; The word we're currently testing (the word at WA)
+  .ALIAS R4,*CANDIDATE   ; The word we're currently testing (the word at WA)
   .ALIAS R5,SWA  ; Search word address
   .ALIAS R6,*TOK ; DP+2
   .ALIAS R7,IDX  ; Loop counter
 
-  ; DP in I R0
-  MOVIL A,%DICTIONARY_POINTER
-  LD DP,A
+  MOVIL *DP,%DICTIONARY_POINTER
+  LD *DP,*DP
 
-  ; Token length in WA R1
-  LD LENA,DP
+  ; Token length
+  LD LENA,*DP
   ; Bump I to point to first char
-  ADDI DP,2
-  MOV *TOK,DP ; Keep a backup copy for each trip round the loop
+  ADDI *DP,2
+  MOV *TOK,*DP ; Keep a backup copy for each trip round the loop
 
   ; Use CA R2 to point to the current word
   MOVIL SWA,%CURRENT
@@ -2739,9 +2682,8 @@ SEARCH_CA:
 
 SEARCH_NEXT:
   LD LENB,SWA  ; get the length of the word
-  CLRI LENB,15 ; Clear the immediate bit if it's set
-  CLRI LENB,14 ; Clear the immediate bit if it's set
-  CLRI LENB,13 ; Clear the run-time bit if it's set
+  MOVIL A,#HEADER_MASK
+  AND LENB,A
   CMP LENB,LENA ; Same as the token?
   JR[Z] SEARCH_COMPARE
   ; Not the same, move to the next word
@@ -2761,18 +2703,18 @@ SEARCH_EXIT:
 
 SEARCH_COMPARE:
   ; Test the strings for equality
-  MOV *A,*TOK
-  MOV *B,SWA
-  ADDI *B,2 ; Point to the string
+  MOV *WORD,*TOK
+  MOV *CANDIDATE,SWA
+  ADDI *CANDIDATE,2 ; Point to the string
   MOV IDX,LENA ; Length to R4 for the counter
 
 SEARCH_COMPARE_LOOP:
-  LD_B A,*A
-  LD_B B,*B
+  LD_B A,*WORD
+  LD_B B,*CANDIDATE
   CMP A,B
   JR[NZ] SEARCH_COMPARE_FAIL
-  ADDI *A,1
-  ADDI *B,1
+  ADDI *WORD,1
+  ADDI *CANDIDATE,1
   ADDI IDX,-1
   JR[NZ] SEARCH_COMPARE_LOOP
 SEARCH_COMPARE_FOUND:
@@ -3156,11 +3098,10 @@ VAR_FENCE_CA:
   PUSHD A
   JP NEXT
 
-; Toggle the FENCE bit on the last word in the dictionary.
-; by default it's not possible to FORGET beyond this barrier
+; Set %FENCE to point ot the last word in the dictionary
 CORE_VOCABULARY:
 FENCE:
-  .X "FENCE"
+  .N "FENCE"
   .DATA VAR_FENCE
 FENCE_WA: .DATA FENCE_CA
 FENCE_CA:

@@ -45,7 +45,7 @@ class SlurpTests : public Test {
 
 
     void shouldOpenTestSlurp() {
-        shouldOpenAsmFile("tests/test-slurp.asm", 945);
+        shouldOpenAsmFile("tests/test-slurp.fasm", 946);
     }
 
 

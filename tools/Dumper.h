@@ -96,6 +96,7 @@ class Dumper {
                         case DIRECTIVE_TYPE_RWORD_STRING: 
                         case DIRECTIVE_TYPE_IWORD_STRING: 
                         case DIRECTIVE_TYPE_XWORD_STRING: 
+                        case DIRECTIVE_TYPE_CWORD_STRING: 
                             printf("%04x ", tok->address);
                             printf("%04x .SDATA: \"%s\"\n", fasm->headerWord(tok), tok->str); 
                             break;
