@@ -173,14 +173,14 @@ public:
                _vm->get(REG_7));
 
         // PC [ S O Z C ] CC OP ARGS
-        printf(" A:%04x B:%04x PC:%04x WA:%04x SP:%04x RS:%04x CA:%04x I:%04x]",
+        printf(" A:%04x B:%04x PC:%04x WA:%04x SP:%04x RS:%04x FP:%04x I:%04x]",
                _vm->get(REG_A),
                _vm->get(REG_B),
                _vm->get(REG_PC),
                _vm->get(REG_WA),
                _vm->get(REG_SP),
                _vm->get(REG_RS),
-               _vm->get(REG_CA),
+               _vm->get(REG_FP),
                _vm->get(REG_I));
 
         switch (op)
@@ -592,8 +592,8 @@ protected:
         case REG_B:
             printf("B");
             break;
-        case REG_CA:
-            printf("CA");
+        case REG_FP:
+            printf("FP");
             break;
         case REG_I:
             printf("I");

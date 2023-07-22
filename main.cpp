@@ -223,7 +223,7 @@ bool commandLine() {
     case 'w': vm.warm();  vm.run(); prompt(); break;
     case 'l': loadInnerInterpreter(); break;
     case 'e': return false;
-    case 'd': debugger.run(); prompt(); break;
+    case 'd': vm.warm();  debugger.run(); prompt(); break;
     case '?': 
       Serial.println("Commands:");
       Serial.println("A - Set mode ATMEGA328");
@@ -257,8 +257,8 @@ int main(int argc, char **argv)
     debugger.setVM(&vm);
     debugger.reset();
     debugger.setBreakpoint1(0x1110);
-    debugger.setLabelBreakpoint1("SEARCH_CA");
-    debugger.setLabelBreakpoint2("SEARCH_CA");
+    debugger.setLabelBreakpoint1("DOES_CODE");
+    debugger.setLabelBreakpoint2("DOES_CODE");
     // ram.setWatch(0x5d4);
     debugger.setShowForthWordsOnly();
     debugger.setVerbose(true);

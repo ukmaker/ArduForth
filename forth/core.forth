@@ -1,25 +1,5 @@
 ( Forth source for core words )
 
-: ?EXECUTE
-    ( WA -- flag )
-    DUP @ HEADER>MODE
-    1<<
-    MODE @ OR
-
-    CASE
-    1 OF ( Normal Word / Compile ) WA>CA ,               1 ENDOF
-    3 OF ( Runtime / Compile )     DROP ." Runtime only" 0 ENDOF
-    4 OF ( Immediate / Execute )   DROP ." Compile only" 0 ENDOF
-    6 OF ( Executive / Execute )   DROP ." Compile only" 0 ENDOF
-    
-    DROP EXECUTE 1 
-    
-    ESAC
-
-    IF *STACK 1 ELSE 0 THEN
-;
-
-
 : CA ENTRY WA>CA ;
 
 : AT-FIRST

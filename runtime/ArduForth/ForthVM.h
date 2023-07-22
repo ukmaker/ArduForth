@@ -138,6 +138,7 @@ public:
         uint8_t cc = 0;
         bool skip = false;
 
+
         uint16_t instr = _ram->get(_regs[REG_PC]);
         // Decode the opcode
         uint8_t op = (instr & OP_MASK) >> OP_BITS;

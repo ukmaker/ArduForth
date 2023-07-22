@@ -131,7 +131,7 @@ class AssemblyVocabulary {
         argnames[REG_WA] = "WA";
         argnames[REG_SP] = "SP";
         argnames[REG_RS] = "RS";
-        argnames[REG_CA] = "CA";
+        argnames[REG_FP] = "FP";
         argnames[REG_I] = "I";
 
         ccnames[COND_C] = "C";

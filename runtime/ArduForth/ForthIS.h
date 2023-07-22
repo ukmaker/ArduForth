@@ -17,8 +17,8 @@
 #define REG_B 9
 // Forth instruction pointer
 #define REG_I 10
-// Forth code address pointer
-#define REG_CA 11
+// Forth return stack frame pointer
+#define REG_FP 11
 // Forth word address pointer
 #define REG_WA 12
 // Data stack pointer

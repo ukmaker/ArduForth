@@ -31,17 +31,16 @@ class Dumper {
         } else {
             fprintf(fp, "const uint8_t rom[%d] = {\n",romSize);
         }
-        for(uint16_t i=0; i<romSize-1; i++) {
-            if((i % 16) == 0) {
-                fprintf(fp, "/* 0x%04x */ ", (uint16_t)romStart + i);
-            }
-            fprintf(fp,"0x%02x, ", mem->getC(romStart + i));
-            if((i % 16) == 15) {
-                fprintf(fp, "\n");
-            }
+
+        uint16_t last = romSize % 8;
+        bool first = true;
+
+        for(uint16_t i=0; i<romSize-last; i+=8) {
+            writeLine(fp, mem, romStart, i, 8, first);
+            first = false;
         }
 
-        fprintf(fp, "0x%02x", mem->getC(romStart + romSize -1));
+        writeLine(fp, mem, romStart, romStart - last, last, false);
 
         fprintf(fp, "}; // rom\n");
 
@@ -49,6 +48,28 @@ class Dumper {
         
 
         fclose(fp);
+    }
+
+    void writeLine(FILE *fp, Memory *mem, uint16_t romStart, uint16_t start, uint16_t n, bool first) {
+
+        fprintf(fp, "/* 0x%04x */  ", (uint16_t)romStart + start);
+
+        for(uint16_t j=0; j<n; j++) {
+            if(first) {
+                fprintf(fp," 0x%02x ", mem->getC(romStart + start + j));
+            } else {
+                fprintf(fp,",0x%02x ", mem->getC(romStart + start + j));
+            }
+            first = false;
+        }
+        fprintf(fp, "   /* ");
+        for(uint16_t j=0; j<n; j++) {
+            uint8_t c = (char)mem->getC(romStart + start +j);
+            c = c > 32 ? c : 32;
+            fprintf(fp,"%c ", (char)c);
+        }
+        
+        fprintf(fp, "*/\n");
     }
 
     void dump(Assembler *fasm) {
