@@ -1,30 +1,5 @@
 ( A set of WORDS to help with development )
 
-( An enhanced version of DUMP )
-( Dump a block of memory in hex, and ptin the characters  )
-( address length -- )
-: DUMP 
-  ( addr length -- end start )
-  OVER + SWAP
-  ( set BASE for the duration )
-  BASE @ HEX LROT
-  DO
-    ( print the address )
-    I . ASPACE EMIT
-    ( print 8 bytes )
-    8 0 DO
-        I J + ( - addr )
-        C@ .C ASPACE EMIT
-    LOOP
-    ( print 8 chars )
-    8 0 DO
-        I J +
-        C@ ?PRINTABLE IF EMIT ELSE DROP ASPACE EMIT THEN ASPACE EMIT
-    LOOP CRET
-    8 +LOOP
-    ( recover the base ) BASE !
-;
-
 : IS-CODE ( ca -- flag ) 
     DUP @ 2 - = 
 ;
@@ -62,18 +37,17 @@
 
     OVER 2+ + SWAP 2+ ( addr+2+len addr+2 )
     DO
-        I C@ ?PRINTABLE IF EMIT ELSE DROP ASPACE EMIT THEN
+        I C@ ?PRINTABLE IF EMIT ELSE DROP &sp; EMIT THEN
     LOOP
 ;
 
 : &quot; 0x22 ;
 : &dot; 0x2e ;
-: .&quot; &quot EMIT ;
-: .&dot; &dot EMIT ;
-: .&sp; &sp; EMIT ;
-: .&dotquotsp; &dot; EMIT &quot; EMIT ASPACE EMIT ;
+: .&quot; &quot; EMIT ;
+: .&dot; &dot; EMIT ;
+: .&dotquotsp; &dot; EMIT &quot; EMIT &sp; EMIT ;
 : .&dotSquot; ." .S" .&quot; ;
-: .&dotSquotsp; .&dotSquot; ASPACE EMIT ;
+: .&dotSquotsp; .&dotSquot; &sp; EMIT ;
 
 ( attempt to print the word at the address )
 ( if the word is one of the literal handlers )
@@ -125,3 +99,4 @@
 ;
 
 : SEE ' DUP IF DECOMPILE ELSE DROP THEN ;
+

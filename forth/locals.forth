@@ -1,121 +1,7 @@
 ( Forth source for core words )
 
-: ALLOT 0 DO 0 , LOOP ;
-: DONE ( Leave a DO LOOP )
-    R> R> R> SWAP DROP DUP >R >R >R
-;
-
-: 2DROP DROP DROP ;
-
-: CA ENTRY WA>CA ;
-
 : AT-FIRST
-    CA 2+ HERE  =
-;
-
-: VALLOT 
-( allocate space in the variables heap )
-( size-in-words -- start-addr )
-    2 *
-    $USER-TOP @ SWAP ( size -- current-address size )
-    $USER-TOP +!
-;
-
-: VEXTEND 
-( Extend a variable to the size on the stack in words )
-    1 - VALLOT
-;
-
-: ARRAY 
-    ( size-in-words -- ) 
-    ( -- addr )
-    <BUILDS DUP VALLOT , , DOES>
-;
-
-: ARRAY-SIZE 2+ @ ;
-
-: ARRAY-BOUNDS? ( addr index -- addr index flag )
-    ( is the index within the bounds of the array ? )
-    DDUP SWAP ARRAY-SIZE <
-    DUP NOT IF ." Index out of bounds " THEN
-;
-
-: ARRAY! ( value array-addr index -- )
-    ARRAY-BOUNDS?
-    IF
-        2* SWAP @ + !
-    ELSE
-        2DROP DROP
-    THEN
-;
-
-
-: ARRAY@ ( addr index -- value )
-    ARRAY-BOUNDS?
-    IF
-        2* SWAP @ + @
-    ELSE
-        2DROP 0
-    THEN
-;
-
-: .ARRAY 
-    DUP ARRAY-SIZE  0
-    ?DO 
-        DUP I ARRAY@ I . &sp; EMIT . CRET 
-    LOOP 
-    DROP 
-;
-
-: STACK 
-    ( Create a stack )
-    ( stack size -- )
-    1+ ARRAY 0 CA 4 + @ @ ! 
-;
-: STACK-SP  @ @ ;
-: STACK-SIZE  2+ @ 1- ;
-: STACK-SP++ @ DUP @ 1+ SWAP ! ;
-: STACK-SP-- @ DUP @ 1- SWAP ! ;
-: STACK! 1+ ARRAY! ;
-: STACK@ 1+ ARRAY@ ;
-
-: STACK-PUT
-    ( put data at the nth position down on the stack ) 
-    ( v pos -- )
-    DUP STACK-SP - STACK!
-;
-
-: STACK-GET
-    ( get the data at the nth position down on the stack ) 
-    ( pos -- v )
-    DUP STACK-SP - STACK@
-;
-
-: PUSH 
-    DUP STACK-SP OVER STACK-SIZE
-    < IF
-        SWAP OVER DUP STACK-SP STACK!
-        STACK-SP++
-    ELSE
-        ." Stack overflow "
-        2DROP
-    THEN
-;
-
-: POP ( addr -- val )
-    DUP STACK-SP 0
-    > IF
-        DUP STACK-SP--
-        DUP STACK-SP STACK@
-    ELSE
-        ." Stack underflow "
-        DROP
-    THEN
-;
-
-: .RS #RSTOP BEGIN
-    DUP . .&sp; DUP @ . CRET
-    2- DUP ?RS = UNTIL DROP
+    CA 2+ DP@  =
 ;
 
 ( Words to allow use of local variables )
@@ -131,8 +17,8 @@
 ( : DEF 3 *INIT-LOCALS 3 *ALLOT-LOCALS )
 (   0 *LOCAL@ 1 *LOCAL@ + 3 *LOCAL! )
 ( ; )
-( )
-( )
+(  )
+(  )
 
 8 CONSTANT #MAX-LOCAL-LEN ( in bytes )
 8 CONSTANT #MAX-LOCALS

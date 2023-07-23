@@ -62,6 +62,7 @@ void syscall_fread(ForthVM *vm) {
     // ( bufferAddress -- bytesRead ) bytesRead is -1 if EOF is reached
     
     // address of the buffer struct
+    uint16_t buflen = vm->pop();
     uint16_t buf = vm->pop();
     uint16_t bufidx = buf;
     uint16_t bufend = buf + 2;
@@ -75,7 +76,7 @@ void syscall_fread(ForthVM *vm) {
 
     uint16_t i = 0;
     int c;
-    while( i < 128) {
+    while( i < buflen-1) {
         c = fgetc(reader);
         if(feof(reader)) {
             if(i == 0) {
