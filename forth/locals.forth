@@ -148,6 +148,7 @@
         IF
             1
         ELSE
+            DROP 
             *COMPILE-LOCAL
             0
         THEN
