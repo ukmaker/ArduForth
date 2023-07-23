@@ -132,7 +132,7 @@ void modeSTM32() {
   fasm.setOption("#VARSTART", 0x3000); 
   fasm.setOption("#SPTOP", 0x3f80);    
   fasm.setOption("#RSTOP", 0x3ffe); 
-  fasm.setOption("#LBUF_LEN", 128); 
+  fasm.setOption("#LBUF_LEN", 80); 
   mode = MODE_STM32; 
   loaded = false;
 }
