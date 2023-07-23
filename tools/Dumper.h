@@ -40,7 +40,7 @@ class Dumper {
             first = false;
         }
 
-        writeLine(fp, mem, romStart, romStart - last, last, false);
+        writeLine(fp, mem, romStart, romSize - last, last, false);
 
         fprintf(fp, "}; // rom\n");
 

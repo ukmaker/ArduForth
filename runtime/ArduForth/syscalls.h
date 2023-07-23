@@ -610,6 +610,42 @@ void syscall_invert_double(ForthVM *vm) {
     vm->push(result >> 16);
 }
 
+//#ifdef ARDUINO
+int do_compare(ForthVM *vm, uint16_t s1, uint16_t s2, uint16_t l1, uint16_t l2) {
+
+    uint16_t i = 0;
+    uint16_t l = l1;
+    char c1,c2;
+    if(l1 > l2) {
+        l = l2;
+    }
+
+    while(i < l) {
+        c1 = vm->readByte(s1);
+        c2 = vm->readByte(s2);
+        if(c1 < c2) return -1;
+        if(c1 > c2) return 1;
+        s1++;
+        s2++;
+        i++;
+    }
+    if(l1 == l2) return 0;
+    if(l1 > l2) return 1;
+    return -1;
+}
+
+void syscall_compare(ForthVM *vm) {
+    uint16_t s2 = vm->pop();
+    uint16_t s1 = vm->pop();
+    uint16_t l1 = vm->read(s1);
+    uint16_t l2 = vm->read(s2);
+
+    int r = do_compare(vm, s1+2, s2+2, l1, l2);
+    vm->push(r);
+}
+
+//#else
+/*
 int do_compare(char *c1, char *c2, uint16_t l1, uint16_t l2) {
 
     uint16_t i = 0;
@@ -641,5 +677,6 @@ void syscall_compare(ForthVM *vm) {
     int r = do_compare(c1, c2, l1, l2);
     vm->push(r);
 }
-
+//#endif
+*/
 #endif

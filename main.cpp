@@ -174,8 +174,8 @@ void generateCPP() {
   {
     uint16_t romsize = vm.read(10);
 
-    Symbol *sym = fasm.getSymbol("#RAMSTART");
-    vm.ram()->put(10, sym->token->value);
+   // Symbol *sym = fasm.getSymbol("#RAMSTART");
+   // vm.ram()->put(10, sym->token->value);
 
     switch(mode) {
       case MODE_ATMEGA:
@@ -189,8 +189,8 @@ void generateCPP() {
       default: break;
     }
 
-    sym = fasm.getSymbol("DICTIONARY_END");
-    vm.ram()->put(10, sym->token->address);
+   // sym = fasm.getSymbol("DICTIONARY_END");
+   // vm.ram()->put(10, sym->token->address);
 
   }
   else
