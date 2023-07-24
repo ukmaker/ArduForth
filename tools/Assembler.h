@@ -1448,7 +1448,7 @@ public:
         case OP_NOP:
             break;
         case OP_NOT:
-            instructionR(tok);
+            instructionRR(tok);
             break;
         case OP_OR:
             instructionRR(tok);

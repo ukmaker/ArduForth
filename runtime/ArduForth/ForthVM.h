@@ -320,8 +320,8 @@ public:
             case OP_MUL: _mul(arga, argb); break;
             case OP_DIV: _div(arga, argb); break;
             case OP_AND: _and(arga, argb); break;
-            case OP_OR: _or(arga, argb); break;
-            case OP_NOT: _not(arga); break;
+            case OP_OR:  _or(arga, argb); break;
+            case OP_NOT: _not(arga, argb); break;
             case OP_XOR: _xor(arga, argb); break;
 
             case OP_SLI: _sl(arga, u4); break;
@@ -495,8 +495,8 @@ public:
         _booleanFlags(r);
     }
 
-    void _not(uint8_t a) {
-        uint16_t r = ~_regs[a];
+    void _not(uint8_t a,uint8_t b) {
+        uint16_t r = ~_regs[b];
         _regs[a] = r;
         _booleanFlags(r);
     }

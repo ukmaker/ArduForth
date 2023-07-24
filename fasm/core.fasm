@@ -278,26 +278,13 @@ SCODE_CA:
   ; to point to the machine code following
   ; SCODE in the defining word
   ; clean up the stack so we pop up a level
-  .DATA RS_AT_WA
+  .DATA POP_RS_WA
   .DATA CASTORE_WA
-  .DATA STAR_SCODE_WA
-
-STAR_SCODE:
-  .N "*SCODE"
-  .DATA SCODE
-STAR_SCODE_WA: .DATA STAR_SCODE_CA
-STAR_SCODE_CA:
-  MOV RS,FP
-  POPR I
-  POPR FP
-  MOV RS,FP
-  POPR I
-  POPR FP
-  JP NEXT
+  .DATA STAR_SEMI_WA
 
 ALLOT:
   .N "ALLOT"
-  .DATA STAR_SCODE
+  .DATA SCODE
 ALLOT_WA: .DATA COLON
 ALLOT_CA:
   .DATA ZERO_WA
@@ -345,11 +332,12 @@ DOES:
   .DATA BUILDS
 DOES_WA: .DATA COLON
 DOES_CA:
-  .DATA RS_AT_WA
+  .DATA POP_RS_WA
   .DATA ENTRY_WA
   .DATA WA_TO_CB_WA
   .DATA STORE_WA
   .DATA SCODE_WA
+
   PUSHR FP
   PUSHR I
   MOV FP,RS ; Frame pointer
@@ -993,7 +981,7 @@ INVERT:
 INVERT_WA: .DATA INVERT_CA
 INVERT_CA:
   POPD A
-  NOT A
+  NOT A,A
   PUSHD A
   JP NEXT
 
@@ -1671,11 +1659,24 @@ RS_AT_CA:
   PUSHD A
   JP NEXT
 
+POP_RS:
+  ; Pop the return stack frame
+  ; Put the return address on the data stack
+  .N "POPR"
+  .DATA RS_AT
+POP_RS_WA: .DATA POP_RS_CA
+POP_RS_CA:
+  MOV RS,FP
+  POPR A
+  POPR FP
+  PUSHD A
+  JP NEXT 
+
 FP:
   ; Put the frame pointer on the data stack
   ; ( -- frame-pointer )
   .N "FP"
-  .DATA RS_AT
+  .DATA POP_RS
 FP_WA: .DATA FP_CA
 FP_CA:
   PUSHD FP
