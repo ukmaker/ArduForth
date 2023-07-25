@@ -111,8 +111,14 @@ void syscall_dot(ForthVM *vm)
     // Syscall to print a value on the stack
     //
     // ( v base - )
+    int is_signed = vm->pop();
     int base = vm->pop();
-    int v = vm->pop();
+    uint16_t uv = vm->pop();
+    int v = uv;
+
+    if(is_signed == 1) {
+        if(uv > 32767) v = uv - 65536;
+    }
     switch (base)
     {
     case 16:

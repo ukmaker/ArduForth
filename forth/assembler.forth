@@ -1,4 +1,8 @@
 ( An assembler for the ForthVM )
+
+VOCABULARY ASSEMBLER
+ASSEMBLER DEFINITIONS
+
 8 CONSTANT OP-BITS
 10 CONSTANT CC-BITS
 
@@ -37,10 +41,51 @@
 : REGA 'REG 4 << OR ;
 : REGB 'REG OR ;
 
+: ARG-EXPECTED-ERROR ." Number expected " ;
+: ARG-RANGE-ERROR ." Argument " . ."  is out of range "
+    . .&sp; . CRET
+;
 
-: ARG4   &sp; TOKEN ?NUMBER 0= IF ." Number expected" 0 ELSE OR THEN ;
-: ARG16  &sp; TOKEN ?NUMBER 0= IF ." Number expected" 0 THEN ;
-: ARG8   &sp; TOKEN ?NUMBER 0= IF ." Number expected" 0 ELSE OR THEN ;
+: ARG &sp; TOKEN TOKEN-LEN 
+    IF
+        SEARCH 
+        IF 
+            ?EXECUTE
+        ELSE
+            ?NUMBER
+            IF
+                1
+            ELSE 
+                0
+            THEN
+        THEN
+    ELSE
+        0
+    THEN
+;
+
+: ?ARG DDUP ARG 0= 
+    IF 
+        2DROP 2DROP
+        ARG-EXPECTED-ERROR 0 
+    ELSE 
+        ( g l g l v )
+        DUP >R
+        LROT LROT >=<
+        IF
+            ( OK )
+            2DROP R> 1
+        ELSE
+            ( Not a value )
+            R> ARG-RANGE-ERROR
+            DROP 0
+        THEN
+    THEN
+;
+
+: ARG4   7 -8 ?ARG IF OR ELSE 0 THEN ;
+: ARG16  65535 0 ?ARG 0= IF 0 THEN ;
+: ARG8   127 -128 ?ARG IF OR ELSE 0 THEN ;
 
 : OP <BUILDS OP-BITS << , ;
 : PLAIN    OP DOES> @ , ;
@@ -52,7 +97,7 @@
 : R-R-I4   OP DOES> @ REGA ARG4 , ;
 
 : FLOW <BUILDS 8 << , ;
-: FLOW-I16    FLOW DOES> @ ARG16 , ;
+: FLOW-I16    FLOW DOES> @ , ARG16 , ;
 : FLOW-I8     FLOW DOES> @ ARG8 , ;
 : FLOW-R-I4   FLOW DOES> @ REGA ARG4 , ;
 : FLOW-R-I16  FLOW DOES> @ REGA , ARG16 , ;
