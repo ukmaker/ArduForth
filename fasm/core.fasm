@@ -278,26 +278,26 @@ SCODE_CA:
   ; to point to the machine code following
   ; SCODE in the defining word
   ; clean up the stack so we pop up a level
-  .DATA RS_AT_WA
+  .DATA POP_RS_WA
   .DATA CASTORE_WA
-  .DATA STAR_SCODE_WA
+  .DATA STAR_SEMI_WA
 
-STAR_SCODE:
-  .N "*SCODE"
+SEMI_CODE:
+  .I ";CODE"
   .DATA SCODE
-STAR_SCODE_WA: .DATA STAR_SCODE_CA
-STAR_SCODE_CA:
-  MOV RS,FP
-  POPR I
-  POPR FP
-  MOV RS,FP
-  POPR I
-  POPR FP
-  JP NEXT
+SEMI_CODE_WA: .DATA COLON
+SEMI_CODE_CA:
+  .DATA STAR_HASH_WA
+  .DATA SCODE_WA
+  .DATA COMMA_WA
+  .DATA ZERO_WA
+  .DATA MODE_WA
+  .DATA STORE_WA
+  .DATA STAR_SEMI_WA
 
 ALLOT:
   .N "ALLOT"
-  .DATA STAR_SCODE
+  .DATA SEMI_CODE
 ALLOT_WA: .DATA COLON
 ALLOT_CA:
   .DATA ZERO_WA
@@ -340,16 +340,48 @@ BUILDS_CA:
   .DATA CONSTANT_WA ; Reserve a slot for DOES> to compile into
   .DATA STAR_SEMI_WA
 
+VBUILDS:
+; Builds a word and creates a variable
+; of the same name
+; Usage: 
+;
+; : VOCABULARY 
+;    <VBUILDS ENTRY ! 
+;    DOES> @ CONTEXT !
+; ;
+;
+  .N "<VBUILDS"
+  .DATA BUILDS
+VBUILDS_WA: .DATA COLON
+VBUILDS_CA:
+  .DATA STAR_HASH_WA
+  .DATA 0
+  .DATA CONSTANT_WA ; Reserve a slot for DOES> to compile the jump address into
+  ; Now create an anonymous variable and compile its address
+  .DATA VAR_USER_TOP_WA
+  .DATA AT_WA
+  .DATA COMMA_WA    ; Store the initial value
+  .DATA VAR_USER_TOP_WA
+  .DATA AT_WA       ; Address to the stack
+  .DATA VAR_USER_TOP_WA
+  .DATA DUP_WA
+  .DATA AT_WA
+  .DATA TWO_PLUS_WA
+  .DATA SWAP_WA
+  .DATA STORE_WA
+  .DATA STAR_SEMI_WA
+
 DOES:
   .N "DOES>"
-  .DATA BUILDS
+  .DATA VBUILDS
 DOES_WA: .DATA COLON
 DOES_CA:
-  .DATA RS_AT_WA
+  .DATA POP_RS_WA
   .DATA ENTRY_WA
   .DATA WA_TO_CB_WA
   .DATA STORE_WA
   .DATA SCODE_WA
+
   PUSHR FP
   PUSHR I
   MOV FP,RS ; Frame pointer
@@ -378,23 +410,24 @@ VARIABLE:
   .DATA CONSTANT
 VARIABLE_WA: .DATA COLON
 VARIABLE_CA:
-  .DATA VAR_USER_TOP_WA
-  .DATA AT_WA
-  .DATA CONSTANT_WA ; Address of the variable compiled into the word
-  .DATA VAR_USER_TOP_WA
-  .DATA AT_WA
-  .DATA STORE_WA    ; Store the initial value
-  .DATA VAR_USER_TOP_WA
-  .DATA DUP_WA
-  .DATA AT_WA
-  .DATA TWO_PLUS_WA
-  .DATA SWAP_WA
+  .DATA VBUILDS_WA
   .DATA STORE_WA
+  .DATA DOES_WA
+  .DATA AT_WA
   .DATA STAR_SEMI_WA
+
+CONST_NEXT:
+  .N "#NEXT"
+  .DATA VARIABLE
+CONST_NEXT_WA: .DATA CONST_NEXT_CA
+CONST_NEXT_CA:
+  MOVIL A,NEXT
+  PUSHD A
+  JP NEXT
 
 SPTOP:
   .N "#SPTOP"
-  .DATA VARIABLE
+  .DATA CONST_NEXT
 SPTOP_WA: .DATA SPTOP_CA
 SPTOP_CA:
   MOVIL A,#SPTOP
@@ -476,12 +509,7 @@ VOCABULARY:
   .DATA EXECUTIVE
 VOCABULARY_WA: .DATA COLON
 VOCABULARY_CA:
-  .DATA BUILDS_WA
-  .DATA ENTRY_WA
-  .DATA WA_TO_CB_WA
-  .DATA AT_WA ; Now we have the address of the variable
-  .DATA DUP_WA
-  .DATA COMMA_WA
+  .DATA VBUILDS_WA
   .DATA ENTRY_WA
   .DATA SWAP_WA
   .DATA STORE_WA
@@ -622,6 +650,22 @@ DOT_CA:
   MOVIL A,%BASE
   LD B,A     ; Current base in B
   PUSHD B      ; Push it to the stack
+  MOVI A,1
+  PUSHD A
+  SYSCALL #SYSCALL_DOT
+  JP NEXT
+
+DOT_U:  ; The Forth word "." to print the unsigned value on the top of the stack
+  .N ".U"
+  .DATA Q_PRINTABLE
+DOT_U_WA:
+  .DATA DOT_U_CA
+DOT_U_CA:
+  MOVIL A,%BASE
+  LD B,A     ; Current base in B
+  PUSHD B    ; Push it to the stack
+  MOVI A,0
+  PUSHD A
   SYSCALL #SYSCALL_DOT
   JP NEXT
 
@@ -993,7 +1037,7 @@ INVERT:
 INVERT_WA: .DATA INVERT_CA
 INVERT_CA:
   POPD A
-  NOT A
+  NOT A,A
   PUSHD A
   JP NEXT
 
@@ -1293,7 +1337,7 @@ DUP_CA:
   PUSHD A
   JP NEXT
 
-; ( 1 2 3 -- 2 3 1 )
+; ( 1 2 3 -- 3 1 2 )
 ROT:
   .N "ROT"
   .DATA DUP
@@ -1302,12 +1346,12 @@ ROT_CA:
   POPD R3
   POPD R2
   POPD R1
-  PUSHD R2
   PUSHD R3
   PUSHD R1
+  PUSHD R2
   JP NEXT
 
-; ( 1 2 3 -- 3 1 2 )
+; ( 1 2 3 -- 2 3 1 )
 LROT:
   .N "LROT"
   .DATA ROT
@@ -1316,9 +1360,9 @@ LROT_CA:
   POPD R3
   POPD R2
   POPD R1
+  PUSHD R2
   PUSHD R3
   PUSHD R1
-  PUSHD R2
   JP NEXT
 
 ; ( xn .. x0 u -- xn .. x0 xu)
@@ -1671,11 +1715,24 @@ RS_AT_CA:
   PUSHD A
   JP NEXT
 
+POP_RS:
+  ; Pop the return stack frame
+  ; Put the return address on the data stack
+  .N "POPR"
+  .DATA RS_AT
+POP_RS_WA: .DATA POP_RS_CA
+POP_RS_CA:
+  MOV RS,FP
+  POPR A
+  POPR FP
+  PUSHD A
+  JP NEXT 
+
 FP:
   ; Put the frame pointer on the data stack
   ; ( -- frame-pointer )
   .N "FP"
-  .DATA RS_AT
+  .DATA POP_RS
 FP_WA: .DATA FP_CA
 FP_CA:
   PUSHD FP
@@ -3122,7 +3179,7 @@ SEARCH_CA:
   MOV *TOK,*DP ; Keep a backup copy for each trip round the loop
 
   ; Use CA R2 to point to the current word
-  MOVIL SWA,%CURRENT
+  MOVIL SWA,%CONTEXT
   LD SWA,SWA
   LD SWA,SWA
 

@@ -89,11 +89,11 @@
 #define OP_NOT 43
 #define OP_XOR 44
 
-#define OP_SL 45 // Ra <- Ra << Rb
-#define OP_SR 46 // Ra <- Ra >> Rb
-#define OP_RR 47 // Ra <- Ra << Rb
-#define OP_RRC 48  // Ra <- Ra << Rb
-#define OP_RL 49 // Ra <- Ra << Rb
+#define OP_SL 45  // Ra <- Ra << Rb
+#define OP_SR 46  // Ra <- Ra >> Rb
+#define OP_RR 47  // Ra <- Ra << Rb
+#define OP_RRC 48 // Ra <- Ra << Rb
+#define OP_RL 49  // Ra <- Ra << Rb
 #define OP_RLC 50 // Ra <- Ra << Rb
 
 #define OP_BIT 51 // Z <- Ra & bit(Rb)
