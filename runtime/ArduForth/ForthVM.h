@@ -434,17 +434,17 @@ public:
 
     void _cmp(uint8_t a, uint8_t b) {
         uint32_t r = (uint32_t)_regs[a] - (uint32_t)_regs[b];
-        _arithmeticFlags(r);
+        _cmpFlags((uint32_t)_regs[a], (uint32_t)_regs[b], r);
     }
 
     void _cmpi(uint8_t a, uint8_t n) {
         uint32_t r = (uint32_t)_regs[a] - n;
-        _arithmeticFlags(r);
+        _cmpFlags((uint32_t)_regs[a], _sex(n), r);
     }
 
     void _cmpl(uint8_t a, uint16_t n) {
         uint32_t r = (uint32_t)_regs[a] - n;
-        _arithmeticFlags(r);
+        _cmpFlags((uint32_t)_regs[a], _sex(n), r);
     }
 
     void _sub(uint8_t a, uint8_t b) {
@@ -569,6 +569,23 @@ public:
         _sign = (v & (uint32_t)0x08000) != 0;
     }
 
+    void _cmpFlags(uint32_t a,uint32_t b, uint32_t v) {
+        // carry => carry as normal
+        // z => a == b
+        // p => a < b
+        // Boolean equation for this is
+        // Signs differ: SD = (a xor b ) & 0x8000
+        // Result sign: SR = r & 0x8000
+        // a < b : P = SR & (SD + ~Z)
+        _c = (v & (uint32_t)0x10000) == (uint32_t)0x10000;
+        _z = v == 0;
+        // odd(P) functions as <
+        bool SD = (a ^ b) != 0;
+        bool SR = (v & 0x8000) != 0;
+        _odd = (SR && (SD || !_z));
+        _sign = (v & (uint32_t)0x08000) != 0;
+    }
+
     /*
     * Sign-extend n and return a signed number
     * b is the sign bit index. Make the number n a signed 8-bit number
@@ -581,6 +598,14 @@ public:
         }
 
         return n;
+    }
+
+    uint16_t _sex(uint8_t n) {
+        uint16_t r = n;
+        if(n & 0x80) {
+            r |= 0xff00;
+        }
+        return r;
     }
 
     uint16_t getIL() {

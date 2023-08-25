@@ -31,6 +31,7 @@ class VMTests : public Test {
     shouldPrintC();
     shouldLDBI();
     shouldAddI();
+    shouldCMP();
     printf("==============================\n");
     printf("TOTAL: %d  PASSED %d  FAILED %d\n", testSuite->tests, testSuite->passed, testSuite->failed);
     printf("==============================\n");
@@ -181,6 +182,58 @@ void shouldAddI() {
     vm->step();
 
     assertEquals(vm->get(REG_B), 3, "B should be 3 after add");
+}
+
+void shouldCMP() {
+    loader->reset();
+    loader->load(0,0,OP_MOVAI, 0);
+    loader->load(0,0,OP_MOVBI, 0);
+    loader->load(0,0,OP_CMP, REG_A, REG_B);
+    vm->reset();
+    vm->step();
+    vm->step();
+    vm->step();
+    assertEquals(vm->getC(),0, "No carry on equals");    
+    assertEquals(vm->getZ(),1, "Z set on equals");    
+    assertEquals(vm->getO(),0, "No signed-carry on equals");   
+
+    loader->reset();
+    loader->load(0,0,OP_MOVAI, 1);
+    loader->load(0,0,OP_MOVBI, 0);
+    loader->load(0,0,OP_CMP, REG_A, REG_B);
+    vm->reset();
+    vm->step();
+    vm->step();
+    vm->step();
+    assertEquals(vm->getC(),0, "No carry on >");    
+    assertEquals(vm->getZ(),0, "Z not set on >");    
+    assertEquals(vm->getO(),0, "No signed-carry on >");   
+
+
+    loader->reset();
+    loader->load(0,0,OP_MOVAI, 0);
+    loader->load(0,0,OP_MOVBI, 1);
+    loader->load(0,0,OP_CMP, REG_A, REG_B);
+    vm->reset();
+    vm->step();
+    vm->step();
+    vm->step();
+    assertEquals(vm->getC(),1, "Carry on <");    
+    assertEquals(vm->getZ(),0, "Z not set on <");    
+    assertEquals(vm->getO(),1, "Signed-carry on <");   
+
+
+    loader->reset();
+    loader->load(0,0,OP_MOVAI, 1);
+    loader->load(0,0,OP_MOVBI, -1);
+    loader->load(0,0,OP_CMP, REG_A, REG_B);
+    vm->reset();
+    vm->step();
+    vm->step();
+    vm->step();
+    assertEquals(vm->getC(),1, "Carry on <");    
+    assertEquals(vm->getZ(),0, "Z not set on <");    
+    assertEquals(vm->getO(),0, "No signed-carry on <");   
 }
 
 };

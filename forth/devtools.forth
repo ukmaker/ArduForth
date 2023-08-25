@@ -100,3 +100,15 @@
 
 : SEE ' DUP IF DECOMPILE ELSE DROP THEN ;
 
+: NUM-WORDS ( return the number of words in the context )
+    0
+    CONTEXT @ @
+    BEGIN
+        SWAP 1+ SWAP
+        NEXT-WORD
+        DUP
+        0=
+    UNTIL
+    DROP
+;
+
