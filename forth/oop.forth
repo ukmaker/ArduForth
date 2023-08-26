@@ -41,3 +41,23 @@ class: Window extends Widget
 
 ;
 
+( or something totally different )
+
+: LABEL 
+( allocates a struct on the heap )
+( -- address-of-the-struct )
+    <STRUCT
+        len
+        name[8]
+        address
+        references
+    STRUCT>
+;
+
+LABEL TOTO                     ( do the allocation )
+
+12 TOTO -> len !
+S" toto" TOTO -> name COPY   
+    
+
+

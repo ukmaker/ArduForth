@@ -320,8 +320,7 @@ VALLOT:
   .N "VALLOT"
   .DATA ALLOT
 VALLOT_WA: .DATA COLON
-  .DATA VAR_USER_TOP_WA .DATA AT_WA
-  .DATA SWAP_WA
+  .DATA TWO_TIMES_WA
   .DATA VAR_USER_TOP_WA .DATA PLUS_STORE_WA
   .DATA STAR_SEMI_WA
 
@@ -1787,9 +1786,9 @@ TWO_DIV_CA:
   PUSHD A
   JP NEXT
 
-RS_AT:
+RP_AT:
   ; Copy the top of the return stack to the data stack
-  .N "RS@"
+  .N "RP@"
   .DATA TWO_DIV
 RS_AT_WA: .DATA RS_AT_CA
 RS_AT_CA:
@@ -1802,7 +1801,7 @@ POP_RS:
   ; Pop the return stack frame
   ; Put the return address on the data stack
   .N "POPR"
-  .DATA RS_AT
+  .DATA RP_AT
 POP_RS_WA: .DATA POP_RS_CA
 POP_RS_CA:
   MOV RS,FP
@@ -2893,19 +2892,19 @@ DONE_CA:
   ST R0,R1
   JP NEXT
 
-Q_SP:
-  .N "?SP"
+SP:
+  .N "SP@"
   .DATA DONE
-Q_SP_WA: .DATA Q_SP_CA
-Q_SP_CA:
+SP_WA: .DATA SP_CA
+SP_CA:
   PUSHD SP
   JP NEXT
 
-Q_RS:
-  .N "?RS"
-  .DATA Q_SP
-Q_RS_WA: .DATA Q_RS_CA
-Q_RS_CA:
+RP:
+  .N "RP"
+  .DATA SP
+RP_WA: .DATA RP_CA
+RP_CA:
   PUSHD RS
 JP NEXT
 
@@ -2913,7 +2912,7 @@ DOT_LOCATION:
 ; ( addr -- )
 ; Print the address and contents in HEX and ASCII
   .N ".LOCATION"
-  .DATA Q_RS
+  .DATA RP
 DOT_LOCATION_WA: .DATA COLON
 DOT_LOCATION_CA:
   .DATA DUP_WA .DATA AT_WA ; data
@@ -2974,7 +2973,7 @@ DOT_SP:
   .N ".SP"
   .DATA DUMP
 DOT_SP_WA: .DATA COLON
-  .DATA Q_SP_WA
+  .DATA SP_WA
   .DATA TWO_WA .DATA PLUS_WA
   .DATA SPTOP_WA
   .DATA DOT_MEM_WA
@@ -2985,7 +2984,7 @@ DOT_RS:
   .N ".RS"
   .DATA DOT_SP
 DOT_RS_WA: .DATA COLON
-  .DATA Q_RS_WA
+  .DATA RP_WA
   .DATA TWO_WA .DATA PLUS_WA
   .DATA RSTOP_WA
   .DATA DOT_MEM_WA

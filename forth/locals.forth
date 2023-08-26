@@ -34,7 +34,7 @@
 ( Returns the address of the nth local )
     DUP #MAX-LOCALS >= 
     IF
-        ." Too many locals " 
+        ." Too many locals ( " . ." > " #MAX-LOCALS . ." ) "
         RESTART
     THEN
     #LOCAL-SIZE * $LOCAL-DEFS +
@@ -81,9 +81,12 @@
 ( During compilation local names are created as )
 ( definitions in the $LOCAL-DEFS space and temporarily )
 ( linked to the CURRENT vocabulary so they can be found )
-
+( Move the token at global DP to the locals DP )
 : *DP>LOCALS
-    DP@ #LOCAL-SIZE $NUM-LOCALS @ LOCAL-DEF COPY
+    DP@ ( source-addr)
+    #LOCAL-SIZE ( source-len)
+    NUM-LOCALS LOCAL-DEF ( dest-addr)
+    COPY
 ;
 
 : *COMPILE-LOCAL
@@ -118,13 +121,23 @@
 
 : *COMPILE-INIT-LOCALS ( num-init-locals -- )
     ( assign in reverse order to match the incoming stack order )
-    ['] *# , ,
-    ['] *INIT-LOCALS ,
+    DUP
+    IF
+        ['] *# , ,
+        ['] *INIT-LOCALS ,
+    ELSE 
+        DROP
+    THEN
 ;
 
 : *COMPILE-ALLOT-LOCALS ( num-allot-locals -- )
-    ['] *# , ,
-    ['] *ALLOT-LOCALS ,
+    DUP
+    IF ( more than 0 to allot )
+        ['] *# , ,
+        ['] *ALLOT-LOCALS ,
+    ELSE
+        DROP
+    THEN
 ;
 
 : to 
@@ -142,21 +155,21 @@
     0 $NUM-LOCALS !
     BEGIN
         &sp; TOKEN 
-        DP|? DUP
-        DP}?
-        OR
+        DP|? DP}? OR
         IF
             1
         ELSE
-            DROP 
             *COMPILE-LOCAL
             0
         THEN
     UNTIL
 
+    DP|?
+    
     NUM-LOCALS *COMPILE-INIT-LOCALS
 
-    IF ( S" |" DP@ COMPARE 0=  From above )
+
+    IF
         NUM-LOCALS
         BEGIN
             &sp; TOKEN 
