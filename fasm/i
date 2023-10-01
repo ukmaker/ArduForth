@@ -1,0 +1,2381 @@
+                        ; Updated by EXPAND to include all defined words
+                  ; This gives both stacks 2K bytes
+        ; And it needs to store values in ram, not the code-body of the word
+        ; But I don't understand how that works yet
+    .DATA 00
+    .DATA ASPACE_WA
+    .DATA AT_WA
+    .DATA COLON
+    .DATA COMMA_WA     ; and he number
+    .DATA COMMA_WA     ; enclose it
+    .DATA COMPARE
+    .DATA CRET_WA
+    .DATA DP_WA
+    .DATA DROP_WA
+    .DATA DUP_WA
+    .DATA FLUSH_CA
+    .DATA INLINE ; Link to INLINE
+    .DATA INLINE_CA
+    .DATA INLINE_WA
+    .DATA MODE_WA
+    .DATA MSG_HELLO
+    .DATA MSG_PROMPT
+    .DATA MSG_UNKNOWN_TOKEN
+    .DATA NOT_WA
+    .DATA OUTER
+    .DATA OUTER_LOOP
+    .DATA OUTER_LOOP_HAS_INPUT
+    .DATA OUTER_LOOP_PROCESS
+    .DATA OUTER_LOOP_READ
+    .DATA PATCH
+    .DATA PATCH_WA
+    .DATA PROCESS_TOKENS_EXIT_FAILED
+    .DATA PROCESS_TOKENS_EXIT_SUCCEEDED ; Just jump back to get another line if no more tokens
+    .DATA PROCESS_TOKENS_LOOP ; Leave the number on the stack and loop
+    .DATA PROCESS_TOKENS_LOOP
+    .DATA PROCESS_TOKENS_NOT_A_NUMBER
+    .DATA PROCESS_TOKENS_NOT_A_WORD
+    .DATA PROCESS_TOKENS_NUM_TO_STACK
+    .DATA PROCESS_TOKENS_WA
+    .DATA Q_EXECUTE_WA ; If the execute failed, discard the rest of the line
+    .DATA Q_NUMBER_WA
+    .DATA SEARCH_CA
+    .DATA SEARCH_WA
+    .DATA STAR_ELSE_WA
+    .DATA STAR_HASH_CA
+    .DATA STAR_HASH_WA ; push the literal handler to the stack
+    .DATA STAR_HASH_WA
+    .DATA STAR_IF_WA
+    .DATA STAR_SEMI_WA
+    .DATA TOKEN_LEN
+    .DATA TOKEN_LEN_WA
+    .DATA TOKEN_WA
+    .DATA TWO_EQUALS_WA
+    .DATA TYPE_WA
+    .DATA ZERO_EQUALS_WA
+    .I "*#"
+    .N "INLINE"
+    .N "OUTER"
+    .N "PROCESS-TOKENS"
+    .N "SEARCH"
+    ; 0 means nothing was available so loop with no prompt
+    ; 2 means empty input was received, so loop with  prompt
+    ; If we're in compile mode, enclose it
+    ; Number is on the stack. 
+    ; Put the address and length of the line buffer on the stack
+    ADDI I,2
+    JP NEXT
+    LD A,I
+    MOVIL A,#LBUF_LEN
+    MOVIL A,%LBUF_IDX
+    PUSHD A
+    SYSCALL #SYSCALL_FLUSH
+    SYSCALL #SYSCALL_INLINE
+    SYSCALL #SYSCALL_QEXIT
+  
+  .ALIAS A,INDEX
+  .ALIAS A,STATE
+  .ALIAS B,LIMIT
+  .ALIAS R0,*DP
+  .ALIAS R0,*OF
+  .ALIAS R0,IDX
+  .ALIAS R0,INCREMENT
+  .ALIAS R0,LE
+  .ALIAS R0,SRCA
+  .ALIAS R1,DP
+  .ALIAS R1,GE
+  .ALIAS R1,LENA
+  .ALIAS R1,OFFSET
+  .ALIAS R1,SRCL
+  .ALIAS R2,*DP
+  .ALIAS R2,*WORD   ; The word we're looking for (the token at DP)
+  .ALIAS R2,DEST
+  .ALIAS R2,NUM
+  .ALIAS R2,VAL
+  .ALIAS R3,DATA
+  .ALIAS R3,LENB
+  .ALIAS R3,NUM
+  .ALIAS R3,SPP
+  .ALIAS R4,*CANDIDATE   ; The word we're currently testing (the word at WA)
+  .ALIAS R4,VAL
+  .ALIAS R5,SWA  ; Search word address
+  .ALIAS R6,*TOK ; DP+2
+  .ALIAS R7,IDX  ; Loop counter
+  .DATA #RAMSTART       ; Initialise the DP from here. Updated by EXPAND
+  .DATA %CURRENT        ; save this address here so the write_cpp syscall can find it
+  .DATA 0
+  .DATA 0x0fff
+  .DATA 1
+  .DATA 17
+  .DATA 41
+  .DATA 92 ; The backslash character
+  .DATA ALIGN
+  .DATA ALIGN_CA
+  .DATA ALIGN_WA      ; now points to link
+  .DATA ALIGN_WA
+  .DATA ALLOT
+  .DATA ALLOT_LOOP
+  .DATA AND
+  .DATA AND_CA
+  .DATA AND_WA
+  .DATA ASPACE
+  .DATA ASPACE_CA
+  .DATA ASPACE_WA .DATA EMIT_WA
+  .DATA ASPACE_WA
+  .DATA AT
+  .DATA AT_CA
+  .DATA AT_WA            ; (addr addr -- addr len )
+  .DATA AT_WA            ; Get the mode bit
+  .DATA AT_WA         ;( .. -- WA LEN HERE [ADDR OF CURRENT VOCAB] )
+  .DATA AT_WA       ; Address to the stack
+  .DATA AT_WA .DATA AT_WA
+  .DATA AT_WA
+  .DATA BACKSLASH
+  .DATA BASE
+  .DATA BEGIN
+  .DATA BETWEEN
+  .DATA BETWEEN_WA
+  .DATA BINARY
+  .DATA BIT_COMPILETIME
+  .DATA BIT_EXECUTIVE
+  .DATA BIT_HAS_LOCALS
+  .DATA BIT_IMMEDIATE
+  .DATA BIT_PASSIVE
+  .DATA BIT_RUNTIME
+  .DATA BRACKET_TICK
+  .DATA BUILDS
+  .DATA C_AT
+  .DATA C_AT_CA
+  .DATA CA
+  .DATA CA_TO_WA
+  .DATA CA_TO_WA_LOOP
+  .DATA CA_TO_WA_WA
+  .DATA CASE
+  .DATA CASE_OF
+  .DATA CASTORE
+  .DATA CASTORE_WA
+  .DATA CCOPY
+  .DATA COLON
+  .DATA COMMA
+  .DATA COMMA_WA      ; And point CA to here
+  .DATA COMMA_WA      ; point to the last entry
+  .DATA COMMA_WA    ; Store the initial value
+  .DATA COMMA_WA ; and compile the return address off the stack
+  .DATA COMMA_WA
+  .DATA CONST_NEXT
+  .DATA CONSTANT
+  .DATA CONSTANT_WA ; Reserve a slot for DOES> to compile into
+  .DATA CONSTANT_WA ; Reserve a slot for DOES> to compile the jump address into
+  .DATA CONTEXT
+  .DATA CONTEXT_CA
+  .DATA CONTEXT_WA
+  .DATA COPY
+  .DATA CORE
+  .DATA CORE_VOCABULARY ; Points to the end of the vocabulary on a cold start
+  .DATA CREATE
+  .DATA CREATE_WA
+  .DATA CRET
+  .DATA CRET_WA
+  .DATA CSPLIT
+  .DATA CSPLIT_WA
+  .DATA CURRENT
+  .DATA CURRENT_CA
+  .DATA CURRENT_WA    
+  .DATA CURRENT_WA .DATA AT_WA .DATA CONTEXT_WA .DATA STORE_WA
+  .DATA CURRENT_WA .DATA AT_WA .DATA STORE_WA
+  .DATA CURRENT_WA .DATA AT_WA
+  .DATA CURRENT_WA
+  .DATA D_ADD
+  .DATA D_AND
+  .DATA D_AT
+  .DATA D_DIV
+  .DATA D_DUP
+  .DATA D_DUP_WA
+  .DATA D_INVERT
+  .DATA D_MUL
+  .DATA D_OR
+  .DATA D_SL
+  .DATA D_SR
+  .DATA D_STORE
+  .DATA D_SUB
+  .DATA D_SWAP
+  .DATA DEBUG
+  .DATA DECIMAL
+  .DATA DEFINITIONS
+  .DATA DIV
+  .DATA DIV_CA
+  .DATA DO
+  .DATA DOES
+  .DATA DOES_WA
+  .DATA DONE
+  .DATA DOT
+  .DATA DOT_ASPACE_WA 
+  .DATA DOT_ASPACE_WA
+  .DATA DOT_C
+  .DATA DOT_C_CA
+  .DATA DOT_C_WA 
+  .DATA DOT_C_WA
+  .DATA DOT_CA
+  .DATA DOT_LOCATION
+  .DATA DOT_MEM
+  .DATA DOT_MEM_DOWN
+  .DATA DOT_MEM_WA
+  .DATA DOT_Q_C
+  .DATA DOT_Q_C_DONE
+  .DATA DOT_Q_C_SPACE
+  .DATA DOT_Q_C_WA 
+  .DATA DOT_Q_C_WA ; and the characters
+  .DATA DOT_RS
+  .DATA DOT_SP
+  .DATA DOT_TWO_BYTES
+  .DATA DOT_TWO_BYTES_WA
+  .DATA DOT_TWO_CHARS
+  .DATA DOT_TWO_CHARS_WA
+  .DATA DOT_U_CA
+  .DATA DOT_WA
+  .DATA DOT_WORD
+  .DATA DOT_WORD_NEXT
+  .DATA DOT_WORD_NEXT_DONE
+  .DATA DOT_WORD_NEXT_WA
+  .DATA DOT_WORD_WA
+  .DATA DP
+  .DATA DP_AT
+  .DATA DP_AT_WA       ;( .. -- WA LEN HERE )
+  .DATA DP_AT_WA
+  .DATA DP_STORE
+  .DATA DP_STORE_WA ; Reset the dictionary pointer
+  .DATA DP_WA
+  .DATA DROP
+  .DATA DROP_CA
+  .DATA DROP_WA .DATA DROP_WA
+  .DATA DROP_WA
+  .DATA DUMP
+  .DATA DUP
+  .DATA DUP_WA           ; ( addr - addr addr )
+  .DATA DUP_WA           ; ( addr bits -- addr bits bits )
+  .DATA DUP_WA       ; copy it
+  .DATA DUP_WA     ; Then duplicate it as a flag
+  .DATA DUP_WA 
+  .DATA DUP_WA .DATA AT_WA ; data
+  .DATA DUP_WA .DATA AT_WA
+  .DATA DUP_WA
+  .DATA ELSE
+  .DATA ELSE_CA
+  .DATA EMIT
+  .DATA EMIT_WA
+  .DATA ENDOF
+  .DATA ENDOF_CA
+  .DATA ENTRY
+  .DATA ENTRY_WA      ;( -- WA of last entry )
+  .DATA ENTRY_WA
+  .DATA EQUALS
+  .DATA EQUALS_WA .DATA NOT_WA
+  .DATA EQUALS_WA .DATA STAR_IF_WA .DATA WORDS_LOOP_PRINT
+  .DATA EQUALS_WA
+  .DATA ESAC
+  .DATA EXECUTE
+  .DATA EXECUTE_CA
+  .DATA EXECUTE_WA
+  .DATA EXECUTIVE
+  .DATA EXIT
+  .DATA EXPAND
+  .DATA FCLOSE
+  .DATA FCLOSE_WA
+  .DATA FENCE           ; 
+  .DATA FEOF
+  .DATA FEOF_WA
+  .DATA FLUSH
+  .DATA FOPEN
+  .DATA FOPEN_WA
+  .DATA FORGET
+  .DATA FORGET_FAIL
+  .DATA FP
+  .DATA FREAD
+  .DATA FREAD_WA
+  .DATA FREE_MEMORY
+  .DATA GT
+  .DATA GT_WA       ; Is it below the fence?
+  .DATA GT_WA
+  .DATA GTE
+  .DATA H_AT
+  .DATA H_STORE
+  .DATA HEADER_TO_MODE
+  .DATA HEADER_TO_MODE_WA
+  .DATA HEX
+  .DATA IF
+  .DATA IF_CA
+  .DATA IMMEDIATE
+  .DATA INDEX_I
+  .DATA INDEX_I_WA .DATA DOT_LOCATION_WA
+  .DATA INDEX_J
+  .DATA INDEX_K
+  .DATA INVERT
+  .DATA LBUF
+  .DATA LEFT_SQUARE_BRACKET
+  .DATA LIT
+  .DATA LOOP
+  .DATA LOOP_NORMAL
+  .DATA LROT
+  .DATA LT
+  .DATA LTE
+  .DATA LTE_WA
+  .DATA MESSAGE
+  .DATA MINUS
+  .DATA MINUS_CA
+  .DATA MINUS_LOOP
+  .DATA MINUS_LOOP_NORMAL
+  .DATA MODE
+  .DATA MODE_CA
+  .DATA MODE_WA .DATA AT_WA
+  .DATA MODE_WA
+  .DATA N_TICK
+  .DATA N_TICK_DONE 
+  .DATA N_TICK_WA      ; Get the address of the word to forget
+  .DATA NEXT_WORD
+  .DATA NEXT_WORD_WA ; address of previous word
+  .DATA NEXT_WORD_WA
+  .DATA NOT
+  .DATA NOT_EQUALS
+  .DATA NOT_EQUALS_WA
+  .DATA NOT_WA 
+  .DATA NOT_WA
+  .DATA ONE_EQUALS
+  .DATA ONE_MINUS
+  .DATA ONE_PLUS
+  .DATA ONE_PLUS_WA
+  .DATA ONE_WA .DATA MINUS_WA
+  .DATA ONE_WA ; Flag to say it's a ?DO loop
+  .DATA ONE_WA
+  .DATA OR
+  .DATA OR_WA            ; AS bit 0
+  .DATA OR_WA
+  .DATA OVER
+  .DATA OVER_WA
+  .DATA PAREN
+  .DATA PATCH_DONE
+  .DATA PICK
+  .DATA PLUS
+  .DATA PLUS_CA
+  .DATA PLUS_LOOP
+  .DATA PLUS_LOOP_NORMAL
+  .DATA PLUS_STORE
+  .DATA PLUS_STORE_WA
+  .DATA PLUS_WA       ; Add the length
+  .DATA PLUS_WA
+  .DATA POP_RS
+  .DATA POP_RS_WA
+  .DATA PROCESS_TOKENS
+  .DATA PROCESS_TOKENS_EXIT
+  .DATA PROCESS_TOKENS_WA
+  .DATA Q_EXECUTE
+  .DATA Q_EXECUTE_DONE  
+  .DATA Q_EXECUTE_EXIT
+  .DATA Q_FENCED
+  .DATA Q_NUMBER
+  .DATA Q_PRINTABLE
+  .DATA Q_PRINTABLE_WA
+  .DATA Q_RS
+  .DATA Q_RS_WA
+  .DATA Q_SP
+  .DATA Q_SP_WA
+  .DATA QDO
+  .DATA QUESTION
+  .DATA QUESTION_WA
+  .DATA QUOTE
+  .DATA R_DROP
+  .DATA R_DROP_CA
+  .DATA R_DROP_WA
+  .DATA R_FROM
+  .DATA R_FROM_CA
+  .DATA R_FROM_WA 
+  .DATA R_FROM_WA
+  .DATA READ_FILE
+  .DATA READ_FILE_CLOSE
+  .DATA READ_FILE_DONE
+  .DATA READ_FILE_EXIT
+  .DATA READ_FILE_FAILED_OPEN
+  .DATA READ_FILE_LOOP
+  .DATA RESTART
+  .DATA RESTART_WA
+  .DATA RIGHT_SQUARE_BRACKET
+  .DATA ROT
+  .DATA RS_AT
+  .DATA RSTOP
+  .DATA RSTOP_WA
+  .DATA RUNTIME
+  .DATA S_LIT
+  .DATA S_LIT_DONE
+  .DATA S_LIT_INTERACTIVE
+  .DATA SCODE
+  .DATA SCODE_WA
+  .DATA SEARCH
+  .DATA SEARCH_WA
+  .DATA SEMI_CODE
+  .DATA SEMICOLON
+  .DATA SEVEN
+  .DATA SL
+  .DATA SL_ONE
+  .DATA SL_ONE_WA        ; Get the bits in 2,1 (addr len -- addr (len>>13))
+  .DATA SPTOP
+  .DATA SPTOP_WA
+  .DATA SR
+  .DATA SR_ONE
+  .DATA STAR_ALLOT_LOCALS
+  .DATA STAR_ARDUINO
+  .DATA STAR_COLON
+  .DATA STAR_DO
+  .DATA STAR_DO_WA
+  .DATA STAR_ELSE
+  .DATA STAR_ELSE_CA
+  .DATA STAR_ELSE_WA 
+  .DATA STAR_ELSE_WA .DATA CA_TO_WA_HEADER_THEN
+  .DATA STAR_ELSE_WA .DATA CA_TO_WA_UNTIL
+  .DATA STAR_ELSE_WA .DATA DOT_MEM_DONE
+  .DATA STAR_ELSE_WA .DATA FORGET_DONE
+  .DATA STAR_ELSE_WA .DATA Q_EXECUTE_ERROR
+  .DATA STAR_ELSE_WA
+  .DATA STAR_ESAC
+  .DATA STAR_HASH
+  .DATA STAR_HASH_WA .DATA 0
+  .DATA STAR_HASH_WA .DATA 0x20
+  .DATA STAR_HASH_WA .DATA 0x22
+  .DATA STAR_HASH_WA .DATA 0x7e
+  .DATA STAR_HASH_WA .DATA 0x8000 .DATA AND_WA
+  .DATA STAR_HASH_WA .DATA 0x8000
+  .DATA STAR_HASH_WA .DATA 1 .DATA MINUS_WA
+  .DATA STAR_HASH_WA .DATA 1
+  .DATA STAR_HASH_WA .DATA -1
+  .DATA STAR_HASH_WA .DATA 2 .DATA EQUALS_WA
+  .DATA STAR_HASH_WA .DATA 2 .DATA MINUS_WA 
+  .DATA STAR_HASH_WA .DATA 2 .DATA MINUS_WA
+  .DATA STAR_HASH_WA .DATA 5 .DATA EQUALS_WA
+  .DATA STAR_HASH_WA .DATA 64 .DATA SWAP_WA
+  .DATA STAR_HASH_WA .DATA 8 .DATA EQUALS_WA
+  .DATA STAR_HASH_WA .DATA 9
+  .DATA STAR_HASH_WA .DATA MSG_COMPILE_ONLY
+  .DATA STAR_HASH_WA .DATA MSG_IMMEDIATE_ONLY
+  .DATA STAR_HASH_WA .DATA MSG_RUNTIME_ONLY
+  .DATA STAR_HASH_WA .DATA STAR_DO_WA
+  .DATA STAR_HASH_WA .DATA STAR_LIT_WA 
+  .DATA STAR_HASH_WA .DATA STAR_QDO_WA
+  .DATA STAR_HASH_WA .DATA STAR_S_LIT_WA
+  .DATA STAR_HASH_WA .DATA STAR_SEMI_WA
+  .DATA STAR_HASH_WA .DATA STAR_UNTIL_WA
+  .DATA STAR_HASH_WA
+  .DATA STAR_IF
+  .DATA STAR_IF_CA
+  .DATA STAR_IF_WA 
+  .DATA STAR_IF_WA .DATA CA_TO_WA_NOT_A_HEADER
+  .DATA STAR_IF_WA .DATA Q_EXECUTE_1
+  .DATA STAR_IF_WA .DATA Q_EXECUTE_5
+  .DATA STAR_IF_WA .DATA Q_EXECUTE_8
+  .DATA STAR_IF_WA .DATA Q_EXECUTE_EXECUTE
+  .DATA STAR_IF_WA .DATA STAR_IF_LEAVE
+  .DATA STAR_IF_WA ; Compiling?
+  .DATA STAR_IF_WA ; If there is a word
+  .DATA STAR_IF_WA ; Normal or ?DO
+  .DATA STAR_IF_WA
+  .DATA STAR_INIT_LOCALS
+  .DATA STAR_LIT
+  .DATA STAR_LIT_WA .DATA 13 .SDATA "-- UNKNOWN --"
+  .DATA STAR_LIT_WA .DATA 16
+  .DATA STAR_LIT_WA .DATA 25
+  .DATA STAR_LIT_WA .DATA 9 .SDATA " at line "
+  .DATA STAR_LIT_WA
+  .DATA STAR_LOOP
+  .DATA STAR_LOOP_WA
+  .DATA STAR_MINUS_LOOP
+  .DATA STAR_MINUS_LOOP_WA .DATA DOT_MEM_DOWN_LOOP
+  .DATA STAR_MINUS_LOOP_WA
+  .DATA STAR_OF
+  .DATA STAR_OF_CA
+  .DATA STAR_OF_ENDOF
+  .DATA STAR_OF_ENDOF_CA
+  .DATA STAR_PLUS_LOOP
+  .DATA STAR_PLUS_LOOP_WA .DATA DOT_MEM_UP_LOOP
+  .DATA STAR_PLUS_LOOP_WA
+  .DATA STAR_QDO
+  .DATA STAR_S_LIT
+  .DATA STAR_SEMI
+  .DATA STAR_SEMI_WA 
+  .DATA STAR_SEMI_WA
+  .DATA STAR_STACK   
+  .DATA STAR_STACK_WA
+  .DATA STAR_UNTIL
+  .DATA STAR_UNTIL_WA .DATA WORDS_LOOP
+  .DATA STAR_UNTIL_WA
+  .DATA STATE
+  .DATA STATE_CA
+  .DATA STORE
+  .DATA STORE_CA
+  .DATA STORE_WA      ; update the dictionary pointer
+  .DATA STORE_WA      ;( .. -- WA LEN )
+  .DATA STORE_WA     ; And the dictionary pointer
+  .DATA STORE_WA     ; Reset the current vocab
+  .DATA STORE_WA
+  .DATA STRNCPY
+  .DATA SWAP
+  .DATA SWAP_WA            ; address
+  .DATA SWAP_WA .DATA DOT_WORD_WA
+  .DATA SWAP_WA .DATA DROP_WA
+  .DATA SWAP_WA .DATA DUP_WA .DATA STAR_HASH_WA .DATA 0
+  .DATA SWAP_WA
+  .DATA SYSCALL
+  .DATA THEN
+  .DATA THEN_CA
+  .DATA TICK
+  .DATA TICK_DONE 
+  .DATA TICK_WA
+  .DATA TIMES
+  .DATA TIMES_CA
+  .DATA TO_R
+  .DATA TO_R_CA
+  .DATA TO_R_WA
+  .DATA TOKEN
+  .DATA TOKEN_CA
+  .DATA TOKEN_LEN_WA      ;( .. -- WA LEN )
+  .DATA TOKEN_LEN_WA
+  .DATA TOKEN_WA ; Move the string to the dictionary
+  .DATA TOKEN_WA
+  .DATA TWO_DIV
+  .DATA TWO_DOTS
+  .DATA TWO_DROP
+  .DATA TWO_DROP_CA
+  .DATA TWO_EQUALS
+  .DATA TWO_MINUS
+  .DATA TWO_MINUS_WA
+  .DATA TWO_PLUS
+  .DATA TWO_PLUS_WA
+  .DATA TWO_TIMES
+  .DATA TWO_WA .DATA PLUS_WA
+  .DATA TWO_WA
+  .DATA TYPE   
+  .DATA TYPE_CA    ; This is the word address of TYPE
+  .DATA TYPELN
+  .DATA TYPELN_CA    ; This is the word address of TYPE
+  .DATA TYPELN_WA
+  .DATA UGT
+  .DATA ULT
+  .DATA UNTIL
+  .DATA VALLOT
+  .DATA VALLOT_WA
+  .DATA VAR_FENCE
+  .DATA VAR_FENCE_WA .DATA AT_WA
+  .DATA VAR_FENCE_WA
+  .DATA VAR_LBUF_IDX
+  .DATA VAR_LBUF_IDX_WA
+  .DATA VAR_USER_TOP
+  .DATA VAR_USER_TOP_WA .DATA AT_WA
+  .DATA VAR_USER_TOP_WA .DATA PLUS_STORE_WA
+  .DATA VAR_USER_TOP_WA
+  .DATA VARIABLE
+  .DATA VBUILDS
+  .DATA VBUILDS_WA
+  .DATA VEXTEND
+  .DATA VOCABULARY
+  .DATA WA_TO_CA
+  .DATA WA_TO_CA_WA
+  .DATA WA_TO_CB
+  .DATA WA_TO_CB_WA
+  .DATA WA_TO_LA
+  .DATA WA_TO_LA_WA .DATA AT_WA
+  .DATA WITHIN
+  .DATA WORD_LEN
+  .DATA WORDLEN
+  .DATA WORDS
+  .DATA ZERO_EQUALS
+  .DATA ZERO_WA .DATA COMMA_WA
+  .DATA ZERO_WA .DATA TO_R_WA
+  .DATA ZERO_WA ; Flag to say it's a normal loop
+  .DATA ZERO_WA
+  .I ".\""
+  .I ";"
+  .I ";CODE"
+  .I "?DO"
+  .I "["
+  .I "[']"
+  .I "+LOOP"
+  .I "BEGIN"
+  .I "CASE"
+  .I "DO"
+  .I "ELSE"
+  .I "ENDOF"
+  .I "ESAC"
+  .I "IF"
+  .I "LOOP"
+  .I "-LOOP"
+  .I "OF"
+  .I "THEN"
+  .I "UNTIL"
+  .N "!"
+  .N "!="
+  .N "'"
+  .N "-"
+  .N "#COMPILETIME"
+  .N "#EXECUTIVE"
+  .N "#HAS_LOCALS"
+  .N "#IMMEDIATE"
+  .N "#NEXT"
+  .N "#PASSIVE"
+  .N "#RSTOP"
+  .N "#RUNTIME"
+  .N "#SPTOP"
+  .N "$FENCE"
+  .N "$LBUF-IDX"
+  .N "$USER-TOP"
+  .N "&sp;"
+  .N "*"
+  .N "*:"
+  .N "*;"
+  .N "*\""
+  .N "*ALLOT-LOCALS"
+  .N "*ESAC"
+  .N "*INIT-LOCALS"
+  .N "*STACK"
+  .N ","
+  .N "."
+  .N ".&sp;"
+  .N ".?C"
+  .N ".2BYTES"
+  .N ".2CHARS"
+  .N ".C"
+  .N ".LOCATION"
+  .N ".MEM"
+  .N ".RS"
+  .N ".SP"
+  .N ".U"
+  .N ".WORD"
+  .N ".WORD-NEXT?"
+  .N "/"
+  .N ":"
+  .N "?"
+  .N "?EXECUTE"
+  .N "?FENCED"
+  .N "?NUMBER"
+  .N "?PRINTABLE"
+  .N "?RS"
+  .N "?SP"
+  .N "@"
+  .N "\""
+  .N "\"COPY"
+  .N "]"
+  .N "+!"
+  .N "+"
+  .N "<"
+  .N "<<"
+  .N "<="
+  .N "<BUILDS"
+  .N "<VBUILDS"
+  .N "="
+  .N ">"
+  .N ">|<"
+  .N ">="
+  .N ">=<"
+  .N ">>"
+  .N ">R"
+  .N "0="
+  .N "1-"
+  .N "1+"
+  .N "1<<"
+  .N "1="
+  .N "1>>"
+  .N "2-"
+  .N "2*"
+  .N "2/"
+  .N "2+"
+  .N "2="
+  .N "2DROP"
+  .N "ALIGN"
+  .N "ALLOT"
+  .N "AND"
+  .N "BASE"
+  .N "BINARY"
+  .N "C@"
+  .N "CA!"
+  .N "CA"
+  .N "CA>WA"
+  .N "CCOPY"
+  .N "COMPARE"
+  .N "CONSTANT"
+  .N "CONTEXT"
+  .N "COPY"
+  .N "CORE"
+  .N "CREATE"
+  .N "CRET"
+  .N "CSPLIT"
+  .N "CURRENT"
+  .N "D!"
+  .N "D-"
+  .N "D*"
+  .N "D/"
+  .N "D@"
+  .N "D+"
+  .N "D<<"
+  .N "D>>"
+  .N "DAND"
+  .N "DDUP"
+  .N "DEBUG"
+  .N "DECIMAL"
+  .N "DEFINITIONS"
+  .N "DINVERT"
+  .N "DOES>"
+  .N "DONE"
+  .N "DOR"
+  .N "DP!"
+  .N "DP"
+  .N "DP@"
+  .N "DROP"
+  .N "DSWAP"
+  .N "DUMP"
+  .N "DUP"
+  .N "EMIT"
+  .N "ENTRY"
+  .N "EXECUTE"
+  .N "EXECUTIVE"
+  .N "EXIT"
+  .N "EXPAND"
+  .N "FCLOSE"
+  .N "FENCE"
+  .N "FEOF"
+  .N "FLUSH"
+  .N "FOPEN"
+  .N "FORGET"
+  .N "FP"
+  .N "FREAD"
+  .N "FREE-MEMORY"
+  .N "H!"
+  .N "H@"
+  .N "HEADER>MODE"
+  .N "HEX"
+  .N "I"
+  .N "IMMEDIATE"
+  .N "INVERT"
+  .N "J"
+  .N "K"
+  .N "LBUF"
+  .N "LROT"
+  .N "MESSAGE"
+  .N "MODE"
+  .N "N'"
+  .N "NEXT-WORD"
+  .N "NOT"
+  .N "OR"
+  .N "OVER"
+  .N "PATCH"
+  .N "PICK"
+  .N "POPR"
+  .N "R>"
+  .N "RDROP"
+  .N "READ-FILE"
+  .N "RESTART"
+  .N "ROT"
+  .N "RS@"
+  .N "RUNTIME"
+  .N "SCODE"
+  .N "STATE"
+  .N "SWAP"
+  .N "SYSCALL"
+  .N "TOKEN"
+  .N "TOKEN-LEN"
+  .N "TYPE"  
+  .N "TYPELN"     ; And the string's characters
+  .N "U<"
+  .N "U>"
+  .N "VALLOT"
+  .N "VARIABLE"
+  .N "VEXTEND"
+  .N "VOCABULARY"
+  .N "WA>CA"
+  .N "WA>CB"
+  .N "WA>LA"
+  .N "WORDLEN"
+  .N "WORD-LEN"
+  .N "WORDS"
+  .N"*ARDUINO"
+  .SDATA "----- FENCE -----"
+  .SDATA "?"
+  .SDATA "Cannot forget below FENCE"
+  .SDATA "Cannot open file"
+  .X "("
+  .X "*+LOOP"
+  .X "*DO"
+  .X "*ELSE"
+  .X "*IF"
+  .X "*LOOP"
+  .X "*-LOOP"
+  .X "*OF"
+  .X "*OF_ENDOF"
+  .X "*QDO"
+  .X "*S\""
+  .X "*UNTIL"
+  .X "\\"
+  .X "S\""
+  ; 
+  ; ( -- frame-pointer )
+  ; ( addr -- addr )
+  ; ( address -- double-data )
+  ; ( address-of-filename -- )
+  ; ( initial-value -- )
+  ; ( wa -- ca )
+  ; ( wa -- cb )
+  ; ( wordAddr -- )
+  ; 0 0000
+  ; 000 - Normal word. Mode = 0 => Execute   Mode = 1 => Compile
+  ; 001 - Immediate    Mode = 0 => Error     Mode = 1 => Execute
+  ; 010 - Runtime only Mode = 0 => Execute   Mode = 1 => Error
+  ; 011 - Executive    Mode = 0 => Execute   Mode = 1 => Execute
+  ; 1 0001
+  ; 100 - Compile      Mode = 0 => Error     Mode = 1 => Compile
+  ; 2 0010 - MSG_IMMEDIATE_ONLY
+  ; 3 0011
+  ; 4 0100
+  ; 5 0101 - MSG_RUNTIME_ONLY
+  ; 6 0110
+  ; 7 0111
+  ; 8 1000 - MSG_COMPILE_ONLY
+  ; 9 1001
+  ; A - a character
+  ; And we're done
+  ; at or past the end of the buffer already?
+  ; B - The separator
+  ; Bump I to point to first char
+  ; Bump the DP by the length of the token plus two for the length itself
+  ; Change the CA of the word being defined
+  ; clean up the stack so we pop up a level
+  ; Compile *DO
+  ; Compile *QDO
+  ; Compile ENTRY
+  ; Compile
+  ; Copy the top of the return stack to the data stack
+  ; Create a variable in the variables space
+  ; DUP @ + 2+ ALIGN @
+  ; Errors
+  ; Execute mode
+  ; Execute
+  ; Get the separator
+  ; Index exceeded, loop is over
+  ; LEN PTR CHARS
+  ; Make the loop index equal to the end value
+  ; Move the token to the end of the dictionary
+  ; No return address
+  ; Not found so leave the bufferr address zero on the stack and exit
+  ; Not the same, move to the next word
+  ; Now create an anonymous variable and compile its address
+  ; number of jump locations to fill in is TOS
+  ; on the return stack
+  ; Pop the return stack frame
+  ; Push Here to the stack so LOOP can compile it later
+  ; Put the frame pointer on the data stack
+  ; Put the return address on the data stack
+  ; R0 - addr -> idx
+  ; R0 - Address of DP
+  ; R0 - Current pointer
+  ; R1 - len
+  ; R1 - Length of this token
+  ; R1 - Value of DP (HERE)
+  ; R2 - End of the buffer
+  ; R2 - location of jump address
+  ; R3 - scratch
+  ; Register usage:
+  ; Reserve space for the jump address
+  ; Save the current pointer
+  ; Scans for tokens from the input line buffer
+  ; SCODE in the defining word
+  ; Set LBUF_END to LBUF_DATA
+  ; Set the header bit in the word's length
+  ; Signs are different, so the negative one is <
+  ; So ?SEARCH can access it
+  ; Start with BASE set to HEX
+  ; Test the strings for equality
+  ; The buffer is set up by INLINE
+  ; This routine expects a NA on the stack from a successful SEARCH
+  ; to point to the machine code following
+  ; Token length
+  ; TOS contains the location of the word to use for the IF relative jump
+  ; TOS contains the location of the word to use for the IF/ELSE  jump
+  ; Use CA R2 to point to the current word
+  ; We can just do a normal compare
+  ; Words can be flagged with the immediate [15] and run-time [14] bits
+  ;
+  ADD A,B
+  ADD A,R0
+  ADD B,R0              ; Add to the address
+  ADD I,A
+  ADD I,B
+  ADD NUM,NUM
+  ADD OFFSET,OFFSET
+  ADD R0,B
+  ADD R1,R0 ; *2 to word-align
+  ADD R1,R0
+  ADD SP,NUM
+  ADD SPP,OFFSET
+  ADD SWA,LENB
+  ADD WA,A
+  ADDI *CANDIDATE,1
+  ADDI *CANDIDATE,2 ; Point to the string
+  ADDI *DP,2 ; next location for the definition
+  ADDI *DP,2 ; point to location of jump word
+  ADDI *DP,2
+  ADDI *WORD,1
+  ADDI A,-1             ; Decrement A
+  ADDI A,1
+  ADDI A,-1
+  ADDI A,2
+  ADDI A,-2
+  ADDI A,3
+  ADDI A,5
+  ADDI A,7
+  ADDI B,1 ; Bump the dictionary pointer
+  ADDI B,2  ; Bump the dictionary pointer
+  ADDI B,2
+  ADDI B,3
+  ADDI DEST,1
+  ADDI DEST,2
+  ADDI I,2
+  ADDI I,3
+  ADDI IDX,-1
+  ADDI NUM,1
+  ADDI R0,1         ; idx++
+  ADDI R0,1 ; Bump the buffer pointer
+  ADDI R0,1 ; Point past the terminator
+  ADDI R0,1
+  ADDI R0,-1
+  ADDI R0,2 ; point to word
+  ADDI R0,2
+  ADDI R0,4
+  ADDI R1,1         ; len++
+  ADDI R1,-1 ; Decrement the length
+  ADDI R1,-1
+  ADDI R1,2 ; 
+  ADDI R1,2
+  ADDI R1,-2
+  ADDI R1,4
+  ADDI R1,-4
+  ADDI R2,2 ; next location for the definition
+  ADDI R2,2 ; point to location of jump word
+  ADDI SRCA,1
+  ADDI SRCA,2
+  ADDI SWA,3 ; CA now points to the link address
+  ADDI WA,2
+  ADDI WA,5 ; Skip over the name and link
+  AND A,A               ; Is this the message we're looking for?
+  AND A,B
+  AND A,R0
+  AND B,A
+  AND LENB,A
+  AND R0,R0
+  AND R1,B
+  AND SWA,SWA ; Is it zero?
+  BITI A,15
+  BITI R0,15
+  CLR A,B
+  CLRI A,0 ; Word-align
+  CLRI A,0
+  CLRI B,0               ; Word-align
+  CLRI I,0 ; Word align
+  CLRI SWA,0  ; make sure it's a word address
+  CLRI WA,0 ; WOrd-align
+  CMP A,B           ; Is it the separator?
+  CMP A,B 
+  CMP A,B
+  CMP B,A     ; Is the separator a space?
+  CMP B,A
+  CMP GE,VAL
+  CMP LENB,LENA ; Same as the token?
+  CMP LIMIT,INDEX
+  CMP R2,R0         ; At the end of the buffer?
+  CMP R2,R0
+  CMP VAL,LE
+  CMPAI 0x0A        ; Or is this a carriage return?
+  CMPI A,0
+  CMPI A,1
+  CMPI A,2
+  CMPI B,0
+  CMPI IDX,0
+  CMPI R1,0
+  CMPI SRCL,0
+  DIV A,B
+  DIV B,A
+  JP COLD
+  JP NEXT  
+  JP NEXT 
+  JP NEXT
+  JP RUN
+  JP STAR_RESTART
+  JR CCOPY_LOOP
+  JR COPY_LOOP
+  JR ESAC_LOOP
+  JR LT_COMPARE
+  JR LT_NOT_EQUAL
+  JR LT_TRUE
+  JR LTE_COMPARE
+  JR MESSAGE_LOOP
+  JR NEXT
+  JR STAR_ALLOT_LOCALS_LOOP
+  JR STAR_CHECK_LOOP
+  JR STAR_DO_CA
+  JR STAR_INIT_LOCALS_LOOP
+  JR STAR_MINUS_LOOP_DONE
+  JR TOKEN_SKIP  ;
+  JR TOKEN_TOK
+  JR[C] LT_TRUE
+  JR[C] NOT_BETWEEN
+  JR[C] NOT_WITHIN
+  JR[C] STAR_LOOP_MORE ; Index not exceeded
+  JR[C] STAR_QDO_DONT
+  JR[C] TOKEN_END
+  JR[C] UGT_TRUE
+  JR[C] ULT_TRUE
+  JR[NC] STAR_LOOP_MORE
+  JR[NC] STAR_STACK_CHECK_RS
+  JR[NC] STAR_STACK_OK
+  JR[NZ] DOT_WORD_LOOP
+  JR[NZ] EQUALS_FALSE
+  JR[NZ] NOT_EQUALS_TRUE
+  JR[NZ] SEARCH_COMPARE_FAIL
+  JR[NZ] SEARCH_COMPARE_LOOP
+  JR[NZ] SEARCH_NEXT
+  JR[NZ] STAR_UNTIL_DONE
+  JR[NZ] TOKEN_MOVE
+  JR[NZ] TOKEN_TOK  ; No, so start seeking
+  JR[NZ] TOKEN_TOK
+  JR[Z] COPY_DONE
+  JR[Z] ESAC_LOOP_DONE
+  JR[Z] LT_FALSE
+  JR[Z] LT_SAME_SIGN
+  JR[Z] LT_TRUE
+  JR[Z] MESSAGE_FOUND
+  JR[Z] NOT_IS_ZERO
+  JR[Z] NOT_WITHIN
+  JR[Z] ONE_EQUALS_TRUE
+  JR[Z] SEARCH_COMPARE
+  JR[Z] STAR_ALLOT_LOCALS_DONE
+  JR[Z] STAR_ELSE_CA
+  JR[Z] STAR_INIT_LOCALS_DONE
+  JR[Z] STAR_LOOP_MORE ; Index not exceeded
+  JR[Z] STAR_LOOP_MORE
+  JR[Z] STAR_MINUS_LOOP_SAME_SIGN
+  JR[Z] STAR_OF_RUN
+  JR[Z] STAR_QDO_DONT
+  JR[Z] TOKEN_DONE  ; Did we get to the end of the buffer?
+  JR[Z] TOKEN_DONE
+  JR[Z] TOKEN_END
+  JR[Z] TWO_EQUALS_TRUE
+  JR[Z] ZERO_EQUALS_TRUE
+  LD  R1,R0
+  LD *DP,*DP
+  LD *DP,DP
+  LD A,A                ; Address of the cold-boot end of the dictionary
+  LD A,A ; current DP
+  LD A,A ; Get the length
+  LD A,A
+  LD A,B ; get the word length
+  LD A,B ; Length to A
+  LD A,I ; Length to A
+  LD A,WA
+  LD B,A     ; Current base in B
+  LD B,A    ; B Points to the dictionary
+  LD B,A ; point to vocab
+  LD B,A
+  LD B,B ; point to word
+  LD B,B
+  LD B,I
+  LD DATA,SRCA
+  LD I,I ; Jump back to the begin
+  LD I,I ; Jump to after the *ENDOF
+  LD I,I ; Jump to the *ESAC
+  LD I,I
+  LD I,WA
+  LD LENA,*DP
+  LD LENB,SWA  ; get the length of the word
+  LD R0,A
+  LD R0,B               ; Get the length of the message
+  LD R0,R0 ; CURRENT @ @
+  LD R0,R0
+  LD R1,R0 ; Len to R1
+  LD R1,R0 ; Low word
+  LD R1,R0
+  LD R1,R1
+  LD R2,R0
+  LD R2,R1
+  LD R2,R2
+  LD SWA,SWA ; Now point to the next word
+  LD SWA,SWA
+  LD VAL,SPP
+  LD WA,I ; WA <- (I)
+  LD_B A,*WORD
+  LD_B A,R0          ; Get the next char
+  LD_B A,R0
+  LD_B B,*CANDIDATE
+  LD_B DATA,SRCA
+  LD_B R2,R0
+  LDAX RS,3 ; words
+  LDAX RS,5 ; words
+  MOV *CANDIDATE,SWA
+  MOV *TOK,*DP ; Keep a backup copy for each trip round the loop
+  MOV *WORD,*TOK
+  MOV A,I
+  MOV A,WA
+  MOV B,A
+  MOV FP,RS ; Frame pointer
+  MOV I,WA
+  MOV IDX,LENA ; Length to R4 for the counter
+  MOV IDX,NUM
+  MOV OFFSET,NUM
+  MOV PC,A
+  MOV R0,A
+  MOV R0,LIMIT
+  MOV R0,RS
+  MOV R1,SP
+  MOV R3,R1 ; Save for later
+  MOV RS,FP
+  MOV SPP,SP
+  MOVAI 0x20   ; Put a space in A
+  MOVAI 0x20
+  MOVBI 0x10
+  MOVBI 10
+  MOVBI 2
+  MOVI A,0 ; invert
+  MOVI A,0
+  MOVI A,1
+  MOVI A,2
+  MOVI A,3
+  MOVI A,4
+  MOVI A,5
+  MOVI A,6
+  MOVI A,7
+  MOVI B,0
+  MOVI B,1
+  MOVI B,2
+  MOVI R1,0 ; Token length
+  MOVI R3,0
+  MOVIL *DP,%DICTIONARY_POINTER
+  MOVIL *OF,STAR_OF_WA
+  MOVIL A,#BASE_HEX
+  MOVIL A,#HEADER_COMPILETIME
+  MOVIL A,#HEADER_EXECUTIVE
+  MOVIL A,#HEADER_HAS_LOCALS
+  MOVIL A,#HEADER_IMMEDIATE
+  MOVIL A,#HEADER_MASK
+  MOVIL A,#HEADER_PASSIVE
+  MOVIL A,#HEADER_RUNTIME
+  MOVIL A,#LBUF_LEN
+  MOVIL A,#MODE_EXECUTE
+  MOVIL A,#RSTOP
+  MOVIL A,#SPTOP
+  MOVIL A,#STATE_NOT_FOUND
+  MOVIL A,%BASE
+  MOVIL A,%CONTEXT
+  MOVIL A,%CORE
+  MOVIL A,%CURRENT
+  MOVIL A,%DICTIONARY_POINTER
+  MOVIL A,%FENCE
+  MOVIL A,%LBUF_DATA
+  MOVIL A,%LBUF_IDX
+  MOVIL A,%MODE
+  MOVIL A,%USER_TOP
+  MOVIL A,0x0a
+  MOVIL A,0xff
+  MOVIL A,CORE_PATCH_DP
+  MOVIL A,CORE_PATCH_FENCE ; At cold-start, FENCE is FENCE (!)
+  MOVIL A,CORE_PATCH_VOCABULARY
+  MOVIL A,MSG_RS_UNDERFLOW    
+  MOVIL A,MSG_SP_UNDERFLOW
+  MOVIL A,NEXT
+  MOVIL A,STAR_ELSE_WA
+  MOVIL A,STAR_OF_ENDOF_WA
+  MOVIL B,#HEADER_HEADER_BIT
+  MOVIL B,#HEADER_MASK ; flags
+  MOVIL B,#HEADER_MASK
+  MOVIL B,#HEADER_SCOPE_BITS
+  MOVIL B,%BASE
+  MOVIL B,%CONTEXT
+  MOVIL B,%CORE
+  MOVIL B,%DICTIONARY_POINTER ; Current dictionary location to B
+  MOVIL B,%DICTIONARY_POINTER
+  MOVIL B,%FENCE
+  MOVIL B,%LBUF_END
+  MOVIL B,%MODE
+  MOVIL B,%STATE
+  MOVIL B,MESSAGES       ; B holds the message address
+  MOVIL B,USER_VARS
+  MOVIL DP,%DICTIONARY_POINTER
+  MOVIL I,OUTER_CA
+  MOVIL R0, #HEADER_MASK
+  MOVIL R0,#HEADER_EXECUTIVE
+  MOVIL R0,#HEADER_IMMEDIATE
+  MOVIL R0,#HEADER_RUNTIME
+  MOVIL R0,#RSTOP
+  MOVIL R0,#SPTOP
+  MOVIL R0,%CURRENT
+  MOVIL R0,%DICTIONARY_POINTER
+  MOVIL R0,%LBUF_IDX
+  MOVIL R0,0x00ff
+  MOVIL R0,CORE_PATCH_DP
+  MOVIL R0,STAR_IF_WA
+  MOVIL R1,%DICTIONARY_POINTER
+  MOVIL R1,%FENCE
+  MOVIL R2,%DICTIONARY_POINTER
+  MOVIL R2,%LBUF_END
+  MOVIL R2,CORE_PATCH_FENCE
+  MOVIL R2,CORE_PATCH_VOCABULARY
+  MOVIL R2,STAR_ESAC_WA
+  MOVIL RS,#RSTOP
+  MOVIL SP,#SPTOP
+  MOVIL STATE,%STATE
+  MOVIL SWA,%CONTEXT
+  MUL B,A
+  NOT A,A
+  OR A,B
+  OR A,R0 ; Set the immediate and runtime bits
+  OR A,R0 ; Set the immediate bit
+  OR A,R0 ; Set the runtime bit
+  POPD A                ; Message number n in A (0-based)
+  POPD A 
+  POPD A ; get the flag
+  POPD A
+  POPD B
+  POPD DEST
+  POPD GE
+  POPD INCREMENT
+  POPD LE
+  POPD NUM
+  POPD R0 ; address
+  POPD R0 ; Address
+  POPD R0 ; H1
+  POPD R0
+  POPD R1 ; DH
+  POPD R1 ; L1
+  POPD R1
+  POPD R2 ; Address of previous *OF + 2
+  POPD R2 ; DL 
+  POPD R2 ; H2
+  POPD R2
+  POPD R3 ; L2
+  POPD R3 ; Number of clauses
+  POPD R3
+  POPD SRCA
+  POPD SRCL
+  POPD VAL
+  POPD WA ; points to the WA
+  POPR A ; current index
+  POPR A
+  POPR B ; end
+  POPR B
+  POPR FP
+  POPR I
+  POPR INDEX
+  POPR LIMIT
+  PUSHD *DP  ; save the location
+  PUSHD A   ; And a true flag
+  PUSHD A 
+  PUSHD A
+  PUSHD B               ; Message address to the stack
+  PUSHD B      ; Push it to the stack
+  PUSHD B    ; Push it to the stack
+  PUSHD B
+  PUSHD FP
+  PUSHD I
+  PUSHD NUM  ; Number of clauses
+  PUSHD R0 ; L1 H1
+  PUSHD R0
+  PUSHD R1 ; L1
+  PUSHD R1
+  PUSHD R2  ; save the location
+  PUSHD R2 ; L1 H1 L2 H2
+  PUSHD R2
+  PUSHD R3 ; L1 H1 L2
+  PUSHD R3
+  PUSHD RS
+  PUSHD SP
+  PUSHD STATE
+  PUSHD SWA ; Name address to the stack
+  PUSHD WA
+  PUSHR A
+  PUSHR B
+  PUSHR FP
+  PUSHR I
+  PUSHR VAL
+  QUOTE_WA: .DATA COLON
+  SL A,B
+  SLI A,1
+  SR A,B
+  SRI A,1
+  SRI B,8
+  ST *DP,*OF ; Compile *OF
+  ST A,B   ; Save it in the jump location
+  ST A,B
+  ST A,R0
+  ST B,A
+  ST B,R3   ; Save the length
+  ST DEST,DATA
+  ST DP,*DP
+  ST R0,R1
+  ST R0,R2
+  ST R1,A  ; Compile *ELSE to the current definition
+  ST R1,A  ; Compile to the current definition
+  ST R1,R0
+  ST R1,R2
+  ST R2,R0 ; Compile *IF
+  ST R2,R1   ; Save it in the jump location
+  ST R2,R1
+  ST_B B,A
+  ST_B DEST,DATA
+  SUB B,A
+  SUB INDEX,INCREMENT
+  SUB R0,R1 ; Reset the buffer pointer
+  SUB R0,RS
+  SUB R0,SP
+  SUBI B,1
+  SUBI IDX,1
+  SUBI OFFSET,2
+  SUBI R0,2
+  SUBI SRCL,1
+  SYSCALL #SYSCALL_ARDUINO
+  SYSCALL #SYSCALL_COMPARE
+  SYSCALL #SYSCALL_D_ADD
+  SYSCALL #SYSCALL_D_AND
+  SYSCALL #SYSCALL_D_DIV
+  SYSCALL #SYSCALL_D_INVERT
+  SYSCALL #SYSCALL_D_MUL
+  SYSCALL #SYSCALL_D_OR
+  SYSCALL #SYSCALL_D_SL
+  SYSCALL #SYSCALL_D_SR
+  SYSCALL #SYSCALL_D_SUB
+  SYSCALL #SYSCALL_DEBUG 
+  SYSCALL #SYSCALL_DOT
+  SYSCALL #SYSCALL_DOT_C
+  SYSCALL #SYSCALL_FCLOSE
+  SYSCALL #SYSCALL_FOPEN
+  SYSCALL #SYSCALL_FREAD
+  SYSCALL #SYSCALL_FREE_MEMORY
+  SYSCALL #SYSCALL_H_AT
+  SYSCALL #SYSCALL_H_STORE
+  SYSCALL #SYSCALL_NUMBER
+  SYSCALL #SYSCALL_PUTC
+  SYSCALL #SYSCALL_QEXIT
+  SYSCALL #SYSCALL_SYSCALL
+  SYSCALL #SYSCALL_TYPE
+  SYSCALL #SYSCALL_TYPELN
+  XOR R0,B ; Compare signs
+  XOR R0,INDEX ; Compare signs
+
+#BASE_BIN: 2
+#BASE_DEC: 10
+#BASE_HEX: 16
+#HEADER_COMPILETIME: 0xc000 ; 0b1100 0000 0000 0000 - Compiled word  error/compile
+#HEADER_EXECUTIVE:   0xb000 ; 0b1011 0000 0000 0000 - Executive word execute/execute (e.g '(' ))
+#HEADER_HAS_LOCALS:  0x0800 ; 0b1000 1000 0000 0000 - This word allocates local variables
+#HEADER_HEADER_BIT: 15
+#HEADER_IMMEDIATE:   0x9000 ; 0b1001 0000 0000 0000 - Immediate word error/execute
+#HEADER_MASK: 0x00ff
+#HEADER_PASSIVE:     0x8000 ; 0b1000 0000 0000 0000 - Normal word    execute/compile
+#HEADER_RUNTIME:     0xa000 ; 0b1010 0000 0000 0000 - Runtime word   execute/error (e.g. ':')
+#HEADER_SCOPE_BITS: 12
+#LBUF_LEN: 80     ; Maximum length of the line buffer in chars
+#MODE_COMPILE: 1
+#MODE_EXECUTE: 0
+#RAMSTART: 0x2000 ; Dictionary grows from here
+#RSTOP:    0x3ffe ; And the return stack from here
+#SPTOP:    0x3800 ; Data stack pointer grows down from here
+#STATE_FOUND: 1
+#STATE_NOT_FOUND: 0
+#SYSCALL_ARDUINO: 24
+#SYSCALL_COMPARE: 21
+#SYSCALL_D_ADD: 11
+#SYSCALL_D_AND: 17
+#SYSCALL_D_DIV: 14
+#SYSCALL_D_INVERT: 19
+#SYSCALL_D_MUL: 13
+#SYSCALL_D_OR: 18
+#SYSCALL_D_SL: 16
+#SYSCALL_D_SR: 15
+#SYSCALL_D_SUB: 12
+#SYSCALL_DEBUG: 0
+#SYSCALL_DOT: 3
+#SYSCALL_DOT_C: 20
+#SYSCALL_FCLOSE: 33
+#SYSCALL_FLUSH: 7
+#SYSCALL_FOPEN: 32
+#SYSCALL_FREAD: 34
+#SYSCALL_FREE_MEMORY: 22
+#SYSCALL_GETC: 4
+#SYSCALL_H_AT: 9
+#SYSCALL_H_STORE: 10
+#SYSCALL_INLINE: 6
+#SYSCALL_NUMBER: 8
+#SYSCALL_PUTC: 5
+#SYSCALL_QEXIT: 25
+#SYSCALL_SYSCALL: 23
+#SYSCALL_TYPE: 1
+#SYSCALL_TYPELN: 2
+#SYSTEM:   0x0000 ; System reset vector
+#VARSTART: 0x3000 ; Variables grow up from here
+%BASE: 2               ; Current system numeric base
+%CONTEXT: 2
+%CORE: 2
+%CURRENT: 2
+%DICTIONARY_POINTER: 2
+%FENCE: 2
+%LBUF_DATA: #LBUF_LEN  ; Line buffer data
+%LBUF_END: 2           ; Address of the last character in the buffer
+%LBUF_IDX: 2           ; Current line buffer byte pointer
+%MODE: 2
+%STATE: 2
+%USER_TOP: 2
+.DATA 0
+.ORG #SYSTEM ; Start vector is at address 0
+.ORG #VARSTART
+;            ( count addr flag)
+;            ( OK to continue )
+;            1 - ( addr count-- )
+;            2 - DUP @ 0x8000 AND ( got to the header? )
+;            DROP DROP 0 _UNKNOWN 0
+;            IF 1 ELSE 0 THEN
+;            SWAP 
+;         (a0)                    (a2)
+;        ( addr count )
+;        ELSE
+;        IF
+;        SWAP DUP 0 = NOT 
+;        THEN
+;    ( count addr flag )
+;    ( put a sanity check in place in case we can't find the WA )
+;    ( try to convert a CA to a Word address )
+;    <VBUILDS ENTRY ! 
+;    2 - ( skip over the link word )
+;    64
+;    BEGIN
+;    DOES> @ CONTEXT !
+;    SWAP DROP
+;    SWAP
+;    UNTIL
+;   #RAMSTART: 0x2000  ; Need to allocate 8K for Forth ROM
+;   #RSTOP:    0x23fe  ; 16 bytes for the return stack 
+;   #SPTOP:    0x23e0  ; Vars end at 0x2500 - 16 bytes for the data stack
+;   #VARSTART: 0x2200  ; Allow 256 bytes for new Forth words in RAM. Allot 64 bytes for variables. 128 for LBUF (see below)
+;  : CA>WA 
+; 
+; ( -- addr-or-zero )
+; ( -- bytes-read )
+; ( -- num true ) | ( -- false )
+; ( -- success )
+; ( 1 2 3 -- 2 3 1 )
+; ( 1 2 3 -- 3 1 2 )
+; ( addr -- )
+; ( addr -- len )
+; ( bufferAddress -- flag )
+; ( char -- flag )
+; ( double-data address -- )
+; ( Extend a variable to the size on the stack in words )
+; ( headerWord -- modeBits )
+; ( n -- )
+; ( sep -- )
+; ( size-in-words -- start addr )
+; ( source-addr dest-addr -- )
+; ( source-addr1 source-len dest-addr2 -- )
+; ( start end -- )
+; ( start-addr len -- )
+; ( v1 v2 -- v1 )
+; ( val ge le -- flag )
+; ( val gt lt -- flag )
+; ( wa -- flag )
+; ( wa -- len )
+; ( wa -- wa wa ) or ( wa -- 0 )
+; ( word -- l h )
+; ( xn .. x0 u -- xn .. x0 xu)
+; : VOCABULARY 
+; ;
+; 0 9 DO stuff 1 -LOOP
+; Allocate n words on the return stack
+; Allot space on the variables heap
+; and jump over it
+; Beginning of the inner interpreter
+; Builds a word and creates a variable
+; Builds the string into the dictionary
+; CASE 0 ; Number of OF clauses to the stack
+; CASE someValue v1 OF ... ENDOF v2 OF ... ENDOF ESAC 
+; check for errors first
+; code *OF a1 ... a1:*ENDOF ax *OF a3 ... a3:*ENDOF ax ax:*ESAC
+; Compare the strings
+; Compile only
+; Compile time only
+; Copy bytes 
+; Copy words
+; Default less-than works for signed numbers
+; E.g. for an Atmega 328P (32KROM, 2K RAM) With no other code the Arduino environment
+; ENDOF -> HERE SWAP ! ' *ENDOF , HERE 2 ALLOT 
+; If there is underflow then print a message and restart
+; Initialise from the data stack
+; Initialise to zero
+; INLINE - Read a line from the terminal
+; Is the WA below the current FENCE?
+; List all the defined words
+; Memory Map
+; Move it to the line buffer
+; much memory you have available.
+; needs approx 900 bytes RAM - so we take only 1K for Forth
+; OF    -> ' *OF , HERE ( push here to the stack ) SWAP 1+ ( increment number of clauses )
+; OF ( 0 -- a0 1 )             ENDOF ( a1 1 )
+; OF ( a1 1 -- a1 2 a2 )       ENDOF ( a1 a3 2 )
+; OF ( a1 a3 2 -- a1 a3 3 a4 ) ENDOF ( a1 a3 a5 3 )
+; of the same name
+; Otherwise print a space
+; Patch - fixup the dictionary to remove any half-compiled words
+; Patch the code so that the core vocabulary is set to point to all 
+; Patch the FENCE inital value also
+; Print the address and contents in HEX and ASCII
+; Print the block of memory in the order given
+; Print the char if it is ?PRINTABLE
+; Print the data stack
+; Print the return stack
+; Print the word at wa and walk up to the  next
+; Push the literal following this word to the stack
+; Put the address of the line buffer on the stack
+; R0 - Address of *IF
+; R0 - Address of *OF
+; R1 - Address of DP
+; R2 - value of DP
+; R3 - number of clauses
+; result = 0 if strings are equal
+; result = -1 if str1 < str2
+; result = 1 if str1 > str2
+; Return the WA on the stack if a match is found, or zero
+; Returns a flag on the stack - false if no characters were read
+; Returns the CA of the word currently being defined
+; Search the dictionary for the current token
+; Searches the vocabulary pointed to by CURRENT
+; Set %FENCE to point ot the last word in the dictionary
+; Split the TOS into two bytes
+; String literal
+; supply in C to wrap the Ardino library
+; Test the stacks for underflow
+; The core of the system is written in assembler for speed
+; The predefined SYSCALLs
+; There was a good reason for leaving a gap. If only I could remember what it was....
+; This is an immediate word
+; Unsigned comparisons
+; Usage: 
+; values below are for STM32F401
+; We'll just code this as a syscall for now 
+; What's the current location?
+; which uses a SYSCALL instruction to call a function you
+; word if it exists
+; words currently defined
+; You can link devices from Arduino-land by writing a word
+; You should redefine this for your device depending on how
+;
+ALIGN:
+ALIGN_CA:
+ALIGN_WA:
+ALLOT:
+ALLOT_CA:
+ALLOT_LOOP:
+ALLOT_WA: .DATA COLON
+AND:
+AND_CA:
+AND_WA: 
+ASPACE:           ; Forth word to push a space char to the stack
+ASPACE_CA:
+ASPACE_WA:
+AT:
+AT_CA:
+AT_WA:
+BACKSLASH: ; Forth word delimiting a \ comment 
+BACKSLASH_CA:
+BACKSLASH_WA: .DATA COLON
+BASE:
+BASE_CA:
+BASE_WA: .DATA BASE_CA
+BEGIN:
+BEGIN_CA:
+BEGIN_WA: .DATA BEGIN_CA
+BETWEEN:
+BETWEEN_CA:
+BETWEEN_WA: .DATA BETWEEN_CA
+BINARY:
+BINARY_CA:
+BINARY_WA: .DATA BINARY_CA
+BIT_COMPILETIME:
+BIT_COMPILETIME_CA:
+BIT_COMPILETIME_WA: .DATA BIT_COMPILETIME_CA
+BIT_EXECUTIVE:
+BIT_EXECUTIVE_CA:
+BIT_EXECUTIVE_WA: .DATA BIT_EXECUTIVE_CA
+BIT_HAS_LOCALS:
+BIT_HAS_LOCALS_CA:
+BIT_HAS_LOCALS_WA: .DATA BIT_HAS_LOCALS_CA
+BIT_IMMEDIATE:
+BIT_IMMEDIATE_CA:
+BIT_IMMEDIATE_WA: .DATA BIT_IMMEDIATE_CA
+BIT_PASSIVE:
+BIT_PASSIVE_CA:
+BIT_PASSIVE_WA: .DATA BIT_PASSIVE_CA
+BIT_RUNTIME:
+BIT_RUNTIME_CA:
+BIT_RUNTIME_WA: .DATA BIT_RUNTIME_CA
+BRACKET_TICK:
+BRACKET_TICK_CA:
+BRACKET_TICK_WA: .DATA COLON
+BUILDS:
+BUILDS_CA:
+BUILDS_WA: .DATA COLON
+C_AT:
+C_AT_CA:
+C_AT_WA:
+CA:
+CA_CA:
+CA_TO_WA:
+CA_TO_WA_CA:
+CA_TO_WA_HEADER_THEN:
+CA_TO_WA_LOOP:
+CA_TO_WA_NOT_A_HEADER:
+CA_TO_WA_UNTIL:
+CA_TO_WA_WA: .DATA COLON
+CA_WA: .DATA COLON
+CASE:
+CASE_CA: 
+CASE_OF:
+CASE_OF_CA:
+CASE_OF_WA: .DATA CASE_OF_CA
+CASE_WA: .DATA COLON
+CASTORE:
+CASTORE_CA:
+CASTORE_WA:
+CCOPY:
+CCOPY_CA:
+CCOPY_DONE:
+CCOPY_LOOP:
+CCOPY_WA: .DATA CCOPY_CA
+COLD:
+COLON: 
+COMMA:
+COMMA_CA:
+COMMA_WA: .DATA COMMA_CA
+COMPARE: ; ( c-addr1 c-addr2 -- result )
+COMPARE_CA:
+COMPARE_WA: .DATA COMPARE_CA
+CONST_NEXT:
+CONST_NEXT_CA:
+CONST_NEXT_WA: .DATA CONST_NEXT_CA
+CONSTANT:
+CONSTANT_CA:
+CONSTANT_WA:
+CONTEXT:
+CONTEXT_CA:
+CONTEXT_WA:
+COPY:
+COPY_CA:
+COPY_DONE:
+COPY_LOOP:
+COPY_WA: .DATA COPY_CA
+CORE:   ; My definition. Should really be as defined using VOCABULARY
+CORE_CA:
+CORE_PATCH_CURRENT:
+CORE_PATCH_DP:
+CORE_PATCH_FENCE:
+CORE_PATCH_VOCABULARY:
+CORE_VOCABULARY:
+CORE_WA: .DATA CORE_CA
+CREATE:
+CREATE_CA:
+CREATE_WA: .DATA COLON
+CRET:
+CRET_CA:
+CRET_WA: .DATA CRET_CA
+CSPLIT:
+CSPLIT_CA:
+CSPLIT_WA: .DATA CSPLIT_CA
+CURRENT:
+CURRENT_CA:
+CURRENT_WA:
+D_ADD:
+D_ADD_CA:
+D_ADD_WA: .DATA D_ADD_CA
+D_AND:
+D_AND_CA:
+D_AND_WA: .DATA D_AND_CA
+D_AT:
+D_AT_CA:
+D_AT_WA: .DATA D_AT_CA
+D_DIV:
+D_DIV_CA:
+D_DIV_WA: .DATA D_DIV_CA
+D_DUP:
+D_DUP_CA:
+D_DUP_WA: .DATA D_DUP_CA
+D_INVERT:
+D_INVERT_CA:
+D_INVERT_WA: .DATA D_INVERT_CA
+D_MUL:
+D_MUL_CA:
+D_MUL_WA: .DATA D_MUL_CA
+D_OR:
+D_OR_CA:
+D_OR_WA: .DATA D_OR_CA
+D_SL:
+D_SL_CA:
+D_SL_WA: .DATA D_SL_CA
+D_SR:
+D_SR_CA:
+D_SR_WA: .DATA D_SR_CA
+D_STORE:
+D_STORE_CA:
+D_STORE_WA: .DATA D_STORE_CA
+D_SUB:
+D_SUB_CA:
+D_SUB_WA: .DATA D_SUB_CA
+D_SWAP:
+D_SWAP_CA:
+D_SWAP_WA: .DATA D_SWAP_CA
+DEBUG:
+DEBUG_CA:
+DEBUG_WA: .DATA DEBUG_CA
+DECIMAL:
+DECIMAL_CA:
+DECIMAL_WA: .DATA DECIMAL_CA
+DEFINITIONS:
+DEFINITIONS_CA:
+DEFINITIONS_WA: .DATA COLON
+DICTIONARY_END:
+DIV:
+DIV_CA:
+DIV_WA: 
+DO:
+DO_CA:
+DO_WA: .DATA COLON
+DOES:
+DOES_CA:
+DOES_WA: .DATA COLON
+DONE:
+DONE_CA:
+DONE_WA: .DATA DONE_CA
+DOT:  ; The Forth word "." to print the value on the top of the stack
+DOT_ASPACE:           
+DOT_ASPACE_CA:
+DOT_ASPACE_WA:
+DOT_C:  ; The Forth word ".C" to print the value on the top of the stack
+DOT_C_CA:
+DOT_C_WA:
+DOT_CA:
+DOT_LOCATION:
+DOT_LOCATION_CA:
+DOT_LOCATION_WA: .DATA COLON
+DOT_MEM:
+DOT_MEM_CA:
+DOT_MEM_DONE:
+DOT_MEM_DOWN:
+DOT_MEM_DOWN_LOOP: 
+DOT_MEM_UP:
+DOT_MEM_UP_LOOP:
+DOT_MEM_WA: .DATA COLON
+DOT_Q_C:
+DOT_Q_C_CA:
+DOT_Q_C_DONE:
+DOT_Q_C_SPACE:
+DOT_Q_C_WA: .DATA COLON
+DOT_RS:
+DOT_RS_WA: .DATA COLON
+DOT_SP:
+DOT_SP_WA: .DATA COLON
+DOT_TWO_BYTES:
+DOT_TWO_BYTES_CA:
+DOT_TWO_BYTES_WA: .DATA COLON
+DOT_TWO_CHARS:
+DOT_TWO_CHARS_CA:
+DOT_TWO_CHARS_WA: .DATA COLON
+DOT_U:  ; The Forth word "." to print the unsigned value on the top of the stack
+DOT_U_CA:
+DOT_U_WA:
+DOT_WA:
+DOT_WORD:
+DOT_WORD_CA:
+DOT_WORD_LOOP:
+DOT_WORD_NEXT:
+DOT_WORD_NEXT_CA:
+DOT_WORD_NEXT_DONE:
+DOT_WORD_NEXT_WA: .DATA COLON
+DOT_WORD_WA: .DATA DOT_WORD_CA
+DP:
+DP_AT:
+DP_AT_CA:
+DP_AT_WA: .DATA DP_AT_CA
+DP_CA:
+DP_STORE:
+DP_STORE_CA:
+DP_STORE_WA: .DATA DP_STORE_CA
+DP_WA: .DATA DP_CA
+DROP:
+DROP_CA:
+DROP_WA:
+DUMP:
+DUMP_CA:
+DUMP_WA: .DATA COLON
+DUP:
+DUP_CA:
+DUP_WA: .DATA DUP_CA
+ELSE:
+ELSE_CA:
+ELSE_WA:
+EMIT:
+EMIT_CA:
+EMIT_WA: .DATA EMIT_CA
+ENDOF:
+ENDOF_CA:
+ENDOF_WA:
+ENTRY:
+ENTRY_CA:
+ENTRY_WA:
+EQUALS:
+EQUALS_CA:
+EQUALS_FALSE:
+EQUALS_WA: .DATA EQUALS_CA
+ESAC:
+ESAC_CA:
+ESAC_LOOP:
+ESAC_LOOP_DONE:
+ESAC_WA: .DATA ESAC_CA
+EXECUTE:
+EXECUTE_CA:
+EXECUTE_WA:
+EXECUTIVE:
+EXECUTIVE_CA:
+EXECUTIVE_WA: .DATA EXECUTIVE_CA
+EXIT:
+EXIT_CA:
+EXIT_WA: .DATA EXIT_CA
+EXPAND:
+EXPAND_CA:
+EXPAND_WA: .DATA EXPAND_CA
+FCLOSE:
+FCLOSE_CA:
+FCLOSE_WA: .DATA FCLOSE_CA
+FENCE:
+FENCE_CA:
+FENCE_WA: .DATA FENCE_CA
+FEOF:
+FEOF_CA:
+FEOF_WA: .DATA COLON
+FIVE: .N "5" .DATA FOUR 
+FIVE_CA: 
+FIVE_WA: .DATA FIVE_CA
+FLUSH:  ; Flush stdout
+FLUSH_CA:
+FLUSH_WA:
+FOPEN:
+FOPEN_CA:
+FOPEN_WA: .DATA FOPEN_CA
+FORGET: 
+FORGET_CA:
+FORGET_DONE:
+FORGET_FAIL:
+FORGET_OK:
+FORGET_WA: .DATA COLON
+FOUR: .N "4" .DATA THREE 
+FOUR_CA: 
+FOUR_WA: .DATA FOUR_CA
+FP:
+FP_CA:
+FP_WA: .DATA FP_CA
+FREAD:
+FREAD_CA:
+FREAD_WA: .DATA FREAD_CA
+FREE_MEMORY:
+FREE_MEMORY_CA:
+FREE_MEMORY_WA: .DATA FREE_MEMORY_CA
+GT:
+GT_CA:
+GT_WA: .DATA GT_CA
+GTE:
+GTE_CA:
+GTE_WA: .DATA GTE_CA
+H_AT:
+H_AT_CA:
+H_AT_WA: .DATA H_AT_CA
+H_STORE:
+H_STORE_CA:
+H_STORE_WA: .DATA H_STORE_CA
+HEADER_TO_MODE:
+HEADER_TO_MODE_CA:
+HEADER_TO_MODE_WA: .DATA HEADER_TO_MODE_CA
+HEX:
+HEX_CA:
+HEX_WA: .DATA HEX_CA
+IF:
+IF_CA:
+IF_WA:
+IMMEDIATE:
+IMMEDIATE_CA:
+IMMEDIATE_WA: .DATA IMMEDIATE_CA
+INDEX_I:
+INDEX_I_CA:
+INDEX_I_WA: .DATA INDEX_I_CA
+INDEX_J:
+INDEX_J_CA:
+INDEX_J_WA: .DATA INDEX_J_CA
+INDEX_K:
+INDEX_K_CA:
+INDEX_K_WA: .DATA INDEX_K_CA
+INLINE:
+INLINE_CA:
+INLINE_WA:
+INVERT:
+INVERT_CA:
+INVERT_WA: .DATA INVERT_CA
+JP NEXT
+LBUF: ; ( -- lbuf-start lbuf-len )
+LBUF_CA:
+LBUF_WA: .DATA LBUF_CA
+LEFT_SQUARE_BRACKET:
+LIT:
+LIT_CA:
+LIT_WA: .DATA COLON
+LOOP:
+LOOP_CA:
+LOOP_NORMAL:
+LOOP_WA: .DATA COLON
+LROT:
+LROT_CA:
+LROT_WA: .DATA LROT_CA
+LSQB_CA:
+LSQB_WA: .DATA COLON
+LT:
+LT_CA:
+LT_COMPARE:
+LT_FALSE:
+LT_NOT_EQUAL:
+LT_SAME_SIGN:
+LT_TRUE:
+LT_WA: .DATA LT_CA
+LTE:
+LTE_CA:
+LTE_COMPARE:
+LTE_WA: .DATA LTE_CA
+MESSAGE: ; Print a system message ( n -- )
+MESSAGE_CA:
+MESSAGE_FOUND:
+MESSAGE_LOOP:
+MESSAGE_WA: .DATA MESSAGE_CA
+MESSAGES: ; SYSTEM MESSAGES LIVE HERE
+MINUS:
+MINUS_CA:
+MINUS_LOOP:
+MINUS_LOOP_CA:
+MINUS_LOOP_NORMAL:
+MINUS_LOOP_WA: .DATA COLON
+MINUS_WA: 
+MODE:
+MODE_CA:
+MODE_WA:
+MSG_COMPILE_ONLY:   .DATA 39 .SDATA "Compile-time words forbidden at runtime"
+MSG_HELLO:          .DATA 23 .SDATA "Hello! I'm a TIL :-) >>"
+MSG_IMMEDIATE_ONLY: .DATA 36 .SDATA "Immediate words forbidden at runtime"
+MSG_PROMPT:         .DATA  5 .SDATA "OK >>"
+MSG_RS_UNDERFLOW:   .DATA 22 .SDATA "Return stack underflow"
+MSG_RUNTIME_ONLY:   .DATA 39 .SDATA "Runtime words forbidden at compile-time"
+MSG_SP_UNDERFLOW:   .DATA 15 .SDATA "Stack underflow"
+MSG_SYSTEM_ERROR:   .DATA 12 .SDATA "System error"
+MSG_UNKNOWN_TOKEN:  .DATA 14 .SDATA "Unknown token "
+MSG_WORD_NOT_FOUND: .DATA 14 .SDATA "Word not found"
+N_TICK: ; ( -- na )
+N_TICK_CA:
+N_TICK_DONE:
+N_TICK_WA: .DATA COLON
+NEXT:
+NEXT_WORD:
+NEXT_WORD_CA:
+NEXT_WORD_WA: .DATA COLON
+NOT:
+NOT_BETWEEN:
+NOT_CA:
+NOT_EQUALS:
+NOT_EQUALS_CA:
+NOT_EQUALS_TRUE:
+NOT_EQUALS_WA: .DATA NOT_EQUALS_CA
+NOT_IS_ZERO:
+NOT_WA: .DATA NOT_CA
+NOT_WITHIN:
+ONE: .N "1" .DATA ZERO 
+ONE_CA: 
+ONE_EQUALS:
+ONE_EQUALS_CA:
+ONE_EQUALS_TRUE:
+ONE_EQUALS_WA: .DATA ONE_EQUALS_CA
+ONE_MINUS:
+ONE_MINUS_CA:
+ONE_MINUS_WA: .DATA ONE_MINUS_CA
+ONE_PLUS:
+ONE_PLUS_CA:
+ONE_PLUS_WA: .DATA ONE_PLUS_CA
+ONE_WA: .DATA ONE_CA
+OR:
+OR_CA:
+OR_WA: .DATA OR_CA
+OUTER:
+OUTER_CA:
+OUTER_LOOP:
+OUTER_LOOP_HAS_INPUT:
+OUTER_LOOP_PROCESS:
+OUTER_LOOP_READ:
+OUTER_WA:
+OVER:
+OVER_CA:
+OVER_WA: .DATA OVER_CA
+PAREN: ; Forth word delimiting a ( comment )
+PAREN_CA:
+PAREN_WA: .DATA COLON
+PATCH:
+PATCH_CA:
+PATCH_DONE:
+PATCH_WA: .DATA COLON
+PICK:
+PICK_CA:
+PICK_WA: .DATA PICK_CA
+PLUS:
+PLUS_CA:
+PLUS_LOOP:
+PLUS_LOOP_CA:
+PLUS_LOOP_NORMAL:
+PLUS_LOOP_WA: .DATA COLON
+PLUS_STORE:
+PLUS_STORE_CA:
+PLUS_STORE_WA: .DATA PLUS_STORE_CA
+PLUS_WA: 
+POP_RS:
+POP_RS_CA:
+POP_RS_WA: .DATA POP_RS_CA
+PROCESS_TOKENS:
+PROCESS_TOKENS_CA:
+PROCESS_TOKENS_EXIT:
+PROCESS_TOKENS_EXIT_FAILED:
+PROCESS_TOKENS_EXIT_SUCCEEDED:
+PROCESS_TOKENS_LOOP:
+PROCESS_TOKENS_NOT_A_NUMBER:
+PROCESS_TOKENS_NOT_A_WORD:
+PROCESS_TOKENS_NUM_TO_STACK:
+PROCESS_TOKENS_WA: .DATA COLON
+Q_EXECUTE:
+Q_EXECUTE_1:
+Q_EXECUTE_5:
+Q_EXECUTE_8:
+Q_EXECUTE_CA:
+Q_EXECUTE_COMPILE:
+Q_EXECUTE_DONE:
+Q_EXECUTE_ERROR:
+Q_EXECUTE_EXECUTE:
+Q_EXECUTE_EXIT:
+Q_EXECUTE_WA:
+Q_FENCED:
+Q_FENCED_CA:
+Q_FENCED_WA: .DATA COLON
+Q_NUMBER:
+Q_NUMBER_CA:
+Q_NUMBER_WA: .DATA Q_NUMBER_CA
+Q_PRINTABLE:
+Q_PRINTABLE_CA:
+Q_PRINTABLE_WA: .DATA COLON
+Q_RS:
+Q_RS_CA:
+Q_RS_WA: .DATA Q_RS_CA
+Q_SP:
+Q_SP_CA:
+Q_SP_WA: .DATA Q_SP_CA
+QDO:
+QDO_CA:
+QDO_WA: .DATA COLON
+QUESTION:
+QUESTION_CA:
+QUESTION_WA: .DATA COLON
+QUOTE:
+QUOTE_CA:
+R_DROP:
+R_DROP_CA:
+R_DROP_WA:
+R_FROM:
+R_FROM_CA:
+R_FROM_WA:
+READ_FILE:
+READ_FILE_CA:
+READ_FILE_CLOSE:
+READ_FILE_DONE:
+READ_FILE_EXIT:
+READ_FILE_FAILED_OPEN:
+READ_FILE_LOOP:
+READ_FILE_WA: .DATA COLON
+RESTART:
+RESTART_WA: .DATA STAR_RESTART
+RIGHT_SQUARE_BRACKET:
+ROT:
+ROT_CA:
+ROT_WA: .DATA ROT_CA
+RS_AT:
+RS_AT_CA:
+RS_AT_WA: .DATA RS_AT_CA
+RSQB_CA:
+RSQB_WA: .DATA COLON
+RSTOP:
+RSTOP_CA:
+RSTOP_WA: .DATA RSTOP_CA
+RUN:
+RUNTIME:
+RUNTIME_CA:
+RUNTIME_WA: .DATA RUNTIME_CA
+S_LIT: 
+S_LIT_CA:
+S_LIT_DONE:
+S_LIT_INTERACTIVE:
+S_LIT_WA: .DATA COLON
+SCODE:
+SCODE_CA:
+SCODE_WA:
+SEARCH:
+SEARCH_CA:
+SEARCH_COMPARE:
+SEARCH_COMPARE_FAIL:
+SEARCH_COMPARE_FOUND:
+SEARCH_COMPARE_LOOP:
+SEARCH_EXIT:
+SEARCH_NEXT:
+SEARCH_WA:
+SEMI_CODE:
+SEMI_CODE_CA:
+SEMI_CODE_WA: .DATA COLON
+SEMICOLON:
+SEMICOLON_CA:
+SEMICOLON_WA: .DATA COLON
+SEVEN: .N "7" .DATA SIX 
+SEVEN_CA: 
+SEVEN_WA: .DATA SEVEN_CA
+SIX: .N "6" .DATA FIVE 
+SIX_CA: 
+SIX_WA: .DATA SIX_CA
+SL:
+SL_CA:
+SL_ONE:
+SL_ONE_CA:
+SL_ONE_WA: .DATA SL_ONE_CA
+SL_WA: .DATA SL_CA
+SPTOP:
+SPTOP_CA:
+SPTOP_WA: .DATA SPTOP_CA
+SR:
+SR_CA:
+SR_ONE:
+SR_ONE_CA:
+SR_ONE_WA: .DATA SR_ONE_CA
+SR_WA: .DATA SR_CA
+STAR_ALLOT_LOCALS:
+STAR_ALLOT_LOCALS_CA:
+STAR_ALLOT_LOCALS_DONE:
+STAR_ALLOT_LOCALS_LOOP:
+STAR_ALLOT_LOCALS_WA: .DATA STAR_ALLOT_LOCALS_CA
+STAR_ARDUINO:
+STAR_ARDUINO_CA:
+STAR_ARDUINO_WA: .DATA STAR_ARDUINO_CA
+STAR_CHECK_LOOP:
+STAR_COLON:
+STAR_COLON_CA:
+STAR_COLON_WA: .DATA STAR_COLON_CA
+STAR_DO:
+STAR_DO_CA:
+STAR_DO_WA: .DATA STAR_DO_CA
+STAR_ELSE:
+STAR_ELSE_CA:
+STAR_ELSE_WA:
+STAR_ESAC:
+STAR_ESAC_CA:
+STAR_ESAC_WA: .DATA STAR_ESAC_CA
+STAR_HASH:
+STAR_HASH_CA:
+STAR_HASH_WA:
+STAR_IF:
+STAR_IF_CA:
+STAR_IF_LEAVE:
+STAR_IF_WA:
+STAR_INIT_LOCALS:
+STAR_INIT_LOCALS_CA:
+STAR_INIT_LOCALS_DONE:
+STAR_INIT_LOCALS_LOOP:
+STAR_INIT_LOCALS_WA: .DATA STAR_INIT_LOCALS_CA
+STAR_LIT:
+STAR_LIT_CA:
+STAR_LIT_WA: .DATA STAR_LIT_CA
+STAR_LOOP:
+STAR_LOOP_CA:
+STAR_LOOP_MORE:
+STAR_LOOP_WA: .DATA STAR_LOOP_CA
+STAR_MINUS_LOOP:
+STAR_MINUS_LOOP_CA:
+STAR_MINUS_LOOP_DONE:
+STAR_MINUS_LOOP_SAME_SIGN:
+STAR_MINUS_LOOP_WA: .DATA STAR_MINUS_LOOP_CA
+STAR_OF:
+STAR_OF_CA:
+STAR_OF_ENDOF:
+STAR_OF_ENDOF_CA:
+STAR_OF_ENDOF_WA:
+STAR_OF_RUN:
+STAR_OF_WA:
+STAR_PLUS_LOOP:
+STAR_PLUS_LOOP_CA:
+STAR_PLUS_LOOP_WA: .DATA STAR_PLUS_LOOP_CA
+STAR_QDO:
+STAR_QDO_CA:
+STAR_QDO_DONT:
+STAR_QDO_WA: .DATA STAR_QDO_CA
+STAR_RESTART: ; Restart from here if a runtime error occurs
+STAR_S_LIT:
+STAR_S_LIT_CA:
+STAR_S_LIT_WA: .DATA STAR_S_LIT_CA
+STAR_SEMI:
+STAR_SEMI_CA:
+STAR_SEMI_WA: .DATA STAR_SEMI_CA ; I.e. the address of the next word
+STAR_STACK:
+STAR_STACK_CA:
+STAR_STACK_CHECK_RS:
+STAR_STACK_OK:
+STAR_STACK_WA: .DATA STAR_STACK_CA
+STAR_UNTIL:
+STAR_UNTIL_CA:
+STAR_UNTIL_DONE:
+STAR_UNTIL_WA: .DATA STAR_UNTIL_CA
+START:
+STATE:
+STATE_CA:
+STATE_WA:
+STORE:
+STORE_CA:
+STORE_WA:
+STRNCPY:
+STRNCPY_CA:
+STRNCPY_WA: .DATA STRNCPY_CA
+SWAP:
+SWAP_CA:
+SWAP_WA: .DATA SWAP_CA
+SYSCALL:
+SYSCALL_CA:
+SYSCALL_WA: .DATA SYSCALL_CA
+THEN:
+THEN_CA:
+THEN_WA:
+THREE: .N "3" .DATA TWO 
+THREE_CA: 
+THREE_WA: .DATA THREE_CA
+TICK: ; ( -- ca )
+TICK_CA:
+TICK_DONE:
+TICK_WA: .DATA COLON
+TIMES:
+TIMES_CA:
+TIMES_WA: 
+TO_R:
+TO_R_CA:
+TO_R_WA:
+TOKEN:
+TOKEN_CA:
+TOKEN_DONE:
+TOKEN_END:
+TOKEN_LEN:
+TOKEN_LEN_CA:
+TOKEN_LEN_WA: .DATA TOKEN_LEN_CA
+TOKEN_MOVE:
+TOKEN_SKIP:         ; Skip leading spaces
+TOKEN_TOK:          ; Start searching for the end token here
+TOKEN_WA:
+TWO: .N "2" .DATA ONE 
+TWO_CA: 
+TWO_DIV:
+TWO_DIV_CA:
+TWO_DIV_WA: .DATA TWO_DIV_CA
+TWO_DOTS: ; This is the public COLON routine
+TWO_DOTS_CA:
+TWO_DOTS_WA: .DATA COLON
+TWO_DROP:
+TWO_DROP_CA:
+TWO_DROP_WA:
+TWO_EQUALS:
+TWO_EQUALS_CA:
+TWO_EQUALS_TRUE:
+TWO_EQUALS_WA: .DATA TWO_EQUALS_CA
+TWO_MINUS:
+TWO_MINUS_CA:
+TWO_MINUS_WA: .DATA TWO_MINUS_CA
+TWO_PLUS:
+TWO_PLUS_CA:
+TWO_PLUS_WA: .DATA TWO_PLUS_CA
+TWO_TIMES:
+TWO_TIMES_CA:
+TWO_TIMES_WA: .DATA TWO_TIMES_CA
+TWO_WA: .DATA TWO_CA
+TYPE:
+TYPE_CA:             ; The Code address
+TYPE_WA:
+TYPELN:
+TYPELN_CA:             ; The Code address
+TYPELN_WA:
+UGT:
+UGT_CA:
+UGT_TRUE:
+UGT_WA: .DATA UGT_CA
+ULT:
+ULT_CA:
+ULT_TRUE:
+ULT_WA: .DATA ULT_CA
+UNTIL:
+UNTIL_CA:
+UNTIL_WA: .DATA COLON
+USER_VARS:
+VALLOT:
+VALLOT_WA: .DATA COLON
+VAR_FENCE:
+VAR_FENCE_CA:
+VAR_FENCE_WA: .DATA VAR_FENCE_CA
+VAR_LBUF_IDX:
+VAR_LBUF_IDX_CA:
+VAR_LBUF_IDX_WA: .DATA VAR_LBUF_IDX_CA
+VAR_USER_TOP:
+VAR_USER_TOP_CA:
+VAR_USER_TOP_WA: .DATA VAR_USER_TOP_CA
+VARIABLE:
+VARIABLE_CA:
+VARIABLE_WA: .DATA COLON
+VBUILDS:
+VBUILDS_CA:
+VBUILDS_WA: .DATA COLON
+VEXTEND:
+VEXTEND_CA:
+VEXTEND_WA: .DATA COLON
+VOCABULARY:
+VOCABULARY_CA:
+VOCABULARY_WA: .DATA COLON
+WA_TO_CA:
+WA_TO_CA_CA:
+WA_TO_CA_WA: .DATA WA_TO_CA_CA
+WA_TO_CB:
+WA_TO_CB_CA:
+WA_TO_CB_WA: .DATA WA_TO_CB_CA
+WA_TO_LA:
+WA_TO_LA_CA:
+WA_TO_LA_WA: .DATA WA_TO_LA_CA
+WARM:
+WITHIN:
+WITHIN_CA:
+WITHIN_WA: .DATA WITHIN_CA
+WORD_LEN:
+WORD_LEN_CA:
+WORD_LEN_WA: .DATA WORD_LEN_CA
+WORDLEN:
+WORDLEN_CA:
+WORDLEN_WA: .DATA WORDLEN_CA
+WORDS:
+WORDS_CA:
+WORDS_LOOP:
+WORDS_LOOP_PRINT:
+WORDS_WA: .DATA COLON
+ZERO: .N "1" .DATA DOT_ASPACE 
+ZERO_CA: 
+ZERO_EQUALS:
+ZERO_EQUALS_CA:
+ZERO_EQUALS_TRUE:
+ZERO_EQUALS_WA: .DATA ZERO_EQUALS_CA
+ZERO_WA: .DATA ZERO_CA
