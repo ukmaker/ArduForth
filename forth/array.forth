@@ -2,7 +2,7 @@
 : ARRAY 
     ( size-in-words -- ) 
     ( -- addr )
-    <BUILDS DUP VALLOT , , DOES>
+    <BUILDS $USER-TOP @ OVER VALLOT , , DOES>
 ;
 
 : ARRAY-SIZE 2+ @ ;

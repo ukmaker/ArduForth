@@ -1,4 +1,5 @@
 ( An assembler for the ForthVM )
+( This is WIP - labels support is not finished )
 
 VOCABULARY ASSEMBLER
 ASSEMBLER DEFINITIONS
@@ -215,4 +216,103 @@ ASSEMBLER DEFINITIONS
 0xc1 COND-I8 CALLR[
 0xc2 COND-R-I4 CALLX[
 0xc3 COND-R-I16 CALLXL[
+
+
+( Allot some space to store temporary labels )
+8 CONSTANT #LABEL-LEN
+8 CONSTANT #MAX-LABELS
+0 VARIABLE $LABEL-TABLE
+  #LABEL-LEN #MAX-LABELS *  4+ VEXTEND
+
+: LABEL-PTR $LABEL-TABLE 2+ ;
+
+#LABEL-LEN #MAX-LABELS *  $LABEL-TABLE !
+$LABEL-TABLE 4+ LABEL-PTR !
+
+: FIRST-LABEL $LABEL-TABLE 4+ ;
+
+: LABEL-SPACE
+   $LABEL-TABLE 4+ $LABEL-TABLE @ + ( end of the table )
+   LABEL-PTR @ 
+   -
+;
+
+: APPEND-LABEL 
+( Append the token at DP to the symbol table )
+    DP@ DP@ @ LABEL-PTR @ COPY
+    DP@ @ LABEL-PTR @ 2+ + ALIGN LABEL-PTR ! 
+;
+
+( now install a token handler to deal with labels )
+
+: ?LABEL 
+( Is the current token a label? I.e. does it end with a colon?)
+    DP@ WORD-LEN DP@ 1+ + C@ [CHAR] : =
+;
+
+: ?LABEL-EXISTS 
+    ( Is the current token already defined? )
+    ( -- addr 1 / 0 )
+    LABEL-PTR @
+    FIRST-LABEL
+    BEGIN
+        DDUP > IF ( OK to continue )
+            DUP DP@ COMPARE 0=
+            IF ( found it )
+                1 1
+            ELSE
+                DUP @ 2+ + ALIGN
+                0
+            THEN
+        ELSE
+            0 1
+        THEN
+    UNTIL
+    IF
+        SWAP DROP 1
+    ELSE 
+        0
+    THEN
+;
+
+: ?LABEL-FITS
+( Does the label fit in the free space? )
+    DP@ @ LABEL-SPACE <=
+;
+
+: LABEL-HANDLER 
+    ?LABEL
+    IF 
+        ?LABEL-EXISTS
+        IF
+            .WORD ."  - label already defined "
+        ELSE
+            ?LABEL-FITS 
+            IF
+                APPEND-LABEL
+            ELSE
+                ." Label space exhausted "
+            THEN
+        THEN
+        1 ( this handler has processed the token )
+    ELSE   
+        0
+    THEN        
+;
+
+: .LABELS
+( Print out all currently defined labels )
+    LABEL-PTR @
+    FIRST-LABEL
+    BEGIN
+        DDUP > IF ( OK to continue )
+            DUP .WORD CRET
+            DUP @ 2+ + ALIGN
+            0
+        ELSE
+            1
+        THEN
+    UNTIL
+    2DROP
+;
 
