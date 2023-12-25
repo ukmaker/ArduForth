@@ -1,0 +1,26 @@
+(kicad_sch (version 20230121) (generator eeschema)
+
+  (uuid a3f055d3-bb47-4dc0-b69d-aed36d7ddbfc)
+
+  (paper "A4")
+
+  (lib_symbols
+  )
+
+
+  (text "[0] MODE Register - Cycle control\n=================================\n\n0 0 0 0  - RUN\n0 0 0 1  - STOP\n1 0 0 1  - Run one instruction cycle\n1 0 1 1  - Run one debug operation\nx 1 x x  - RESET\n      |--- DEBUG_STOP (stop the PC)\n    |----- DEBUG_MODE (0 = instruction, 1 = debug)\n  |------- DEBUG_RESET (global reset)\n|--------- DEBUG_REQX (trigger a debug cycle)\n\n"
+    (at 17.78 54.61 0)
+    (effects (font (face "Consolas") (size 1 1)) (justify left bottom))
+    (uuid 3c46589a-c0ee-48f3-80b5-fd285799f226)
+  )
+  (text "[1] OP Register - Debug Operations\n================================================================\n0000000 x  - NOP\n0000001 i  - MEMRD (address in ADDR, set i for post increment)\n0000010 i  - MEMWR (address in ADDR, set i for post increment)\n0000011 i  - REGRD (address in ADDR)\n0000100 i  - REGWR (address in ADDR)\n0000101 i  - CCRD  (address in ADDR selects CCREGX)\n0000110 i  - PCRD  (address in ADDR selectd PCNEXTX)\n0000111 x  - INSTRD read the current instruction\n0001000 x  - ARGRD  read the argument at HERE\n        |\n        |---- DEBUG_INC\n-------\n   |--------- DEBUG_OP\n\nAddress increments happen on access to the data high-byte\nat the end of a read or write cycle"
+    (at 57.15 46.99 0)
+    (effects (font (face "Consolas") (size 1 1)) (justify left bottom))
+    (uuid 6436ae53-c857-4bfa-9795-b5fa9f1a25cd)
+  )
+  (text "Debug Registers\n=================================\n0 MODE - RUN / STOP / ISTEP / DSTEP\n1 OP   - Debug instruction\n2 DL   - Data Low Byte and DEBUG_ARGX\n3 DH   - Data High Byte\n4 AL   - Address Low Byte\n5 AH   - Address High Byte\n"
+    (at 17.78 30.48 0)
+    (effects (font (face "Consolas") (size 1 1)) (justify left bottom))
+    (uuid f4a6616e-ba96-4994-ba21-8ed59d5e8f6f)
+  )
+)

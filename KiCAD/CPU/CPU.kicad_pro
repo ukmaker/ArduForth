@@ -330,6 +330,26 @@
     [
       "63eafc77-ce61-4ce8-9880-8fe51d7aea0b",
       "Data Flows"
+    ],
+    [
+      "d7457945-3189-47b1-85e0-01be958f21ce",
+      "MCU"
+    ],
+    [
+      "d7e66260-6f5e-4a69-a41e-924af958af71",
+      "DebugBlocks"
+    ],
+    [
+      "38e144a1-0b6b-455a-bc75-49663cfe1186",
+      "InstructionDecode"
+    ],
+    [
+      "7f2d6d52-47ea-4ded-bf51-179840b14ce7",
+      "DebugSerialPort"
+    ],
+    [
+      "cc622f48-98d6-437d-bf36-f47140dea02c",
+      "Debug V2"
     ]
   ],
   "text_variables": {}
